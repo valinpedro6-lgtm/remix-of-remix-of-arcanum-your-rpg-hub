@@ -143,7 +143,7 @@ const TavernGames = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-display font-bold">Jogos de Taverna</h1>
+      <h1 className="page-title">Jogos de Taverna</h1>
 
       {lastResult && (
         <Card className={`card-hover border-2 ${lastResult.win === true ? 'border-primary/50' : lastResult.win === false ? 'border-accent/50' : 'border-border'}`}>

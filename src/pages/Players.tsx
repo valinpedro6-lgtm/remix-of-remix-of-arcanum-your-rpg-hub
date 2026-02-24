@@ -45,7 +45,7 @@ const Players = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-display font-bold">Jogadores</h1>
+        <h1 className="page-title">Jogadores</h1>
         <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Adicionar</Button>
       </div>
 
