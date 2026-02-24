@@ -32,7 +32,7 @@ const Initiative = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-display font-bold">Iniciativa</h1>
+      <h1 className="page-title">Iniciativa</h1>
       <div className="max-w-lg mx-auto space-y-4">
         <Card className="card-hover">
           <CardContent className="p-4">

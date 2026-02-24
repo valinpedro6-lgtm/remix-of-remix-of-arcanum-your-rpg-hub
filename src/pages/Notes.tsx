@@ -37,7 +37,7 @@ const Notes = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-display font-bold">Notas</h1>
+      <h1 className="page-title">Notas</h1>
 
       <Card className="card-hover">
         <CardContent className="p-4 space-y-3">

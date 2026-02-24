@@ -70,7 +70,7 @@ const GameTimer = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-display font-bold">Timer do Jogo</h1>
+      <h1 className="page-title">Timer do Jogo</h1>
       <div className="max-w-lg mx-auto">
         <Card className="card-hover">
           <CardContent className="p-6 space-y-6">

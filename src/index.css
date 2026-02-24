@@ -14,6 +14,7 @@
     --popover-foreground: 0 0% 92%;
     --primary: 0 75% 50%;
     --primary-foreground: 0 0% 98%;
+    --primary-glow: 15 80% 55%;
     --secondary: 0 0% 12%;
     --secondary-foreground: 0 0% 85%;
     --muted: 0 0% 14%;
@@ -34,6 +35,9 @@
     --sidebar-accent-foreground: 0 0% 85%;
     --sidebar-border: 0 0% 15%;
     --sidebar-ring: 0 75% 50%;
+    --gold: 42 80% 55%;
+    --gold-foreground: 42 10% 10%;
+    --ember: 15 85% 45%;
   }
 }
 
@@ -49,6 +53,21 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Metal Mania', cursive;
   }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(0 0% 8%);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(0 0% 20%);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(0 75% 50% / 0.5);
+  }
 }
 
 @layer components {
@@ -56,6 +75,22 @@
     text-shadow: 0 0 20px hsl(0 75% 50% / 0.5), 0 0 40px hsl(0 75% 50% / 0.3);
   }
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-[0_0_20px_hsl(0_75%_50%_/_0.15)] hover:border-primary/30;
+    @apply transition-all duration-300 hover:shadow-[0_0_20px_hsl(0_75%_50%_/_0.15)] hover:border-primary/30 hover:-translate-y-0.5;
+  }
+  .glass-card {
+    @apply bg-card/60 backdrop-blur-md border border-border/50;
+  }
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-[hsl(var(--ember))];
+  }
+  .page-title {
+    @apply text-3xl md:text-4xl font-display font-bold gradient-text;
+  }
+  .glow-border {
+    @apply border border-primary/20 shadow-[0_0_15px_hsl(0_75%_50%_/_0.1),inset_0_0_15px_hsl(0_75%_50%_/_0.05)];
+  }
+  .subtle-pattern {
+    background-image: radial-gradient(hsl(0 0% 20% / 0.3) 1px, transparent 1px);
+    background-size: 20px 20px;
   }
 }

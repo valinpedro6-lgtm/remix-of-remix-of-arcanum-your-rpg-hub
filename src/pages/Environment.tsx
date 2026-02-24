@@ -409,7 +409,7 @@ const Environment = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-display font-bold">Ambiente & Clima</h1>
+      <h1 className="page-title">Ambiente & Clima</h1>
 
       {/* Day/Night + Timer sync */}
       <Card className="card-hover border-primary/30">
