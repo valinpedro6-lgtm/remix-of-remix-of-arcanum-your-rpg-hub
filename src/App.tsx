@@ -16,6 +16,7 @@ import NPCGenerator from "./pages/NPCGenerator";
 import Notes from "./pages/Notes";
 import Environment from "./pages/Environment";
 import Weapons from "./pages/Weapons";
+import Spells from "./pages/Spells";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/notas" element={<Notes />} />
             <Route path="/ambiente" element={<Environment />} />
             <Route path="/armas" element={<Weapons />} />
+            <Route path="/magias" element={<Spells />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>
