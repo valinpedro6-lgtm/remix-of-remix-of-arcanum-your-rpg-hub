@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import {
   TreePine, Mountain, Waves, Sun, Building2, Shrub,
   ArrowDown, MapPin, CloudRain, CloudSnow, CloudLightning,
@@ -12,10 +13,13 @@ import {
   Snowflake, Flame, RefreshCw, AlertTriangle, Clock,
   Sunrise, Sunset, Moon, Zap, ToggleLeft, ToggleRight,
   Palmtree, Castle, Tent, Ship, Skull, Compass,
-  Users, Trash2, Plus, Edit, X, Check
+  Users, Trash2, Plus, Edit, X, Check, Save, Pencil
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
+} from '@/components/ui/dialog';
 
 // --- TYPES ---
 
@@ -68,10 +72,13 @@ interface TimerState {
   lastTickTimestamp: number;
 }
 
+// Custom overrides stored separately
+type WeatherEffectsOverrides = Record<string, string[]>; // key: `${weatherType}_${intensity}`
+type EventEffectsOverrides = Record<string, string>; // key: `${region}_${eventIndex}_${subIndex}` -> new effect
+
 // --- DATA ---
 
 const REGIONS: { value: RegionType; label: string; icon: typeof TreePine; emoji: string; category: string }[] = [
-  // Fantasia
   { value: 'floresta', label: 'Floresta', icon: TreePine, emoji: '🌲', category: 'Natureza' },
   { value: 'montanha', label: 'Montanha', icon: Mountain, emoji: '⛰️', category: 'Natureza' },
   { value: 'costa', label: 'Costa', icon: Waves, emoji: '🌊', category: 'Natureza' },
@@ -80,11 +87,9 @@ const REGIONS: { value: RegionType; label: string; icon: typeof TreePine; emoji:
   { value: 'planicie', label: 'Planície', icon: Compass, emoji: '🌾', category: 'Natureza' },
   { value: 'tundra', label: 'Tundra', icon: Snowflake, emoji: '🧊', category: 'Natureza' },
   { value: 'savana', label: 'Savana', icon: Palmtree, emoji: '🦁', category: 'Natureza' },
-  // Civilização
   { value: 'cidade', label: 'Cidade', icon: Building2, emoji: '🏰', category: 'Civilização' },
   { value: 'ruinas', label: 'Ruínas', icon: Castle, emoji: '🏚️', category: 'Civilização' },
   { value: 'acampamento', label: 'Acampamento', icon: Tent, emoji: '⛺', category: 'Civilização' },
-  // Especial
   { value: 'subterraneo', label: 'Subterrâneo', icon: ArrowDown, emoji: '🕳️', category: 'Especial' },
   { value: 'vulcanico', label: 'Vulcânico', icon: Flame, emoji: '🌋', category: 'Especial' },
   { value: 'arquipelago', label: 'Arquipélago', icon: Ship, emoji: '🏝️', category: 'Especial' },
@@ -130,7 +135,7 @@ const WEATHER_PROBABILITIES: Record<RegionType, Partial<Record<WeatherType, numb
   personalizado: { sol: 15, nublado: 15, chuva: 12, tempestade: 8, neblina: 10, neve: 8, calor_extremo: 8, vento_forte: 8, granizo: 4, aurora_magica: 4, chuva_acida: 4, eclipse: 4 },
 };
 
-const WEATHER_EFFECTS: Record<WeatherType, Record<Intensity, string[]>> = {
+const DEFAULT_WEATHER_EFFECTS: Record<WeatherType, Record<Intensity, string[]>> = {
   sol: { leve: ['Visibilidade normal'], moderado: ['Visibilidade excelente'], intenso: ['+1 Percepção visual'] },
   nublado: { leve: ['Sem efeitos'], moderado: ['Luz difusa'], intenso: ['-1 Percepção visual a distância'] },
   chuva: {
@@ -185,7 +190,7 @@ const WEATHER_EFFECTS: Record<WeatherType, Record<Intensity, string[]>> = {
   },
 };
 
-const ENVIRONMENTAL_EVENTS: Record<RegionType, { weather: WeatherType[]; events: { desc: string; effect: string; category: string }[] }[]> = {
+const DEFAULT_ENVIRONMENTAL_EVENTS: Record<RegionType, { weather: WeatherType[]; events: { desc: string; effect: string; category: string }[] }[]> = {
   floresta: [
     { weather: ['chuva', 'tempestade'], events: [
       { desc: '🌳 Queda de árvore no caminho', effect: 'Teste DEX CD 13 ou 2d6 de dano', category: 'Perigo' },
@@ -326,7 +331,7 @@ const ENVIRONMENTAL_EVENTS: Record<RegionType, { weather: WeatherType[]; events:
       { desc: '🔥 Elemental de fogo emerge', effect: 'Encontro: elemental de fogo, imune a fogo', category: 'Encontro' },
     ]},
     { weather: ['nublado', 'neblina'], events: [
-      { desc: '�ite Obsidiana bruta', effect: 'Teste Mineração CD 15: arma +1 ou 3d10 GP', category: 'Recurso' },
+      { desc: '💎 Obsidiana bruta', effect: 'Teste Mineração CD 15: arma +1 ou 3d10 GP', category: 'Recurso' },
     ]},
     { weather: ['aurora_magica'], events: [
       { desc: '🔮 Fragmento elemental', effect: 'Item: pedra de fogo (3 usos de Bola de Fogo)', category: 'Recurso' },
@@ -443,7 +448,33 @@ function randomDuration(): number {
   return (Math.floor(Math.random() * 8) + 1) * 60;
 }
 
-function generateWeather(region: RegionType, specificType?: WeatherType, specificIntensity?: Intensity): WeatherState {
+function getEffectsForWeather(
+  type: WeatherType,
+  intensity: Intensity,
+  overrides: WeatherEffectsOverrides
+): string[] {
+  const key = `${type}_${intensity}`;
+  if (overrides[key]) return overrides[key];
+  return DEFAULT_WEATHER_EFFECTS[type]?.[intensity] || ['Efeito desconhecido'];
+}
+
+function getEventEffect(
+  region: RegionType,
+  groupIdx: number,
+  eventIdx: number,
+  overrides: EventEffectsOverrides
+): string {
+  const key = `${region}_${groupIdx}_${eventIdx}`;
+  if (overrides[key]) return overrides[key];
+  return DEFAULT_ENVIRONMENTAL_EVENTS[region]?.[groupIdx]?.events?.[eventIdx]?.effect || '';
+}
+
+function generateWeather(
+  region: RegionType,
+  overrides: WeatherEffectsOverrides,
+  specificType?: WeatherType,
+  specificIntensity?: Intensity
+): WeatherState {
   const type = specificType || weightedRandom(WEATHER_PROBABILITIES[region]);
   const intensity = specificIntensity || randomIntensity();
   const duration = randomDuration();
@@ -452,20 +483,38 @@ function generateWeather(region: RegionType, specificType?: WeatherType, specifi
     intensity,
     durationGameMinutes: duration,
     elapsedGameMinutes: 0,
-    effects: WEATHER_EFFECTS[type]?.[intensity] || ['Efeito desconhecido'],
+    effects: getEffectsForWeather(type, intensity, overrides),
   };
 }
 
-function tryGenerateEvent(region: RegionType, weatherType: WeatherType, categoryFilter?: string): { desc: string; effect: string; category: string } | null {
-  const regionEvents = ENVIRONMENTAL_EVENTS[region];
+function tryGenerateEvent(
+  region: RegionType,
+  weatherType: WeatherType,
+  eventOverrides: EventEffectsOverrides,
+  categoryFilter?: string
+): { desc: string; effect: string; category: string } | null {
+  const regionEvents = DEFAULT_ENVIRONMENTAL_EVENTS[region];
   const matching = regionEvents.filter(e => e.weather.includes(weatherType));
   if (matching.length === 0) return null;
-  let allEvents = matching.flatMap(m => m.events);
-  if (categoryFilter && categoryFilter !== 'Todos') {
-    const filtered = allEvents.filter(e => e.category === categoryFilter);
-    if (filtered.length > 0) allEvents = filtered;
+
+  // Collect events with override-aware effects
+  type EventEntry = { desc: string; effect: string; category: string };
+  const allEvents: EventEntry[] = [];
+  for (const group of matching) {
+    const groupIdx = regionEvents.indexOf(group);
+    for (let ei = 0; ei < group.events.length; ei++) {
+      const ev = group.events[ei];
+      const effect = getEventEffect(region, groupIdx, ei, eventOverrides);
+      allEvents.push({ desc: ev.desc, effect, category: ev.category });
+    }
   }
-  return allEvents[Math.floor(Math.random() * allEvents.length)];
+
+  let filtered = allEvents;
+  if (categoryFilter && categoryFilter !== 'Todos') {
+    const f = allEvents.filter(e => e.category === categoryFilter);
+    if (f.length > 0) filtered = f;
+  }
+  return filtered[Math.floor(Math.random() * filtered.length)];
 }
 
 function getTimeOfDay(gameMinutes: number): { label: string; icon: typeof Sunrise; emoji: string; type: TimeOfDayType } {
@@ -483,7 +532,7 @@ function getTimeOfDay(gameMinutes: number): { label: string; icon: typeof Sunris
 const DEFAULT_ENV: EnvironmentState = {
   region: 'floresta',
   customRegionName: '',
-  weather: generateWeather('floresta'),
+  weather: generateWeather('floresta', {}),
   events: [],
   eventMode: 'sugestao',
   autoWeather: true,
@@ -506,6 +555,16 @@ const Environment = () => {
   const [pendingEvent, setPendingEvent] = useState<{ desc: string; effect: string; category: string } | null>(null);
   const [eventCategoryFilter, setEventCategoryFilter] = useState('Todos');
   const [regionTab, setRegionTab] = useState('Natureza');
+
+  // Custom overrides persisted
+  const [weatherOverrides, setWeatherOverrides] = useLocalStorage<WeatherEffectsOverrides>('arcanum-weather-overrides', {});
+  const [eventOverrides, setEventOverrides] = useLocalStorage<EventEffectsOverrides>('arcanum-event-overrides', {});
+
+  // Edit dialogs
+  const [editingWeather, setEditingWeather] = useState<{ type: WeatherType; intensity: Intensity } | null>(null);
+  const [editWeatherEffects, setEditWeatherEffects] = useState<string[]>([]);
+  const [editingEvent, setEditingEvent] = useState<{ region: RegionType; groupIdx: number; eventIdx: number; desc: string } | null>(null);
+  const [editEventEffect, setEditEventEffect] = useState('');
 
   // Sync region to localStorage for NPC generator
   useEffect(() => {
@@ -579,10 +638,10 @@ const Environment = () => {
   useEffect(() => {
     if (!env.autoWeather) return;
     if (env.weather.elapsedGameMinutes >= env.weather.durationGameMinutes) {
-      const newWeather = generateWeather(env.region);
+      const newWeather = generateWeather(env.region, weatherOverrides);
       setEnv(prev => ({ ...prev, weather: newWeather, lastWeatherChangeTimestamp: gameMinutes }));
     }
-  }, [env.autoWeather, env.weather.elapsedGameMinutes, env.weather.durationGameMinutes, env.region, gameMinutes, setEnv]);
+  }, [env.autoWeather, env.weather.elapsedGameMinutes, env.weather.durationGameMinutes, env.region, gameMinutes, setEnv, weatherOverrides]);
 
   // Track weather elapsed time
   useEffect(() => {
@@ -602,7 +661,7 @@ const Environment = () => {
     if (!timerIsRunning && !env.manualTimeOverride) return;
     const lastEventTime = env.events.length > 0 ? env.events[env.events.length - 1].timestamp : 0;
     if (gameMinutes - lastEventTime >= 120 && Math.random() < 0.3) {
-      const event = tryGenerateEvent(env.region, env.weather.type);
+      const event = tryGenerateEvent(env.region, env.weather.type, eventOverrides);
       if (event) {
         if (env.eventMode === 'automatico') {
           addEvent(event);
@@ -628,38 +687,91 @@ const Environment = () => {
   }, [setEnv, gameMinutes]);
 
   const changeRegion = (region: RegionType) => {
-    const newWeather = generateWeather(region);
+    const newWeather = generateWeather(region, weatherOverrides);
     setEnv(prev => ({ ...prev, region, weather: newWeather, lastWeatherChangeTimestamp: gameMinutes, events: [] }));
   };
 
   const setWeatherManual = (type: WeatherType) => {
-    const newWeather = generateWeather(env.region, type);
+    const newWeather = generateWeather(env.region, weatherOverrides, type);
     setEnv(prev => ({ ...prev, weather: newWeather, lastWeatherChangeTimestamp: gameMinutes }));
   };
 
   const setIntensityManual = (intensity: Intensity) => {
+    const effects = getEffectsForWeather(env.weather.type, intensity, weatherOverrides);
     setEnv(prev => ({
       ...prev,
-      weather: {
-        ...prev.weather,
-        intensity,
-        effects: WEATHER_EFFECTS[prev.weather.type]?.[intensity] || ['Efeito desconhecido'],
-      },
+      weather: { ...prev.weather, intensity, effects },
     }));
   };
 
   const rerollWeather = () => {
-    const newWeather = generateWeather(env.region);
+    const newWeather = generateWeather(env.region, weatherOverrides);
     setEnv(prev => ({ ...prev, weather: newWeather, lastWeatherChangeTimestamp: gameMinutes }));
   };
 
   const forceEvent = () => {
-    const event = tryGenerateEvent(env.region, env.weather.type, eventCategoryFilter);
+    const event = tryGenerateEvent(env.region, env.weather.type, eventOverrides, eventCategoryFilter);
     if (event) addEvent(event);
   };
 
   const clearEvents = () => {
     setEnv(prev => ({ ...prev, events: [] }));
+  };
+
+  // --- Weather Effects Editing ---
+  const openWeatherEdit = (type: WeatherType, intensity: Intensity) => {
+    const effects = getEffectsForWeather(type, intensity, weatherOverrides);
+    setEditWeatherEffects([...effects]);
+    setEditingWeather({ type, intensity });
+  };
+
+  const saveWeatherEdit = () => {
+    if (!editingWeather) return;
+    const key = `${editingWeather.type}_${editingWeather.intensity}`;
+    const cleaned = editWeatherEffects.filter(e => e.trim() !== '');
+    setWeatherOverrides(prev => ({ ...prev, [key]: cleaned }));
+    // Update current weather if it matches
+    if (env.weather.type === editingWeather.type && env.weather.intensity === editingWeather.intensity) {
+      setEnv(prev => ({ ...prev, weather: { ...prev.weather, effects: cleaned } }));
+    }
+    setEditingWeather(null);
+  };
+
+  const resetWeatherEffect = (type: WeatherType, intensity: Intensity) => {
+    const key = `${type}_${intensity}`;
+    setWeatherOverrides(prev => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+    // Update current weather if it matches
+    if (env.weather.type === type && env.weather.intensity === intensity) {
+      const defaults = DEFAULT_WEATHER_EFFECTS[type]?.[intensity] || ['Efeito desconhecido'];
+      setEnv(prev => ({ ...prev, weather: { ...prev.weather, effects: defaults } }));
+    }
+  };
+
+  // --- Event Effects Editing ---
+  const openEventEdit = (region: RegionType, groupIdx: number, eventIdx: number, desc: string) => {
+    const effect = getEventEffect(region, groupIdx, eventIdx, eventOverrides);
+    setEditEventEffect(effect);
+    setEditingEvent({ region, groupIdx, eventIdx, desc });
+  };
+
+  const saveEventEdit = () => {
+    if (!editingEvent) return;
+    const key = `${editingEvent.region}_${editingEvent.groupIdx}_${editingEvent.eventIdx}`;
+    setEventOverrides(prev => ({ ...prev, [key]: editEventEffect }));
+    setEditingEvent(null);
+  };
+
+  const resetEventEffect = (region: RegionType, groupIdx: number, eventIdx: number) => {
+    const key = `${region}_${groupIdx}_${eventIdx}`;
+    setEventOverrides(prev => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   };
 
   const WeatherIcon = WEATHER_INFO[env.weather.type].icon;
@@ -879,12 +991,32 @@ const Environment = () => {
               </div>
 
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground font-semibold">Efeitos mecânicos:</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground font-semibold">Efeitos mecânicos:</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => openWeatherEdit(env.weather.type, env.weather.intensity)}
+                  >
+                    <Pencil className="w-3 h-3 mr-1" /> Editar
+                  </Button>
+                </div>
                 {env.weather.effects.map((e, i) => (
                   <p key={i} className="text-sm flex items-center gap-1.5">
                     <Zap className="w-3 h-3 text-primary flex-shrink-0" /> {e}
                   </p>
                 ))}
+                {weatherOverrides[`${env.weather.type}_${env.weather.intensity}`] && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-muted-foreground h-5 px-1"
+                    onClick={() => resetWeatherEffect(env.weather.type, env.weather.intensity)}
+                  >
+                    <RefreshCw className="w-3 h-3 mr-1" /> Restaurar padrão
+                  </Button>
+                )}
               </div>
 
               <Button variant="outline" size="sm" className="w-full" onClick={rerollWeather}>
@@ -921,6 +1053,123 @@ const Environment = () => {
                   </Button>
                 );
               })}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Weather Effects Editor - All combos */}
+      <motion.div variants={cardVariant} initial="hidden" animate="visible" transition={{ delay: 0.22 }}>
+        <Card className="card-hover">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-display flex items-center gap-2">
+              <Edit className="w-5 h-5 text-primary" /> Editar Mecânicas de Clima
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {(Object.keys(WEATHER_INFO) as WeatherType[]).map(type => (
+                <div key={type} className="bg-secondary/30 rounded-lg p-3 border border-border/50">
+                  <p className="font-semibold text-sm mb-2 flex items-center gap-2">
+                    {WEATHER_INFO[type].emoji} {WEATHER_INFO[type].label}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {(['leve', 'moderado', 'intenso'] as Intensity[]).map(intensity => {
+                      const key = `${type}_${intensity}`;
+                      const isCustom = !!weatherOverrides[key];
+                      const effects = getEffectsForWeather(type, intensity, weatherOverrides);
+                      return (
+                        <div
+                          key={intensity}
+                          className={`rounded p-2 border text-xs cursor-pointer transition-colors ${
+                            isCustom ? 'border-primary/50 bg-primary/5' : 'border-border/50 bg-background/50'
+                          } hover:border-primary/30`}
+                          onClick={() => openWeatherEdit(type, intensity)}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <Badge variant={isCustom ? 'default' : 'outline'} className="text-[10px] py-0">
+                              {INTENSITY_LABEL[intensity]}
+                            </Badge>
+                            {isCustom && (
+                              <Badge variant="secondary" className="text-[10px] py-0">editado</Badge>
+                            )}
+                          </div>
+                          <ul className="space-y-0.5">
+                            {effects.map((e, i) => (
+                              <li key={i} className="text-muted-foreground truncate">• {e}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Event Effects Editor */}
+      <motion.div variants={cardVariant} initial="hidden" animate="visible" transition={{ delay: 0.24 }}>
+        <Card className="card-hover">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-display flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-primary" /> Editar Efeitos de Eventos ({regionInfo.label})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {DEFAULT_ENVIRONMENTAL_EVENTS[env.region].map((group, gi) => (
+                <div key={gi} className="bg-secondary/30 rounded-lg p-3 border border-border/50">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Clima: {group.weather.map(w => WEATHER_INFO[w].emoji + ' ' + WEATHER_INFO[w].label).join(', ')}
+                  </p>
+                  <div className="space-y-1.5">
+                    {group.events.map((ev, ei) => {
+                      const key = `${env.region}_${gi}_${ei}`;
+                      const isCustom = !!eventOverrides[key];
+                      const effect = getEventEffect(env.region, gi, ei, eventOverrides);
+                      return (
+                        <div
+                          key={ei}
+                          className={`rounded p-2 border text-xs flex items-start justify-between gap-2 ${
+                            isCustom ? 'border-primary/50 bg-primary/5' : 'border-border/30 bg-background/30'
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold">{ev.desc}</p>
+                            <p className="text-muted-foreground mt-0.5">{effect}</p>
+                            {isCustom && (
+                              <Badge variant="secondary" className="text-[10px] py-0 mt-1">editado</Badge>
+                            )}
+                          </div>
+                          <div className="flex gap-1 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => openEventEdit(env.region, gi, ei, ev.desc)}
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            {isCustom && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={() => resetEventEffect(env.region, gi, ei)}
+                              >
+                                <RefreshCw className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -1004,7 +1253,7 @@ const Environment = () => {
         )}
       </AnimatePresence>
 
-      {/* Events */}
+      {/* Events Log */}
       <motion.div variants={cardVariant} initial="hidden" animate="visible" transition={{ delay: 0.3 }}>
         <Card className="card-hover">
           <CardHeader className="pb-3">
@@ -1132,6 +1381,108 @@ const Environment = () => {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Edit Weather Effects Dialog */}
+      <Dialog open={!!editingWeather} onOpenChange={(open) => !open && setEditingWeather(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {editingWeather && (
+                <>
+                  {WEATHER_INFO[editingWeather.type].emoji} {WEATHER_INFO[editingWeather.type].label} — {INTENSITY_LABEL[editingWeather.intensity]}
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>Edite os efeitos mecânicos para esta combinação de clima e intensidade.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {editWeatherEffects.map((effect, i) => (
+              <div key={i} className="flex gap-2">
+                <Input
+                  value={effect}
+                  onChange={e => {
+                    const next = [...editWeatherEffects];
+                    next[i] = e.target.value;
+                    setEditWeatherEffects(next);
+                  }}
+                  placeholder="Efeito mecânico..."
+                  className="flex-1"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setEditWeatherEffects(prev => prev.filter((_, j) => j !== i))}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => setEditWeatherEffects(prev => [...prev, ''])}
+            >
+              <Plus className="w-3 h-3 mr-1" /> Adicionar Efeito
+            </Button>
+          </div>
+          <DialogFooter>
+            {editingWeather && weatherOverrides[`${editingWeather.type}_${editingWeather.intensity}`] && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (editingWeather) {
+                    resetWeatherEffect(editingWeather.type, editingWeather.intensity);
+                    setEditingWeather(null);
+                  }
+                }}
+              >
+                <RefreshCw className="w-3 h-3 mr-1" /> Padrão
+              </Button>
+            )}
+            <Button onClick={saveWeatherEdit}>
+              <Save className="w-4 h-4 mr-1" /> Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Event Effect Dialog */}
+      <Dialog open={!!editingEvent} onOpenChange={(open) => !open && setEditingEvent(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingEvent?.desc}</DialogTitle>
+            <DialogDescription>Edite o efeito mecânico deste evento ambiental.</DialogDescription>
+          </DialogHeader>
+          <div>
+            <Input
+              value={editEventEffect}
+              onChange={e => setEditEventEffect(e.target.value)}
+              placeholder="Efeito mecânico..."
+            />
+          </div>
+          <DialogFooter>
+            {editingEvent && eventOverrides[`${editingEvent.region}_${editingEvent.groupIdx}_${editingEvent.eventIdx}`] && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (editingEvent) {
+                    resetEventEffect(editingEvent.region, editingEvent.groupIdx, editingEvent.eventIdx);
+                    setEditingEvent(null);
+                  }
+                }}
+              >
+                <RefreshCw className="w-3 h-3 mr-1" /> Padrão
+              </Button>
+            )}
+            <Button onClick={saveEventEdit}>
+              <Save className="w-4 h-4 mr-1" /> Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
