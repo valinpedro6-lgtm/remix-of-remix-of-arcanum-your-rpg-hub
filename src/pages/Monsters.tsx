@@ -8,13 +8,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Edit, Skull, Shield, Heart, Zap, Swords, BookOpen, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Plus, Trash2, Edit, Skull, Shield, Heart, Zap, Swords, BookOpen, X, ChevronDown, ChevronUp, RotateCcw, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Attribute {
   name: string;
   value: number;
   modifier: number;
+  manualModifier: boolean;
 }
 
 interface Monster {
@@ -43,12 +45,12 @@ interface Monster {
 }
 
 const DEFAULT_ATTRIBUTES: Attribute[] = [
-  { name: 'Força', value: 10, modifier: 0 },
-  { name: 'Destreza', value: 10, modifier: 0 },
-  { name: 'Constituição', value: 10, modifier: 0 },
-  { name: 'Intuição', value: 10, modifier: 0 },
-  { name: 'Sabedoria', value: 10, modifier: 0 },
-  { name: 'Carisma', value: 10, modifier: 0 },
+  { name: 'Força', value: 10, modifier: 0, manualModifier: false },
+  { name: 'Destreza', value: 10, modifier: 0, manualModifier: false },
+  { name: 'Constituição', value: 10, modifier: 0, manualModifier: false },
+  { name: 'Intuição', value: 10, modifier: 0, manualModifier: false },
+  { name: 'Sabedoria', value: 10, modifier: 0, manualModifier: false },
+  { name: 'Carisma', value: 10, modifier: 0, manualModifier: false },
 ];
 
 const ATTACK_SUGGESTIONS = [
@@ -100,8 +102,14 @@ const Monsters = () => {
     if (!editing?.name.trim()) return;
     const updated = {
       ...editing,
-      attributes: editing.attributes.map(a => ({ ...a, modifier: calcModifier(a.value) })),
-      customAttributes: editing.customAttributes.map(a => ({ ...a, modifier: calcModifier(a.value) })),
+      attributes: editing.attributes.map(a => ({
+        ...a,
+        modifier: a.manualModifier ? a.modifier : calcModifier(a.value),
+      })),
+      customAttributes: editing.customAttributes.map(a => ({
+        ...a,
+        modifier: a.manualModifier ? a.modifier : calcModifier(a.value),
+      })),
     };
     setMonsters(prev => {
       const exists = prev.find(m => m.id === updated.id);
@@ -113,29 +121,51 @@ const Monsters = () => {
 
   const remove = (id: string) => setMonsters(prev => prev.filter(m => m.id !== id));
 
+  const duplicate = (m: Monster) => {
+    const dup = { ...m, id: crypto.randomUUID(), name: `${m.name} (cópia)`, attributes: m.attributes.map(a => ({...a})), customAttributes: m.customAttributes.map(a => ({...a})) };
+    setMonsters(prev => [...prev, dup]);
+  };
+
   const openEdit = (m: Monster) => {
     setEditing({
       ...m,
       type: m.type || '', size: m.size || 'Médio', alignment: m.alignment || '', challengeRating: m.challengeRating || '',
       movement: m.movement || 9,
-      attributes: m.attributes?.map(a => ({ ...a })) || DEFAULT_ATTRIBUTES.map(a => ({ ...a })),
-      customAttributes: m.customAttributes?.map(a => ({ ...a })) || [],
+      attributes: m.attributes?.map(a => ({ ...a, manualModifier: a.manualModifier ?? false })) || DEFAULT_ATTRIBUTES.map(a => ({ ...a })),
+      customAttributes: m.customAttributes?.map(a => ({ ...a, manualModifier: a.manualModifier ?? false })) || [],
       resistances: m.resistances || '', immunities: m.immunities || '', senses: m.senses || '', languages: m.languages || '', inventory: m.inventory || '', skills: m.skills || '',
     });
     setOpen(true);
   };
 
-  const setAttr = (index: number, val: number, custom = false) => {
+  const setAttrValue = (index: number, val: number, custom = false) => {
     if (!editing) return;
     const key = custom ? 'customAttributes' : 'attributes';
     const arr = [...editing[key]];
-    arr[index] = { ...arr[index], value: val, modifier: calcModifier(val) };
+    const a = arr[index];
+    arr[index] = { ...a, value: val, modifier: a.manualModifier ? a.modifier : calcModifier(val) };
+    setEditing({ ...editing, [key]: arr });
+  };
+
+  const setAttrModifier = (index: number, mod: number, custom = false) => {
+    if (!editing) return;
+    const key = custom ? 'customAttributes' : 'attributes';
+    const arr = [...editing[key]];
+    arr[index] = { ...arr[index], modifier: mod, manualModifier: true };
+    setEditing({ ...editing, [key]: arr });
+  };
+
+  const resetModifier = (index: number, custom = false) => {
+    if (!editing) return;
+    const key = custom ? 'customAttributes' : 'attributes';
+    const arr = [...editing[key]];
+    arr[index] = { ...arr[index], modifier: calcModifier(arr[index].value), manualModifier: false };
     setEditing({ ...editing, [key]: arr });
   };
 
   const addCustomAttr = () => {
     if (!editing || !newAttrName.trim()) return;
-    setEditing({ ...editing, customAttributes: [...editing.customAttributes, { name: newAttrName.trim(), value: 10, modifier: 0 }] });
+    setEditing({ ...editing, customAttributes: [...editing.customAttributes, { name: newAttrName.trim(), value: 10, modifier: 0, manualModifier: false }] });
     setNewAttrName('');
   };
 
@@ -158,15 +188,57 @@ const Monsters = () => {
 
   const allAttributes = (m: Monster) => [...(m.attributes || []), ...(m.customAttributes || [])];
 
+  const AttrEditor = ({ a, i, custom = false }: { a: Attribute; i: number; custom?: boolean }) => (
+    <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/50">
+      <span className="text-sm font-semibold w-24 truncate">{a.name}</span>
+      <div className="flex flex-col items-center gap-0.5">
+        <label className="text-[10px] text-muted-foreground">Valor</label>
+        <Input type="number" className="w-16 h-8 text-center text-sm" value={a.value} onChange={e => setAttrValue(i, parseInt(e.target.value) || 0, custom)} />
+      </div>
+      <div className="flex flex-col items-center gap-0.5">
+        <label className="text-[10px] text-muted-foreground">Mod</label>
+        <div className="flex items-center gap-1">
+          <Input
+            type="number"
+            className={`w-16 h-8 text-center text-sm ${a.manualModifier ? 'border-primary/50 bg-primary/5' : ''}`}
+            value={a.modifier}
+            onChange={e => setAttrModifier(i, parseInt(e.target.value) || 0, custom)}
+          />
+          {a.manualModifier && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="p-0.5 h-auto" onClick={() => resetModifier(i, custom)}>
+                    <RotateCcw className="w-3 h-3 text-muted-foreground" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent><p className="text-xs">Restaurar cálculo automático ({modStr(calcModifier(a.value))})</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+      </div>
+      {custom && (
+        <Button variant="ghost" size="sm" className="p-1 h-auto ml-auto" onClick={() => removeCustomAttr(i)}><X className="w-3 h-3" /></Button>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="page-title">Monstros</h1>
-        <Button onClick={() => { setEditing(emptyMonster()); setOpen(true); }}><Plus className="w-4 h-4 mr-2" />Adicionar</Button>
+        <Button onClick={() => { setEditing(emptyMonster()); setOpen(true); }} className="gap-2"><Plus className="w-4 h-4" />Adicionar</Button>
       </div>
 
       {monsters.length === 0 && (
-        <Card className="card-hover"><CardContent className="p-8 text-center text-muted-foreground">Nenhum monstro cadastrado</CardContent></Card>
+        <Card className="card-hover glow-border">
+          <CardContent className="p-12 text-center">
+            <Skull className="w-12 h-12 mx-auto text-muted-foreground/20 mb-3" />
+            <p className="text-muted-foreground">Nenhum monstro cadastrado</p>
+            <Button variant="outline" className="mt-4" onClick={() => { setEditing(emptyMonster()); setOpen(true); }}><Plus className="w-4 h-4 mr-2" />Criar primeiro monstro</Button>
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -177,9 +249,9 @@ const Monsters = () => {
                 <CardContent className="p-0">
                   <div className="flex items-start gap-4 p-4">
                     {m.image ? (
-                      <div className="w-20 h-20 rounded-lg bg-secondary overflow-hidden shrink-0"><img src={m.image} alt={m.name} className="w-full h-full object-cover" /></div>
+                      <div className="w-20 h-20 rounded-xl bg-secondary overflow-hidden shrink-0 ring-2 ring-primary/20"><img src={m.image} alt={m.name} className="w-full h-full object-cover" /></div>
                     ) : (
-                      <div className="w-20 h-20 rounded-lg bg-secondary flex items-center justify-center shrink-0"><Skull className="w-8 h-8 text-muted-foreground/30" /></div>
+                      <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-secondary to-secondary/50 flex items-center justify-center shrink-0 ring-2 ring-border"><Skull className="w-8 h-8 text-muted-foreground/30" /></div>
                     )}
                     <div className="flex-1 min-w-0">
                       <h3 className="text-xl font-display font-bold truncate">{m.name || 'Sem nome'}</h3>
@@ -196,7 +268,7 @@ const Monsters = () => {
                   </div>
 
                   <div className="px-4 pb-2">
-                    <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground" onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}>
+                    <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground" onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}>
                       {expandedId === m.id ? <ChevronUp className="w-3 h-3 mr-1" /> : <ChevronDown className="w-3 h-3 mr-1" />}
                       {expandedId === m.id ? 'Recolher' : 'Expandir ficha'}
                     </Button>
@@ -207,29 +279,28 @@ const Monsters = () => {
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                         <Separator />
                         <div className="p-4 space-y-4">
-                          {/* Attributes */}
                           <div>
                             <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Swords className="w-3.5 h-3.5" />Atributos</h4>
                             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                               {allAttributes(m).map(a => (
-                                <div key={a.name} className="text-center p-2 rounded-md bg-secondary/50">
-                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{a.name.substring(0, 3)}</p>
-                                  <p className="text-lg font-bold">{a.value}</p>
-                                  <p className="text-xs text-primary font-semibold">{modStr(a.modifier)}</p>
+                                <div key={a.name} className="text-center p-2.5 rounded-lg bg-secondary/50 border border-border/30">
+                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{a.name.substring(0, 3)}</p>
+                                  <p className="text-xl font-bold">{a.value}</p>
+                                  <p className={`text-xs font-bold ${a.manualModifier ? 'text-accent' : 'text-primary'}`}>{modStr(a.modifier)}</p>
                                 </div>
                               ))}
                             </div>
                           </div>
 
-                          {m.skills && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Perícias</h4><p className="text-sm whitespace-pre-line">{m.skills}</p></div>}
-                          {m.attacks && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Ataques</h4><p className="text-sm whitespace-pre-line">{m.attacks}</p></div>}
-                          {m.abilities && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Habilidades</h4><p className="text-sm whitespace-pre-line">{m.abilities}</p></div>}
-                          {m.resistances && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Resistências</h4><p className="text-sm whitespace-pre-line">{m.resistances}</p></div>}
-                          {m.immunities && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Imunidades</h4><p className="text-sm whitespace-pre-line">{m.immunities}</p></div>}
-                          {m.senses && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Sentidos</h4><p className="text-sm">{m.senses}</p></div>}
-                          {m.languages && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Idiomas</h4><p className="text-sm">{m.languages}</p></div>}
-                          {m.inventory && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Tesouro / Inventário</h4><p className="text-sm whitespace-pre-line">{m.inventory}</p></div>}
-                          {m.notes && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Anotações</h4><p className="text-sm whitespace-pre-line">{m.notes}</p></div>}
+                          {m.skills && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Perícias</h4><p className="text-sm whitespace-pre-line bg-secondary/30 rounded-lg p-3 border border-border/30">{m.skills}</p></div>}
+                          {m.attacks && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Ataques</h4><p className="text-sm whitespace-pre-line bg-secondary/30 rounded-lg p-3 border border-border/30">{m.attacks}</p></div>}
+                          {m.abilities && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Habilidades</h4><p className="text-sm whitespace-pre-line bg-secondary/30 rounded-lg p-3 border border-border/30">{m.abilities}</p></div>}
+                          {m.resistances && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Resistências</h4><p className="text-sm whitespace-pre-line bg-secondary/30 rounded-lg p-3 border border-border/30">{m.resistances}</p></div>}
+                          {m.immunities && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Imunidades</h4><p className="text-sm whitespace-pre-line bg-secondary/30 rounded-lg p-3 border border-border/30">{m.immunities}</p></div>}
+                          {m.senses && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Sentidos</h4><p className="text-sm bg-secondary/30 rounded-lg p-3 border border-border/30">{m.senses}</p></div>}
+                          {m.languages && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Idiomas</h4><p className="text-sm bg-secondary/30 rounded-lg p-3 border border-border/30">{m.languages}</p></div>}
+                          {m.inventory && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Tesouro / Inventário</h4><p className="text-sm whitespace-pre-line bg-secondary/30 rounded-lg p-3 border border-border/30">{m.inventory}</p></div>}
+                          {m.notes && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Anotações</h4><p className="text-sm whitespace-pre-line bg-secondary/30 rounded-lg p-3 border border-border/30">{m.notes}</p></div>}
                         </div>
                       </motion.div>
                     )}
@@ -237,8 +308,16 @@ const Monsters = () => {
 
                   <Separator />
                   <div className="flex gap-2 p-3">
-                    <Button variant="outline" size="sm" onClick={() => openEdit(m)} className="flex-1"><Edit className="w-3 h-3 mr-1" />Editar</Button>
-                    <Button variant="outline" size="sm" onClick={() => remove(m.id)}><Trash2 className="w-3 h-3" /></Button>
+                    <Button variant="outline" size="sm" onClick={() => openEdit(m)} className="flex-1 gap-1"><Edit className="w-3 h-3" />Editar</Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="sm" onClick={() => duplicate(m)}><Copy className="w-3 h-3" /></Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p className="text-xs">Duplicar</p></TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <Button variant="outline" size="sm" onClick={() => remove(m.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-3 h-3" /></Button>
                   </div>
                 </CardContent>
               </Card>
@@ -250,7 +329,7 @@ const Monsters = () => {
       {/* EDIT DIALOG */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-display">{editing && monsters.find(m => m.id === editing.id) ? 'Editar' : 'Novo'} Monstro</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-display text-xl">{editing && monsters.find(m => m.id === editing.id) ? 'Editar' : 'Novo'} Monstro</DialogTitle></DialogHeader>
           {editing && (
             <Tabs defaultValue="info" className="w-full">
               <TabsList className="w-full grid grid-cols-4">
@@ -276,28 +355,20 @@ const Monsters = () => {
 
               {/* ATTRIBUTES */}
               <TabsContent value="attributes" className="space-y-3 mt-3">
-                <div className="grid grid-cols-2 gap-3">
+                <p className="text-xs text-muted-foreground">Edite valor e modificador. Modificadores manuais ficam em <span className="text-accent">destaque</span>.</p>
+                <div className="space-y-2">
                   {editing.attributes.map((a, i) => (
-                    <div key={a.name} className="flex items-center gap-2">
-                      <span className="text-sm w-24 truncate">{a.name}</span>
-                      <Input type="number" className="w-20" value={a.value} onChange={e => setAttr(i, parseInt(e.target.value) || 0)} />
-                      <span className="text-xs text-primary font-semibold w-8">{modStr(calcModifier(a.value))}</span>
-                    </div>
+                    <AttrEditor key={a.name} a={a} i={i} />
                   ))}
                 </div>
 
                 {editing.customAttributes.length > 0 && (
                   <>
                     <Separator />
-                    <p className="text-xs text-muted-foreground">Atributos customizados</p>
-                    <div className="grid grid-cols-2 gap-3">
+                    <p className="text-xs text-muted-foreground font-semibold">Atributos customizados</p>
+                    <div className="space-y-2">
                       {editing.customAttributes.map((a, i) => (
-                        <div key={`${a.name}-${i}`} className="flex items-center gap-2">
-                          <span className="text-sm w-24 truncate">{a.name}</span>
-                          <Input type="number" className="w-20" value={a.value} onChange={e => setAttr(i, parseInt(e.target.value) || 0, true)} />
-                          <span className="text-xs text-primary font-semibold w-8">{modStr(calcModifier(a.value))}</span>
-                          <Button variant="ghost" size="sm" className="p-1 h-auto" onClick={() => removeCustomAttr(i)}><X className="w-3 h-3" /></Button>
-                        </div>
+                        <AttrEditor key={`${a.name}-${i}`} a={a} i={i} custom />
                       ))}
                     </div>
                   </>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,13 +8,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Edit, Shield, Heart, User, Zap, Swords, BookOpen, Backpack, Sparkles, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Plus, Trash2, Edit, Shield, Heart, User, Zap, Swords, BookOpen, Backpack, Sparkles, X, ChevronDown, ChevronUp, RotateCcw, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Attribute {
   name: string;
   value: number;
   modifier: number;
+  manualModifier: boolean;
 }
 
 interface Skill {
@@ -52,12 +54,12 @@ interface Player {
 }
 
 const DEFAULT_ATTRIBUTES: Attribute[] = [
-  { name: 'Força', value: 10, modifier: 0 },
-  { name: 'Destreza', value: 10, modifier: 0 },
-  { name: 'Constituição', value: 10, modifier: 0 },
-  { name: 'Intuição', value: 10, modifier: 0 },
-  { name: 'Sabedoria', value: 10, modifier: 0 },
-  { name: 'Carisma', value: 10, modifier: 0 },
+  { name: 'Força', value: 10, modifier: 0, manualModifier: false },
+  { name: 'Destreza', value: 10, modifier: 0, manualModifier: false },
+  { name: 'Constituição', value: 10, modifier: 0, manualModifier: false },
+  { name: 'Intuição', value: 10, modifier: 0, manualModifier: false },
+  { name: 'Sabedoria', value: 10, modifier: 0, manualModifier: false },
+  { name: 'Carisma', value: 10, modifier: 0, manualModifier: false },
 ];
 
 const DEFAULT_SKILLS: Skill[] = [
@@ -74,6 +76,7 @@ const DEFAULT_SKILLS: Skill[] = [
 ];
 
 const calcModifier = (value: number) => Math.floor((value - 10) / 2);
+const modStr = (m: number) => m >= 0 ? `+${m}` : `${m}`;
 
 const emptyPlayer = (): Player => ({
   id: crypto.randomUUID(),
@@ -99,8 +102,14 @@ const Players = () => {
     if (!editing?.name.trim()) return;
     const updated = {
       ...editing,
-      attributes: editing.attributes.map(a => ({ ...a, modifier: calcModifier(a.value) })),
-      customAttributes: editing.customAttributes.map(a => ({ ...a, modifier: calcModifier(a.value) })),
+      attributes: editing.attributes.map(a => ({
+        ...a,
+        modifier: a.manualModifier ? a.modifier : calcModifier(a.value),
+      })),
+      customAttributes: editing.customAttributes.map(a => ({
+        ...a,
+        modifier: a.manualModifier ? a.modifier : calcModifier(a.value),
+      })),
     };
     setPlayers(prev => {
       const exists = prev.find(p => p.id === updated.id);
@@ -111,14 +120,47 @@ const Players = () => {
   };
 
   const remove = (id: string) => setPlayers(prev => prev.filter(p => p.id !== id));
-  const openNew = () => { setEditing(emptyPlayer()); setOpen(true); };
-  const openEdit = (p: Player) => { setEditing({ ...p, attributes: p.attributes?.map(a => ({...a})) || DEFAULT_ATTRIBUTES.map(a => ({...a})), customAttributes: p.customAttributes?.map(a => ({...a})) || [], skills: p.skills?.map(s => ({...s})) || DEFAULT_SKILLS.map(s => ({...s})), customSkills: p.customSkills?.map(s => ({...s})) || [] }); setOpen(true); };
 
-  const setAttr = (index: number, field: 'value', val: number, custom = false) => {
+  const duplicate = (p: Player) => {
+    const dup = { ...p, id: crypto.randomUUID(), name: `${p.name} (cópia)`, attributes: p.attributes.map(a => ({...a})), customAttributes: p.customAttributes.map(a => ({...a})), skills: p.skills.map(s => ({...s})), customSkills: p.customSkills.map(s => ({...s})) };
+    setPlayers(prev => [...prev, dup]);
+  };
+
+  const openNew = () => { setEditing(emptyPlayer()); setOpen(true); };
+
+  const openEdit = (p: Player) => {
+    setEditing({
+      ...p,
+      attributes: p.attributes?.map(a => ({ ...a, manualModifier: a.manualModifier ?? false })) || DEFAULT_ATTRIBUTES.map(a => ({ ...a })),
+      customAttributes: p.customAttributes?.map(a => ({ ...a, manualModifier: a.manualModifier ?? false })) || [],
+      skills: p.skills?.map(s => ({ ...s })) || DEFAULT_SKILLS.map(s => ({ ...s })),
+      customSkills: p.customSkills?.map(s => ({ ...s })) || [],
+    });
+    setOpen(true);
+  };
+
+  const setAttrValue = (index: number, val: number, custom = false) => {
     if (!editing) return;
     const key = custom ? 'customAttributes' : 'attributes';
     const arr = [...editing[key]];
-    arr[index] = { ...arr[index], [field]: val, modifier: calcModifier(val) };
+    const a = arr[index];
+    arr[index] = { ...a, value: val, modifier: a.manualModifier ? a.modifier : calcModifier(val) };
+    setEditing({ ...editing, [key]: arr });
+  };
+
+  const setAttrModifier = (index: number, mod: number, custom = false) => {
+    if (!editing) return;
+    const key = custom ? 'customAttributes' : 'attributes';
+    const arr = [...editing[key]];
+    arr[index] = { ...arr[index], modifier: mod, manualModifier: true };
+    setEditing({ ...editing, [key]: arr });
+  };
+
+  const resetModifier = (index: number, custom = false) => {
+    if (!editing) return;
+    const key = custom ? 'customAttributes' : 'attributes';
+    const arr = [...editing[key]];
+    arr[index] = { ...arr[index], modifier: calcModifier(arr[index].value), manualModifier: false };
     setEditing({ ...editing, [key]: arr });
   };
 
@@ -132,7 +174,7 @@ const Players = () => {
 
   const addCustomAttr = () => {
     if (!editing || !newAttrName.trim()) return;
-    setEditing({ ...editing, customAttributes: [...editing.customAttributes, { name: newAttrName.trim(), value: 10, modifier: 0 }] });
+    setEditing({ ...editing, customAttributes: [...editing.customAttributes, { name: newAttrName.trim(), value: 10, modifier: 0, manualModifier: false }] });
     setNewAttrName('');
   };
 
@@ -156,17 +198,77 @@ const Players = () => {
   const allAttributes = (p: Player) => [...(p.attributes || []), ...(p.customAttributes || [])];
   const allSkills = (p: Player) => [...(p.skills || []), ...(p.customSkills || [])];
 
-  const modStr = (m: number) => m >= 0 ? `+${m}` : `${m}`;
+  const AttrEditor = ({ a, i, custom = false }: { a: Attribute; i: number; custom?: boolean }) => (
+    <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/50">
+      <span className="text-sm font-semibold w-24 truncate">{a.name}</span>
+      <div className="flex flex-col items-center gap-0.5">
+        <label className="text-[10px] text-muted-foreground">Valor</label>
+        <Input type="number" className="w-16 h-8 text-center text-sm" value={a.value} onChange={e => setAttrValue(i, parseInt(e.target.value) || 0, custom)} />
+      </div>
+      <div className="flex flex-col items-center gap-0.5">
+        <label className="text-[10px] text-muted-foreground">Mod</label>
+        <div className="flex items-center gap-1">
+          <Input
+            type="number"
+            className={`w-16 h-8 text-center text-sm ${a.manualModifier ? 'border-primary/50 bg-primary/5' : ''}`}
+            value={a.modifier}
+            onChange={e => setAttrModifier(i, parseInt(e.target.value) || 0, custom)}
+          />
+          {a.manualModifier && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="p-0.5 h-auto" onClick={() => resetModifier(i, custom)}>
+                    <RotateCcw className="w-3 h-3 text-muted-foreground" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent><p className="text-xs">Restaurar cálculo automático ({modStr(calcModifier(a.value))})</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+      </div>
+      {custom && (
+        <Button variant="ghost" size="sm" className="p-1 h-auto ml-auto" onClick={() => removeCustomAttr(i)}><X className="w-3 h-3" /></Button>
+      )}
+    </div>
+  );
+
+  const SkillEditor = ({ s, i, custom = false }: { s: Skill; i: number; custom?: boolean }) => (
+    <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/50">
+      <button
+        className={`text-sm w-32 text-left truncate transition-colors ${s.proficient ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`}
+        onClick={() => setSkill(i, 'proficient', !s.proficient, custom)}
+      >
+        <span className={`inline-block w-4 ${s.proficient ? 'text-primary' : ''}`}>{s.proficient ? '●' : '○'}</span>
+        {s.name}
+      </button>
+      <div className="flex flex-col items-center gap-0.5">
+        <label className="text-[10px] text-muted-foreground">Bônus</label>
+        <Input type="number" className="w-16 h-8 text-center text-sm" value={s.bonus} onChange={e => setSkill(i, 'bonus', parseInt(e.target.value) || 0, custom)} />
+      </div>
+      <span className="text-[10px] text-muted-foreground bg-secondary/60 px-1.5 py-0.5 rounded">{s.attribute}</span>
+      {custom && (
+        <Button variant="ghost" size="sm" className="p-1 h-auto ml-auto" onClick={() => removeCustomSkill(i)}><X className="w-3 h-3" /></Button>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="page-title">Jogadores</h1>
-        <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Adicionar</Button>
+        <Button onClick={openNew} className="gap-2"><Plus className="w-4 h-4" />Adicionar</Button>
       </div>
 
       {players.length === 0 && (
-        <Card className="card-hover"><CardContent className="p-8 text-center text-muted-foreground">Nenhum jogador cadastrado</CardContent></Card>
+        <Card className="card-hover glow-border">
+          <CardContent className="p-12 text-center">
+            <User className="w-12 h-12 mx-auto text-muted-foreground/20 mb-3" />
+            <p className="text-muted-foreground">Nenhum jogador cadastrado</p>
+            <Button variant="outline" className="mt-4" onClick={openNew}><Plus className="w-4 h-4 mr-2" />Criar primeiro personagem</Button>
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -177,15 +279,15 @@ const Players = () => {
                 <CardContent className="p-0">
                   <div className="flex items-start gap-4 p-4">
                     {p.image ? (
-                      <div className="w-20 h-20 rounded-lg bg-secondary overflow-hidden shrink-0"><img src={p.image} alt={p.name} className="w-full h-full object-cover" /></div>
+                      <div className="w-20 h-20 rounded-xl bg-secondary overflow-hidden shrink-0 ring-2 ring-primary/20"><img src={p.image} alt={p.name} className="w-full h-full object-cover" /></div>
                     ) : (
-                      <div className="w-20 h-20 rounded-lg bg-secondary flex items-center justify-center shrink-0"><User className="w-8 h-8 text-muted-foreground/30" /></div>
+                      <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-secondary to-secondary/50 flex items-center justify-center shrink-0 ring-2 ring-border"><User className="w-8 h-8 text-muted-foreground/30" /></div>
                     )}
                     <div className="flex-1 min-w-0">
                       <h3 className="text-xl font-display font-bold truncate">{p.name || 'Sem nome'}</h3>
                       {p.playerName && <p className="text-xs text-muted-foreground">Jogador: {p.playerName}</p>}
-                      <p className="text-sm text-muted-foreground">{p.race} • {p.className}{p.profession ? ` / ${p.profession}` : ''} • Nv {p.level}</p>
-                      {p.experience > 0 && <p className="text-xs text-muted-foreground">XP: {p.experience}</p>}
+                      <p className="text-sm text-muted-foreground">{[p.race, p.className, p.profession].filter(Boolean).join(' • ')}{p.level > 0 && ` • Nv ${p.level}`}</p>
+                      {p.experience > 0 && <p className="text-xs text-muted-foreground">XP: {p.experience.toLocaleString()}</p>}
                       <div className="flex flex-wrap gap-3 mt-2">
                         <div className="flex items-center gap-1"><Heart className="w-4 h-4 text-accent" /><span className="text-sm font-semibold">{p.hp}/{p.maxHp}</span></div>
                         {p.maxMana > 0 && <div className="flex items-center gap-1"><Zap className="w-4 h-4 text-blue-400" /><span className="text-sm font-semibold">{p.mana}/{p.maxMana}</span></div>}
@@ -196,7 +298,7 @@ const Players = () => {
                   </div>
 
                   <div className="px-4 pb-2">
-                    <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground" onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}>
+                    <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground" onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}>
                       {expandedId === p.id ? <ChevronUp className="w-3 h-3 mr-1" /> : <ChevronDown className="w-3 h-3 mr-1" />}
                       {expandedId === p.id ? 'Recolher' : 'Expandir ficha'}
                     </Button>
@@ -211,10 +313,10 @@ const Players = () => {
                             <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Swords className="w-3.5 h-3.5" />Atributos</h4>
                             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                               {allAttributes(p).map(a => (
-                                <div key={a.name} className="text-center p-2 rounded-md bg-secondary/50">
-                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{a.name.substring(0, 3)}</p>
-                                  <p className="text-lg font-bold">{a.value}</p>
-                                  <p className="text-xs text-primary font-semibold">{modStr(a.modifier)}</p>
+                                <div key={a.name} className="text-center p-2.5 rounded-lg bg-secondary/50 border border-border/30">
+                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{a.name.substring(0, 3)}</p>
+                                  <p className="text-xl font-bold">{a.value}</p>
+                                  <p className={`text-xs font-bold ${a.manualModifier ? 'text-accent' : 'text-primary'}`}>{modStr(a.modifier)}</p>
                                 </div>
                               ))}
                             </div>
@@ -225,8 +327,8 @@ const Players = () => {
                               <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" />Perícias</h4>
                               <div className="flex flex-wrap gap-1.5">
                                 {allSkills(p).map(s => (
-                                  <Badge key={s.name} variant={s.proficient ? 'default' : 'outline'} className="text-xs">
-                                    {s.name} {modStr(s.bonus)}
+                                  <Badge key={s.name} variant={s.proficient ? 'default' : 'outline'} className="text-xs gap-1">
+                                    {s.name} <span className="font-bold">{modStr(s.bonus)}</span>
                                   </Badge>
                                 ))}
                               </div>
@@ -236,21 +338,21 @@ const Players = () => {
                           {p.inventory && (
                             <div>
                               <h4 className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-1"><Backpack className="w-3.5 h-3.5" />Inventário</h4>
-                              <p className="text-sm whitespace-pre-line">{p.inventory}</p>
+                              <p className="text-sm whitespace-pre-line bg-secondary/30 rounded-lg p-3 border border-border/30">{p.inventory}</p>
                             </div>
                           )}
 
                           {p.abilities && (
                             <div>
                               <h4 className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" />Habilidades e Talentos</h4>
-                              <p className="text-sm whitespace-pre-line">{p.abilities}</p>
+                              <p className="text-sm whitespace-pre-line bg-secondary/30 rounded-lg p-3 border border-border/30">{p.abilities}</p>
                             </div>
                           )}
 
                           {p.notes && (
                             <div>
                               <h4 className="text-sm font-semibold text-muted-foreground mb-1">Anotações</h4>
-                              <p className="text-sm whitespace-pre-line">{p.notes}</p>
+                              <p className="text-sm whitespace-pre-line bg-secondary/30 rounded-lg p-3 border border-border/30">{p.notes}</p>
                             </div>
                           )}
                         </div>
@@ -260,8 +362,16 @@ const Players = () => {
 
                   <Separator />
                   <div className="flex gap-2 p-3">
-                    <Button variant="outline" size="sm" onClick={() => openEdit(p)} className="flex-1"><Edit className="w-3 h-3 mr-1" />Editar</Button>
-                    <Button variant="outline" size="sm" onClick={() => remove(p.id)}><Trash2 className="w-3 h-3" /></Button>
+                    <Button variant="outline" size="sm" onClick={() => openEdit(p)} className="flex-1 gap-1"><Edit className="w-3 h-3" />Editar</Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="sm" onClick={() => duplicate(p)}><Copy className="w-3 h-3" /></Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p className="text-xs">Duplicar</p></TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <Button variant="outline" size="sm" onClick={() => remove(p.id)} className="text-destructive hover:text-destructive"><Trash2 className="w-3 h-3" /></Button>
                   </div>
                 </CardContent>
               </Card>
@@ -272,7 +382,7 @@ const Players = () => {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="font-display">{editing && players.find(p => p.id === editing.id) ? 'Editar' : 'Novo'} Jogador</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="font-display text-xl">{editing && players.find(p => p.id === editing.id) ? 'Editar' : 'Novo'} Jogador</DialogTitle></DialogHeader>
           {editing && (
             <Tabs defaultValue="info" className="w-full">
               <TabsList className="w-full grid grid-cols-5">
@@ -299,29 +409,22 @@ const Players = () => {
               </TabsContent>
 
               <TabsContent value="attributes" className="space-y-3 mt-3">
-                <p className="text-xs text-muted-foreground">Atributos base (modificador calculado automaticamente)</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">Edite valor e modificador. Modificadores manuais ficam em <span className="text-accent">destaque</span>.</p>
+                </div>
+                <div className="space-y-2">
                   {editing.attributes.map((a, i) => (
-                    <div key={a.name} className="flex items-center gap-2">
-                      <span className="text-sm w-24 truncate">{a.name}</span>
-                      <Input type="number" className="w-20" value={a.value} onChange={e => setAttr(i, 'value', parseInt(e.target.value) || 0)} />
-                      <span className="text-xs text-primary font-semibold w-8">{modStr(calcModifier(a.value))}</span>
-                    </div>
+                    <AttrEditor key={a.name} a={a} i={i} />
                   ))}
                 </div>
 
                 {editing.customAttributes.length > 0 && (
                   <>
                     <Separator />
-                    <p className="text-xs text-muted-foreground">Atributos customizados</p>
-                    <div className="grid grid-cols-2 gap-3">
+                    <p className="text-xs text-muted-foreground font-semibold">Atributos customizados</p>
+                    <div className="space-y-2">
                       {editing.customAttributes.map((a, i) => (
-                        <div key={`${a.name}-${i}`} className="flex items-center gap-2">
-                          <span className="text-sm w-24 truncate">{a.name}</span>
-                          <Input type="number" className="w-20" value={a.value} onChange={e => setAttr(i, 'value', parseInt(e.target.value) || 0, true)} />
-                          <span className="text-xs text-primary font-semibold w-8">{modStr(calcModifier(a.value))}</span>
-                          <Button variant="ghost" size="sm" className="p-1 h-auto" onClick={() => removeCustomAttr(i)}><X className="w-3 h-3" /></Button>
-                        </div>
+                        <AttrEditor key={`${a.name}-${i}`} a={a} i={i} custom />
                       ))}
                     </div>
                   </>
@@ -335,32 +438,20 @@ const Players = () => {
               </TabsContent>
 
               <TabsContent value="skills" className="space-y-3 mt-3">
-                <p className="text-xs text-muted-foreground">Clique na perícia para alternar proficiência</p>
+                <p className="text-xs text-muted-foreground">Clique no nome para alternar proficiência. Edite o bônus livremente.</p>
                 <div className="space-y-2">
                   {editing.skills.map((s, i) => (
-                    <div key={s.name} className="flex items-center gap-2">
-                      <button className={`text-sm w-32 text-left truncate ${s.proficient ? 'text-primary font-semibold' : 'text-muted-foreground'}`} onClick={() => setSkill(i, 'proficient', !s.proficient)}>
-                        {s.proficient ? '●' : '○'} {s.name}
-                      </button>
-                      <Input type="number" className="w-20" value={s.bonus} onChange={e => setSkill(i, 'bonus', parseInt(e.target.value) || 0)} />
-                      <span className="text-xs text-muted-foreground">{s.attribute}</span>
-                    </div>
+                    <SkillEditor key={s.name} s={s} i={i} />
                   ))}
                 </div>
 
                 {editing.customSkills.length > 0 && (
                   <>
                     <Separator />
-                    <p className="text-xs text-muted-foreground">Perícias customizadas</p>
+                    <p className="text-xs text-muted-foreground font-semibold">Perícias customizadas</p>
                     <div className="space-y-2">
                       {editing.customSkills.map((s, i) => (
-                        <div key={`${s.name}-${i}`} className="flex items-center gap-2">
-                          <button className={`text-sm w-32 text-left truncate ${s.proficient ? 'text-primary font-semibold' : 'text-muted-foreground'}`} onClick={() => setSkill(i, 'proficient', !s.proficient, true)}>
-                            {s.proficient ? '●' : '○'} {s.name}
-                          </button>
-                          <Input type="number" className="w-20" value={s.bonus} onChange={e => setSkill(i, 'bonus', parseInt(e.target.value) || 0, true)} />
-                          <Button variant="ghost" size="sm" className="p-1 h-auto" onClick={() => removeCustomSkill(i)}><X className="w-3 h-3" /></Button>
-                        </div>
+                        <SkillEditor key={`${s.name}-${i}`} s={s} i={i} custom />
                       ))}
                     </div>
                   </>
