@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Trash2, Edit, Shield, Heart, User, Zap, Swords, BookOpen, Backpack, Sparkles, X, ChevronDown, ChevronUp, RotateCcw, Copy } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, Trash2, Edit, Shield, Heart, User, Zap, Swords, BookOpen, Backpack, Sparkles, X, ChevronDown, ChevronUp, RotateCcw, Copy, FileText, Save, FolderOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Attribute {
@@ -24,6 +25,25 @@ interface Skill {
   bonus: number;
   proficient: boolean;
   attribute: string;
+}
+
+interface CombatFields {
+  hp: boolean;
+  mana: boolean;
+  energy: boolean;
+  ca: boolean;
+  movement: boolean;
+}
+
+interface SheetTemplate {
+  id: string;
+  name: string;
+  attributes: { name: string }[];
+  skills: { name: string; attribute: string }[];
+  combatFields: CombatFields;
+  hasInventory: boolean;
+  hasAbilities: boolean;
+  hasNotes: boolean;
 }
 
 interface Player {
@@ -45,52 +65,79 @@ interface Player {
   ca: number;
   movement: number;
   attributes: Attribute[];
-  customAttributes: Attribute[];
   skills: Skill[];
-  customSkills: Skill[];
   inventory: string;
   abilities: string;
   notes: string;
+  combatFields?: CombatFields;
+  hasInventory?: boolean;
+  hasAbilities?: boolean;
+  hasNotes?: boolean;
 }
 
-const DEFAULT_ATTRIBUTES: Attribute[] = [
-  { name: 'Força', value: 10, modifier: 0, manualModifier: false },
-  { name: 'Destreza', value: 10, modifier: 0, manualModifier: false },
-  { name: 'Constituição', value: 10, modifier: 0, manualModifier: false },
-  { name: 'Intuição', value: 10, modifier: 0, manualModifier: false },
-  { name: 'Sabedoria', value: 10, modifier: 0, manualModifier: false },
-  { name: 'Carisma', value: 10, modifier: 0, manualModifier: false },
+const DEFAULT_ATTRIBUTES: { name: string }[] = [
+  { name: 'Força' },
+  { name: 'Destreza' },
+  { name: 'Constituição' },
+  { name: 'Intuição' },
+  { name: 'Sabedoria' },
+  { name: 'Carisma' },
 ];
 
-const DEFAULT_SKILLS: Skill[] = [
-  { name: 'Acrobacia', bonus: 0, proficient: false, attribute: 'Destreza' },
-  { name: 'Arcanismo', bonus: 0, proficient: false, attribute: 'Intuição' },
-  { name: 'Atletismo', bonus: 0, proficient: false, attribute: 'Força' },
-  { name: 'Furtividade', bonus: 0, proficient: false, attribute: 'Destreza' },
-  { name: 'Intimidação', bonus: 0, proficient: false, attribute: 'Carisma' },
-  { name: 'Investigação', bonus: 0, proficient: false, attribute: 'Intuição' },
-  { name: 'Medicina', bonus: 0, proficient: false, attribute: 'Sabedoria' },
-  { name: 'Percepção', bonus: 0, proficient: false, attribute: 'Sabedoria' },
-  { name: 'Persuasão', bonus: 0, proficient: false, attribute: 'Carisma' },
-  { name: 'Sobrevivência', bonus: 0, proficient: false, attribute: 'Sabedoria' },
+const DEFAULT_SKILLS: { name: string; attribute: string }[] = [
+  { name: 'Acrobacia', attribute: 'Destreza' },
+  { name: 'Arcanismo', attribute: 'Intuição' },
+  { name: 'Atletismo', attribute: 'Força' },
+  { name: 'Furtividade', attribute: 'Destreza' },
+  { name: 'Intimidação', attribute: 'Carisma' },
+  { name: 'Investigação', attribute: 'Intuição' },
+  { name: 'Medicina', attribute: 'Sabedoria' },
+  { name: 'Percepção', attribute: 'Sabedoria' },
+  { name: 'Persuasão', attribute: 'Carisma' },
+  { name: 'Sobrevivência', attribute: 'Sabedoria' },
 ];
+
+const DEFAULT_COMBAT: CombatFields = { hp: true, mana: true, energy: true, ca: true, movement: true };
 
 const calcModifier = (value: number) => Math.floor((value - 10) / 2);
 const modStr = (m: number) => m >= 0 ? `+${m}` : `${m}`;
 
-const emptyPlayer = (): Player => ({
-  id: crypto.randomUUID(),
-  name: '', playerName: '', race: '', className: '', profession: '', level: 1, experience: 0, image: '',
-  hp: 10, maxHp: 10, mana: 0, maxMana: 0, energy: 10, maxEnergy: 10, ca: 10, movement: 9,
+const makeAttrs = (defs: { name: string }[]): Attribute[] =>
+  defs.map(d => ({ name: d.name, value: 10, modifier: 0, manualModifier: false }));
+
+const makeSkills = (defs: { name: string; attribute: string }[]): Skill[] =>
+  defs.map(d => ({ name: d.name, bonus: 0, proficient: false, attribute: d.attribute }));
+
+const defaultTemplate = (): SheetTemplate => ({
+  id: 'default',
+  name: 'Padrão (D&D / Universal)',
   attributes: DEFAULT_ATTRIBUTES.map(a => ({ ...a })),
-  customAttributes: [],
   skills: DEFAULT_SKILLS.map(s => ({ ...s })),
-  customSkills: [],
-  inventory: '', abilities: '', notes: '',
+  combatFields: { ...DEFAULT_COMBAT },
+  hasInventory: true,
+  hasAbilities: true,
+  hasNotes: true,
 });
+
+const emptyPlayer = (template?: SheetTemplate): Player => {
+  const t = template || defaultTemplate();
+  return {
+    id: crypto.randomUUID(),
+    name: '', playerName: '', race: '', className: '', profession: '', level: 1, experience: 0, image: '',
+    hp: 10, maxHp: 10, mana: 0, maxMana: 0, energy: 10, maxEnergy: 10, ca: 10, movement: 9,
+    attributes: makeAttrs(t.attributes),
+    skills: makeSkills(t.skills),
+    inventory: '', abilities: '', notes: '',
+    combatFields: { ...t.combatFields },
+    hasInventory: t.hasInventory,
+    hasAbilities: t.hasAbilities,
+    hasNotes: t.hasNotes,
+  };
+};
 
 const Players = () => {
   const [players, setPlayers] = useLocalStorage<Player[]>('arcanum-players', []);
+  const [templates, setTemplates] = useLocalStorage<SheetTemplate[]>('arcanum-player-templates', []);
   const [editing, setEditing] = useState<Player | null>(null);
   const [open, setOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -98,15 +145,21 @@ const Players = () => {
   const [newSkillName, setNewSkillName] = useState('');
   const [newSkillAttr, setNewSkillAttr] = useState('');
 
+  // Template editor state
+  const [templateOpen, setTemplateOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<SheetTemplate | null>(null);
+  const [tNewAttr, setTNewAttr] = useState('');
+  const [tNewSkill, setTNewSkill] = useState('');
+  const [tNewSkillAttr, setTNewSkillAttr] = useState('');
+
+  // New player template picker
+  const [pickerOpen, setPickerOpen] = useState(false);
+
   const save = () => {
     if (!editing?.name.trim()) return;
     const updated = {
       ...editing,
       attributes: editing.attributes.map(a => ({
-        ...a,
-        modifier: a.manualModifier ? a.modifier : calcModifier(a.value),
-      })),
-      customAttributes: editing.customAttributes.map(a => ({
         ...a,
         modifier: a.manualModifier ? a.modifier : calcModifier(a.value),
       })),
@@ -122,88 +175,121 @@ const Players = () => {
   const remove = (id: string) => setPlayers(prev => prev.filter(p => p.id !== id));
 
   const duplicate = (p: Player) => {
-    const dup = { ...p, id: crypto.randomUUID(), name: `${p.name} (cópia)`, attributes: p.attributes.map(a => ({...a})), customAttributes: p.customAttributes.map(a => ({...a})), skills: p.skills.map(s => ({...s})), customSkills: p.customSkills.map(s => ({...s})) };
+    const dup = { ...p, id: crypto.randomUUID(), name: `${p.name} (cópia)`, attributes: p.attributes.map(a => ({ ...a })), skills: p.skills.map(s => ({ ...s })) };
     setPlayers(prev => [...prev, dup]);
   };
 
-  const openNew = () => { setEditing(emptyPlayer()); setOpen(true); };
+  const openNewWithTemplate = (t?: SheetTemplate) => {
+    setEditing(emptyPlayer(t));
+    setPickerOpen(false);
+    setOpen(true);
+  };
 
   const openEdit = (p: Player) => {
     setEditing({
       ...p,
-      attributes: p.attributes?.map(a => ({ ...a, manualModifier: a.manualModifier ?? false })) || DEFAULT_ATTRIBUTES.map(a => ({ ...a })),
-      customAttributes: p.customAttributes?.map(a => ({ ...a, manualModifier: a.manualModifier ?? false })) || [],
-      skills: p.skills?.map(s => ({ ...s })) || DEFAULT_SKILLS.map(s => ({ ...s })),
-      customSkills: p.customSkills?.map(s => ({ ...s })) || [],
+      attributes: p.attributes?.map(a => ({ ...a, manualModifier: a.manualModifier ?? false })) || makeAttrs(DEFAULT_ATTRIBUTES),
+      skills: p.skills?.map(s => ({ ...s })) || makeSkills(DEFAULT_SKILLS),
+      combatFields: p.combatFields || { ...DEFAULT_COMBAT },
+      hasInventory: p.hasInventory ?? true,
+      hasAbilities: p.hasAbilities ?? true,
+      hasNotes: p.hasNotes ?? true,
     });
     setOpen(true);
   };
 
-  const setAttrValue = (index: number, val: number, custom = false) => {
+  // Attribute helpers
+  const setAttrValue = (index: number, val: number) => {
     if (!editing) return;
-    const key = custom ? 'customAttributes' : 'attributes';
-    const arr = [...editing[key]];
+    const arr = [...editing.attributes];
     const a = arr[index];
     arr[index] = { ...a, value: val, modifier: a.manualModifier ? a.modifier : calcModifier(val) };
-    setEditing({ ...editing, [key]: arr });
+    setEditing({ ...editing, attributes: arr });
   };
 
-  const setAttrModifier = (index: number, mod: number, custom = false) => {
+  const setAttrModifier = (index: number, mod: number) => {
     if (!editing) return;
-    const key = custom ? 'customAttributes' : 'attributes';
-    const arr = [...editing[key]];
+    const arr = [...editing.attributes];
     arr[index] = { ...arr[index], modifier: mod, manualModifier: true };
-    setEditing({ ...editing, [key]: arr });
+    setEditing({ ...editing, attributes: arr });
   };
 
-  const resetModifier = (index: number, custom = false) => {
+  const resetModifier = (index: number) => {
     if (!editing) return;
-    const key = custom ? 'customAttributes' : 'attributes';
-    const arr = [...editing[key]];
+    const arr = [...editing.attributes];
     arr[index] = { ...arr[index], modifier: calcModifier(arr[index].value), manualModifier: false };
-    setEditing({ ...editing, [key]: arr });
+    setEditing({ ...editing, attributes: arr });
   };
 
-  const setSkill = (index: number, field: string, val: any, custom = false) => {
+  const removeAttr = (index: number) => {
     if (!editing) return;
-    const key = custom ? 'customSkills' : 'skills';
-    const arr = [...editing[key]];
-    arr[index] = { ...arr[index], [field]: val };
-    setEditing({ ...editing, [key]: arr });
+    setEditing({ ...editing, attributes: editing.attributes.filter((_, i) => i !== index) });
   };
 
-  const addCustomAttr = () => {
+  const addAttr = () => {
     if (!editing || !newAttrName.trim()) return;
-    setEditing({ ...editing, customAttributes: [...editing.customAttributes, { name: newAttrName.trim(), value: 10, modifier: 0, manualModifier: false }] });
+    setEditing({ ...editing, attributes: [...editing.attributes, { name: newAttrName.trim(), value: 10, modifier: 0, manualModifier: false }] });
     setNewAttrName('');
   };
 
-  const removeCustomAttr = (index: number) => {
+  // Skill helpers
+  const setSkill = (index: number, field: string, val: any) => {
     if (!editing) return;
-    setEditing({ ...editing, customAttributes: editing.customAttributes.filter((_, i) => i !== index) });
+    const arr = [...editing.skills];
+    arr[index] = { ...arr[index], [field]: val };
+    setEditing({ ...editing, skills: arr });
   };
 
-  const addCustomSkill = () => {
+  const removeSkill = (index: number) => {
+    if (!editing) return;
+    setEditing({ ...editing, skills: editing.skills.filter((_, i) => i !== index) });
+  };
+
+  const addSkill = () => {
     if (!editing || !newSkillName.trim()) return;
-    setEditing({ ...editing, customSkills: [...editing.customSkills, { name: newSkillName.trim(), bonus: 0, proficient: false, attribute: newSkillAttr || 'Nenhum' }] });
+    setEditing({ ...editing, skills: [...editing.skills, { name: newSkillName.trim(), bonus: 0, proficient: false, attribute: newSkillAttr || 'Nenhum' }] });
     setNewSkillName('');
     setNewSkillAttr('');
   };
 
-  const removeCustomSkill = (index: number) => {
-    if (!editing) return;
-    setEditing({ ...editing, customSkills: editing.customSkills.filter((_, i) => i !== index) });
+  // Template helpers
+  const openNewTemplate = () => {
+    setEditingTemplate({
+      id: crypto.randomUUID(),
+      name: '',
+      attributes: DEFAULT_ATTRIBUTES.map(a => ({ ...a })),
+      skills: DEFAULT_SKILLS.map(s => ({ ...s })),
+      combatFields: { ...DEFAULT_COMBAT },
+      hasInventory: true,
+      hasAbilities: true,
+      hasNotes: true,
+    });
+    setTemplateOpen(true);
   };
 
-  const allAttributes = (p: Player) => [...(p.attributes || []), ...(p.customAttributes || [])];
-  const allSkills = (p: Player) => [...(p.skills || []), ...(p.customSkills || [])];
+  const openEditTemplate = (t: SheetTemplate) => {
+    setEditingTemplate({ ...t, attributes: t.attributes.map(a => ({ ...a })), skills: t.skills.map(s => ({ ...s })), combatFields: { ...t.combatFields } });
+    setTemplateOpen(true);
+  };
 
-  const AttrEditor = ({ a, i, custom = false }: { a: Attribute; i: number; custom?: boolean }) => (
+  const saveTemplate = () => {
+    if (!editingTemplate?.name.trim()) return;
+    setTemplates(prev => {
+      const exists = prev.find(t => t.id === editingTemplate.id);
+      return exists ? prev.map(t => t.id === editingTemplate.id ? editingTemplate : t) : [...prev, editingTemplate];
+    });
+    setTemplateOpen(false);
+    setEditingTemplate(null);
+  };
+
+  const removeTemplate = (id: string) => setTemplates(prev => prev.filter(t => t.id !== id));
+
+  const AttrEditor = ({ a, i }: { a: Attribute; i: number }) => (
     <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/50">
       <span className="text-sm font-semibold w-24 truncate">{a.name}</span>
       <div className="flex flex-col items-center gap-0.5">
         <label className="text-[10px] text-muted-foreground">Valor</label>
-        <Input type="number" className="w-16 h-8 text-center text-sm" value={a.value} onChange={e => setAttrValue(i, parseInt(e.target.value) || 0, custom)} />
+        <Input type="number" className="w-16 h-8 text-center text-sm" value={a.value} onChange={e => setAttrValue(i, parseInt(e.target.value) || 0)} />
       </div>
       <div className="flex flex-col items-center gap-0.5">
         <label className="text-[10px] text-muted-foreground">Mod</label>
@@ -212,61 +298,87 @@ const Players = () => {
             type="number"
             className={`w-16 h-8 text-center text-sm ${a.manualModifier ? 'border-primary/50 bg-primary/5' : ''}`}
             value={a.modifier}
-            onChange={e => setAttrModifier(i, parseInt(e.target.value) || 0, custom)}
+            onChange={e => setAttrModifier(i, parseInt(e.target.value) || 0)}
           />
           {a.manualModifier && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" className="p-0.5 h-auto" onClick={() => resetModifier(i, custom)}>
+                  <Button variant="ghost" size="sm" className="p-0.5 h-auto" onClick={() => resetModifier(i)}>
                     <RotateCcw className="w-3 h-3 text-muted-foreground" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent><p className="text-xs">Restaurar cálculo automático ({modStr(calcModifier(a.value))})</p></TooltipContent>
+                <TooltipContent><p className="text-xs">Restaurar ({modStr(calcModifier(a.value))})</p></TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}
         </div>
       </div>
-      {custom && (
-        <Button variant="ghost" size="sm" className="p-1 h-auto ml-auto" onClick={() => removeCustomAttr(i)}><X className="w-3 h-3" /></Button>
-      )}
+      <Button variant="ghost" size="sm" className="p-1 h-auto ml-auto text-muted-foreground hover:text-destructive" onClick={() => removeAttr(i)}>
+        <X className="w-3 h-3" />
+      </Button>
     </div>
   );
 
-  const SkillEditor = ({ s, i, custom = false }: { s: Skill; i: number; custom?: boolean }) => (
+  const SkillEditor = ({ s, i }: { s: Skill; i: number }) => (
     <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/50">
       <button
         className={`text-sm w-32 text-left truncate transition-colors ${s.proficient ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`}
-        onClick={() => setSkill(i, 'proficient', !s.proficient, custom)}
+        onClick={() => setSkill(i, 'proficient', !s.proficient)}
       >
         <span className={`inline-block w-4 ${s.proficient ? 'text-primary' : ''}`}>{s.proficient ? '●' : '○'}</span>
         {s.name}
       </button>
       <div className="flex flex-col items-center gap-0.5">
         <label className="text-[10px] text-muted-foreground">Bônus</label>
-        <Input type="number" className="w-16 h-8 text-center text-sm" value={s.bonus} onChange={e => setSkill(i, 'bonus', parseInt(e.target.value) || 0, custom)} />
+        <Input type="number" className="w-16 h-8 text-center text-sm" value={s.bonus} onChange={e => setSkill(i, 'bonus', parseInt(e.target.value) || 0)} />
       </div>
       <span className="text-[10px] text-muted-foreground bg-secondary/60 px-1.5 py-0.5 rounded">{s.attribute}</span>
-      {custom && (
-        <Button variant="ghost" size="sm" className="p-1 h-auto ml-auto" onClick={() => removeCustomSkill(i)}><X className="w-3 h-3" /></Button>
-      )}
+      <Button variant="ghost" size="sm" className="p-1 h-auto ml-auto text-muted-foreground hover:text-destructive" onClick={() => removeSkill(i)}>
+        <X className="w-3 h-3" />
+      </Button>
     </div>
   );
 
+  const cf = editing?.combatFields || DEFAULT_COMBAT;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="page-title">Jogadores</h1>
-        <Button onClick={openNew} className="gap-2"><Plus className="w-4 h-4" />Adicionar</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={openNewTemplate} className="gap-2"><FileText className="w-4 h-4" />Adicionar Modelo</Button>
+          <Button onClick={() => templates.length > 0 ? setPickerOpen(true) : openNewWithTemplate()} className="gap-2"><Plus className="w-4 h-4" />Adicionar</Button>
+        </div>
       </div>
+
+      {/* Templates bar */}
+      {templates.length > 0 && (
+        <Card className="border-primary/20">
+          <CardContent className="p-3">
+            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1"><FolderOpen className="w-3 h-3" />Modelos salvos</p>
+            <div className="flex flex-wrap gap-2">
+              {templates.map(t => (
+                <div key={t.id} className="flex items-center gap-1">
+                  <Badge variant="outline" className="cursor-pointer hover:bg-primary/10 gap-1" onClick={() => openEditTemplate(t)}>
+                    <Edit className="w-3 h-3" />{t.name}
+                  </Badge>
+                  <Button variant="ghost" size="sm" className="p-0.5 h-auto text-muted-foreground hover:text-destructive" onClick={() => removeTemplate(t.id)}>
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {players.length === 0 && (
         <Card className="card-hover glow-border">
           <CardContent className="p-12 text-center">
             <User className="w-12 h-12 mx-auto text-muted-foreground/20 mb-3" />
             <p className="text-muted-foreground">Nenhum jogador cadastrado</p>
-            <Button variant="outline" className="mt-4" onClick={openNew}><Plus className="w-4 h-4 mr-2" />Criar primeiro personagem</Button>
+            <Button variant="outline" className="mt-4" onClick={() => templates.length > 0 ? setPickerOpen(true) : openNewWithTemplate()}><Plus className="w-4 h-4 mr-2" />Criar primeiro personagem</Button>
           </CardContent>
         </Card>
       )}
@@ -309,24 +421,26 @@ const Players = () => {
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                         <Separator />
                         <div className="p-4 space-y-4">
-                          <div>
-                            <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Swords className="w-3.5 h-3.5" />Atributos</h4>
-                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                              {allAttributes(p).map(a => (
-                                <div key={a.name} className="text-center p-2.5 rounded-lg bg-secondary/50 border border-border/30">
-                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{a.name.substring(0, 3)}</p>
-                                  <p className="text-xl font-bold">{a.value}</p>
-                                  <p className={`text-xs font-bold ${a.manualModifier ? 'text-accent' : 'text-primary'}`}>{modStr(a.modifier)}</p>
-                                </div>
-                              ))}
+                          {p.attributes.length > 0 && (
+                            <div>
+                              <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Swords className="w-3.5 h-3.5" />Atributos</h4>
+                              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                                {p.attributes.map(a => (
+                                  <div key={a.name} className="text-center p-2.5 rounded-lg bg-secondary/50 border border-border/30">
+                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{a.name.substring(0, 3)}</p>
+                                    <p className="text-xl font-bold">{a.value}</p>
+                                    <p className={`text-xs font-bold ${a.manualModifier ? 'text-accent' : 'text-primary'}`}>{modStr(a.modifier)}</p>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                          </div>
+                          )}
 
-                          {allSkills(p).length > 0 && (
+                          {p.skills.length > 0 && (
                             <div>
                               <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" />Perícias</h4>
                               <div className="flex flex-wrap gap-1.5">
-                                {allSkills(p).map(s => (
+                                {p.skills.map(s => (
                                   <Badge key={s.name} variant={s.proficient ? 'default' : 'outline'} className="text-xs gap-1">
                                     {s.name} <span className="font-bold">{modStr(s.bonus)}</span>
                                   </Badge>
@@ -335,26 +449,9 @@ const Players = () => {
                             </div>
                           )}
 
-                          {p.inventory && (
-                            <div>
-                              <h4 className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-1"><Backpack className="w-3.5 h-3.5" />Inventário</h4>
-                              <p className="text-sm whitespace-pre-line bg-secondary/30 rounded-lg p-3 border border-border/30">{p.inventory}</p>
-                            </div>
-                          )}
-
-                          {p.abilities && (
-                            <div>
-                              <h4 className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" />Habilidades e Talentos</h4>
-                              <p className="text-sm whitespace-pre-line bg-secondary/30 rounded-lg p-3 border border-border/30">{p.abilities}</p>
-                            </div>
-                          )}
-
-                          {p.notes && (
-                            <div>
-                              <h4 className="text-sm font-semibold text-muted-foreground mb-1">Anotações</h4>
-                              <p className="text-sm whitespace-pre-line bg-secondary/30 rounded-lg p-3 border border-border/30">{p.notes}</p>
-                            </div>
-                          )}
+                          {p.inventory && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-1"><Backpack className="w-3.5 h-3.5" />Inventário</h4><p className="text-sm whitespace-pre-line bg-secondary/30 rounded-lg p-3 border border-border/30">{p.inventory}</p></div>}
+                          {p.abilities && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" />Habilidades e Talentos</h4><p className="text-sm whitespace-pre-line bg-secondary/30 rounded-lg p-3 border border-border/30">{p.abilities}</p></div>}
+                          {p.notes && <div><h4 className="text-sm font-semibold text-muted-foreground mb-1">Anotações</h4><p className="text-sm whitespace-pre-line bg-secondary/30 rounded-lg p-3 border border-border/30">{p.notes}</p></div>}
                         </div>
                       </motion.div>
                     )}
@@ -380,6 +477,132 @@ const Players = () => {
         </AnimatePresence>
       </div>
 
+      {/* TEMPLATE PICKER */}
+      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle className="font-display text-xl">Escolher Modelo</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Button variant="outline" className="w-full justify-start gap-2" onClick={() => openNewWithTemplate()}>
+              <FileText className="w-4 h-4" />Ficha padrão (sem modelo)
+            </Button>
+            {templates.map(t => (
+              <Button key={t.id} variant="outline" className="w-full justify-start gap-2" onClick={() => openNewWithTemplate(t)}>
+                <FolderOpen className="w-4 h-4" />{t.name}
+                <span className="text-xs text-muted-foreground ml-auto">{t.attributes.length} atr · {t.skills.length} per</span>
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* TEMPLATE EDITOR */}
+      <Dialog open={templateOpen} onOpenChange={setTemplateOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="font-display text-xl">{editingTemplate && templates.find(t => t.id === editingTemplate.id) ? 'Editar' : 'Novo'} Modelo de Ficha</DialogTitle></DialogHeader>
+          {editingTemplate && (
+            <Tabs defaultValue="t-info" className="w-full">
+              <TabsList className="w-full grid grid-cols-4">
+                <TabsTrigger value="t-info">Geral</TabsTrigger>
+                <TabsTrigger value="t-attrs">Atributos</TabsTrigger>
+                <TabsTrigger value="t-skills">Perícias</TabsTrigger>
+                <TabsTrigger value="t-combat">Combate/Outros</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="t-info" className="space-y-3 mt-3">
+                <Input placeholder="Nome do modelo (ex: Ficha Vampiro)" value={editingTemplate.name} onChange={e => setEditingTemplate({ ...editingTemplate, name: e.target.value })} />
+                <p className="text-xs text-muted-foreground">Configure quais atributos, perícias e campos de combate este modelo terá. Ao criar uma ficha com este modelo, ela já virá com a estrutura definida.</p>
+              </TabsContent>
+
+              <TabsContent value="t-attrs" className="space-y-3 mt-3">
+                <p className="text-xs text-muted-foreground">Escolha quais atributos fazem parte deste modelo. Remova os que não quer e adicione novos.</p>
+                <div className="space-y-1.5">
+                  {editingTemplate.attributes.map((a, i) => (
+                    <div key={`${a.name}-${i}`} className="flex items-center justify-between p-2 rounded-lg bg-secondary/30 border border-border/50">
+                      <span className="text-sm font-semibold">{a.name}</span>
+                      <Button variant="ghost" size="sm" className="p-1 h-auto text-muted-foreground hover:text-destructive" onClick={() => setEditingTemplate({ ...editingTemplate, attributes: editingTemplate.attributes.filter((_, j) => j !== i) })}>
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input placeholder="Novo atributo" value={tNewAttr} onChange={e => setTNewAttr(e.target.value)} onKeyDown={e => {
+                    if (e.key === 'Enter' && tNewAttr.trim()) {
+                      setEditingTemplate({ ...editingTemplate, attributes: [...editingTemplate.attributes, { name: tNewAttr.trim() }] });
+                      setTNewAttr('');
+                    }
+                  }} />
+                  <Button variant="outline" size="sm" onClick={() => {
+                    if (!tNewAttr.trim()) return;
+                    setEditingTemplate({ ...editingTemplate, attributes: [...editingTemplate.attributes, { name: tNewAttr.trim() }] });
+                    setTNewAttr('');
+                  }}><Plus className="w-3 h-3" /></Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="t-skills" className="space-y-3 mt-3">
+                <p className="text-xs text-muted-foreground">Defina as perícias do modelo.</p>
+                <div className="space-y-1.5">
+                  {editingTemplate.skills.map((s, i) => (
+                    <div key={`${s.name}-${i}`} className="flex items-center justify-between p-2 rounded-lg bg-secondary/30 border border-border/50">
+                      <div>
+                        <span className="text-sm font-semibold">{s.name}</span>
+                        <span className="text-[10px] text-muted-foreground ml-2">({s.attribute})</span>
+                      </div>
+                      <Button variant="ghost" size="sm" className="p-1 h-auto text-muted-foreground hover:text-destructive" onClick={() => setEditingTemplate({ ...editingTemplate, skills: editingTemplate.skills.filter((_, j) => j !== i) })}>
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input placeholder="Nome da perícia" value={tNewSkill} onChange={e => setTNewSkill(e.target.value)} className="flex-1" />
+                  <Input placeholder="Atributo" value={tNewSkillAttr} onChange={e => setTNewSkillAttr(e.target.value)} className="w-28" />
+                  <Button variant="outline" size="sm" onClick={() => {
+                    if (!tNewSkill.trim()) return;
+                    setEditingTemplate({ ...editingTemplate, skills: [...editingTemplate.skills, { name: tNewSkill.trim(), attribute: tNewSkillAttr || 'Nenhum' }] });
+                    setTNewSkill('');
+                    setTNewSkillAttr('');
+                  }}><Plus className="w-3 h-3" /></Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="t-combat" className="space-y-4 mt-3">
+                <p className="text-xs text-muted-foreground">Escolha quais campos de combate e seções adicionais o modelo terá.</p>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold">Campos de Combate</h4>
+                  {([['hp', 'Pontos de Vida (HP)'], ['mana', 'Mana'], ['energy', 'Energia'], ['ca', 'Classe de Armadura (CA)'], ['movement', 'Deslocamento']] as const).map(([key, label]) => (
+                    <label key={key} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/50 cursor-pointer">
+                      <Checkbox checked={editingTemplate.combatFields[key]} onCheckedChange={(v) => setEditingTemplate({ ...editingTemplate, combatFields: { ...editingTemplate.combatFields, [key]: !!v } })} />
+                      <span className="text-sm">{label}</span>
+                    </label>
+                  ))}
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold">Seções adicionais</h4>
+                  <label className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/50 cursor-pointer">
+                    <Checkbox checked={editingTemplate.hasInventory} onCheckedChange={(v) => setEditingTemplate({ ...editingTemplate, hasInventory: !!v })} />
+                    <span className="text-sm">Inventário</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/50 cursor-pointer">
+                    <Checkbox checked={editingTemplate.hasAbilities} onCheckedChange={(v) => setEditingTemplate({ ...editingTemplate, hasAbilities: !!v })} />
+                    <span className="text-sm">Habilidades, Magias e Talentos</span>
+                  </label>
+                  <label className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/50 cursor-pointer">
+                    <Checkbox checked={editingTemplate.hasNotes} onCheckedChange={(v) => setEditingTemplate({ ...editingTemplate, hasNotes: !!v })} />
+                    <span className="text-sm">Anotações</span>
+                  </label>
+                </div>
+              </TabsContent>
+
+              <Button onClick={saveTemplate} className="w-full mt-4 gap-2"><Save className="w-4 h-4" />Salvar Modelo</Button>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* EDIT PLAYER DIALOG */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-display text-xl">{editing && players.find(p => p.id === editing.id) ? 'Editar' : 'Novo'} Jogador</DialogTitle></DialogHeader>
@@ -409,94 +632,86 @@ const Players = () => {
               </TabsContent>
 
               <TabsContent value="attributes" className="space-y-3 mt-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">Edite valor e modificador. Modificadores manuais ficam em <span className="text-accent">destaque</span>.</p>
-                </div>
+                <p className="text-xs text-muted-foreground">Edite, remova ou adicione atributos. Modificadores manuais ficam em <span className="text-accent">destaque</span>.</p>
                 <div className="space-y-2">
                   {editing.attributes.map((a, i) => (
-                    <AttrEditor key={a.name} a={a} i={i} />
+                    <AttrEditor key={`${a.name}-${i}`} a={a} i={i} />
                   ))}
                 </div>
-
-                {editing.customAttributes.length > 0 && (
-                  <>
-                    <Separator />
-                    <p className="text-xs text-muted-foreground font-semibold">Atributos customizados</p>
-                    <div className="space-y-2">
-                      {editing.customAttributes.map((a, i) => (
-                        <AttrEditor key={`${a.name}-${i}`} a={a} i={i} custom />
-                      ))}
-                    </div>
-                  </>
-                )}
-
                 <Separator />
                 <div className="flex gap-2">
-                  <Input placeholder="Nome do novo atributo" value={newAttrName} onChange={e => setNewAttrName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCustomAttr()} />
-                  <Button variant="outline" size="sm" onClick={addCustomAttr}><Plus className="w-3 h-3" /></Button>
+                  <Input placeholder="Nome do novo atributo" value={newAttrName} onChange={e => setNewAttrName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addAttr()} />
+                  <Button variant="outline" size="sm" onClick={addAttr}><Plus className="w-3 h-3" /></Button>
                 </div>
               </TabsContent>
 
               <TabsContent value="skills" className="space-y-3 mt-3">
-                <p className="text-xs text-muted-foreground">Clique no nome para alternar proficiência. Edite o bônus livremente.</p>
+                <p className="text-xs text-muted-foreground">Clique no nome para proficiência. Remova perícias com o X.</p>
                 <div className="space-y-2">
                   {editing.skills.map((s, i) => (
-                    <SkillEditor key={s.name} s={s} i={i} />
+                    <SkillEditor key={`${s.name}-${i}`} s={s} i={i} />
                   ))}
                 </div>
-
-                {editing.customSkills.length > 0 && (
-                  <>
-                    <Separator />
-                    <p className="text-xs text-muted-foreground font-semibold">Perícias customizadas</p>
-                    <div className="space-y-2">
-                      {editing.customSkills.map((s, i) => (
-                        <SkillEditor key={`${s.name}-${i}`} s={s} i={i} custom />
-                      ))}
-                    </div>
-                  </>
-                )}
-
                 <Separator />
                 <div className="flex gap-2">
                   <Input placeholder="Nome da perícia" value={newSkillName} onChange={e => setNewSkillName(e.target.value)} className="flex-1" />
                   <Input placeholder="Atributo" value={newSkillAttr} onChange={e => setNewSkillAttr(e.target.value)} className="w-28" />
-                  <Button variant="outline" size="sm" onClick={addCustomSkill}><Plus className="w-3 h-3" /></Button>
+                  <Button variant="outline" size="sm" onClick={addSkill}><Plus className="w-3 h-3" /></Button>
                 </div>
               </TabsContent>
 
               <TabsContent value="combat" className="space-y-3 mt-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-xs text-muted-foreground">HP Atual</label><Input type="number" value={editing.hp} onChange={e => setEditing({ ...editing, hp: parseInt(e.target.value) || 0 })} /></div>
-                  <div><label className="text-xs text-muted-foreground">HP Máximo</label><Input type="number" value={editing.maxHp} onChange={e => setEditing({ ...editing, maxHp: parseInt(e.target.value) || 0 })} /></div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-xs text-muted-foreground">Mana Atual</label><Input type="number" value={editing.mana} onChange={e => setEditing({ ...editing, mana: parseInt(e.target.value) || 0 })} /></div>
-                  <div><label className="text-xs text-muted-foreground">Mana Máxima</label><Input type="number" value={editing.maxMana} onChange={e => setEditing({ ...editing, maxMana: parseInt(e.target.value) || 0 })} /></div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-xs text-muted-foreground">Energia Atual</label><Input type="number" value={editing.energy} onChange={e => setEditing({ ...editing, energy: parseInt(e.target.value) || 0 })} /></div>
-                  <div><label className="text-xs text-muted-foreground">Energia Máxima</label><Input type="number" value={editing.maxEnergy} onChange={e => setEditing({ ...editing, maxEnergy: parseInt(e.target.value) || 0 })} /></div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-xs text-muted-foreground">CA (Classe de Armadura)</label><Input type="number" value={editing.ca} onChange={e => setEditing({ ...editing, ca: parseInt(e.target.value) || 0 })} /></div>
-                  <div><label className="text-xs text-muted-foreground">Deslocamento (m)</label><Input type="number" value={editing.movement} onChange={e => setEditing({ ...editing, movement: parseInt(e.target.value) || 0 })} /></div>
-                </div>
+                {cf.hp && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><label className="text-xs text-muted-foreground">HP Atual</label><Input type="number" value={editing.hp} onChange={e => setEditing({ ...editing, hp: parseInt(e.target.value) || 0 })} /></div>
+                    <div><label className="text-xs text-muted-foreground">HP Máximo</label><Input type="number" value={editing.maxHp} onChange={e => setEditing({ ...editing, maxHp: parseInt(e.target.value) || 0 })} /></div>
+                  </div>
+                )}
+                {cf.mana && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><label className="text-xs text-muted-foreground">Mana Atual</label><Input type="number" value={editing.mana} onChange={e => setEditing({ ...editing, mana: parseInt(e.target.value) || 0 })} /></div>
+                    <div><label className="text-xs text-muted-foreground">Mana Máxima</label><Input type="number" value={editing.maxMana} onChange={e => setEditing({ ...editing, maxMana: parseInt(e.target.value) || 0 })} /></div>
+                  </div>
+                )}
+                {cf.energy && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><label className="text-xs text-muted-foreground">Energia Atual</label><Input type="number" value={editing.energy} onChange={e => setEditing({ ...editing, energy: parseInt(e.target.value) || 0 })} /></div>
+                    <div><label className="text-xs text-muted-foreground">Energia Máxima</label><Input type="number" value={editing.maxEnergy} onChange={e => setEditing({ ...editing, maxEnergy: parseInt(e.target.value) || 0 })} /></div>
+                  </div>
+                )}
+                {(cf.ca || cf.movement) && (
+                  <div className="grid grid-cols-2 gap-3">
+                    {cf.ca && <div><label className="text-xs text-muted-foreground">CA (Classe de Armadura)</label><Input type="number" value={editing.ca} onChange={e => setEditing({ ...editing, ca: parseInt(e.target.value) || 0 })} /></div>}
+                    {cf.movement && <div><label className="text-xs text-muted-foreground">Deslocamento (m)</label><Input type="number" value={editing.movement} onChange={e => setEditing({ ...editing, movement: parseInt(e.target.value) || 0 })} /></div>}
+                  </div>
+                )}
+                {!cf.hp && !cf.mana && !cf.energy && !cf.ca && !cf.movement && (
+                  <p className="text-sm text-muted-foreground text-center py-4">Nenhum campo de combate configurado neste modelo.</p>
+                )}
               </TabsContent>
 
               <TabsContent value="other" className="space-y-3 mt-3">
-                <div>
-                  <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><Backpack className="w-3 h-3" />Inventário</label>
-                  <Textarea placeholder="Espada longa, escudo de madeira, poção de cura x3..." rows={4} value={editing.inventory} onChange={e => setEditing({ ...editing, inventory: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><Sparkles className="w-3 h-3" />Habilidades, Magias e Talentos</label>
-                  <Textarea placeholder="Ataque Extra, Ação Ardilosa, Bola de Fogo..." rows={4} value={editing.abilities} onChange={e => setEditing({ ...editing, abilities: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Anotações</label>
-                  <Textarea placeholder="Notas gerais sobre o personagem..." rows={4} value={editing.notes} onChange={e => setEditing({ ...editing, notes: e.target.value })} />
-                </div>
+                {(editing.hasInventory ?? true) && (
+                  <div>
+                    <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><Backpack className="w-3 h-3" />Inventário</label>
+                    <Textarea placeholder="Espada longa, escudo de madeira, poção de cura x3..." rows={4} value={editing.inventory} onChange={e => setEditing({ ...editing, inventory: e.target.value })} />
+                  </div>
+                )}
+                {(editing.hasAbilities ?? true) && (
+                  <div>
+                    <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><Sparkles className="w-3 h-3" />Habilidades, Magias e Talentos</label>
+                    <Textarea placeholder="Ataque Extra, Ação Ardilosa, Bola de Fogo..." rows={4} value={editing.abilities} onChange={e => setEditing({ ...editing, abilities: e.target.value })} />
+                  </div>
+                )}
+                {(editing.hasNotes ?? true) && (
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Anotações</label>
+                    <Textarea placeholder="Notas gerais sobre o personagem..." rows={4} value={editing.notes} onChange={e => setEditing({ ...editing, notes: e.target.value })} />
+                  </div>
+                )}
+                {!(editing.hasInventory ?? true) && !(editing.hasAbilities ?? true) && !(editing.hasNotes ?? true) && (
+                  <p className="text-sm text-muted-foreground text-center py-4">Nenhuma seção adicional configurada neste modelo.</p>
+                )}
               </TabsContent>
 
               <Button onClick={save} className="w-full mt-4">Salvar</Button>
