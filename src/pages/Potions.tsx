@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FlaskConical, Plus, Dices, Trash2, Pencil } from 'lucide-react';
+import { FlaskConical, Plus, Dices, Trash2, Pencil, Search, Copy } from 'lucide-react';
+import { NumberInput } from '@/components/NumberInput';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Potion {
   id: string;
@@ -37,11 +39,12 @@ const DEFAULT_POTIONS: Potion[] = [
 const Potions = () => {
   const [customPotions, setCustomPotions] = useLocalStorage<Potion[]>('arcanum-potions', []);
   const [overrides, setOverrides] = useLocalStorage<Record<string, { diceCount: number; diceSides: number; modifier: number }>>('arcanum-potions-overrides', {});
-  const [results, setResults] = useState<Record<string, number>>({});
+  const [results, setResults] = useState<Record<string, { value: number; rolls: number[] }>>({});
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [editIsCustom, setEditIsCustom] = useState(false);
   const [form, setForm] = useState<Potion>({ id: '', name: '', description: '', diceCount: 1, diceSides: 4, modifier: 0, custom: true });
+  const [search, setSearch] = useState('');
 
   const getPotion = (p: Potion): Potion => {
     const ov = overrides[p.id];
@@ -50,24 +53,30 @@ const Potions = () => {
 
   const allPotions = [...DEFAULT_POTIONS.map(getPotion), ...customPotions];
 
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    if (!q) return allPotions;
+    return allPotions.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
+  }, [allPotions, search]);
+
   const rollPotion = (p: Potion) => {
     if (p.diceCount === 0) return;
     const rolls = Array.from({ length: p.diceCount }, () => Math.floor(Math.random() * p.diceSides) + 1);
-    setResults(prev => ({ ...prev, [p.id]: rolls.reduce((a, b) => a + b, 0) + p.modifier }));
+    setResults(prev => ({ ...prev, [p.id]: { value: rolls.reduce((a, b) => a + b, 0) + p.modifier, rolls } }));
   };
 
   const openNew = () => {
-    setEditId(null);
-    setEditIsCustom(false);
+    setEditId(null); setEditIsCustom(false);
     setForm({ id: '', name: '', description: '', diceCount: 1, diceSides: 4, modifier: 0, custom: true });
     setOpen(true);
   };
 
   const openEdit = (p: Potion, isCustom: boolean) => {
-    setEditId(p.id);
-    setEditIsCustom(isCustom);
-    setForm({ ...p });
-    setOpen(true);
+    setEditId(p.id); setEditIsCustom(isCustom); setForm({ ...p }); setOpen(true);
+  };
+
+  const duplicatePotion = (p: Potion) => {
+    setCustomPotions(prev => [...prev, { ...p, id: crypto.randomUUID(), name: `${p.name} (cópia)`, custom: true }]);
   };
 
   const save = () => {
@@ -88,43 +97,86 @@ const Potions = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="page-title">Poções</h1>
-        <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" />Nova Poção</Button>
+        <Button onClick={openNew} className="gap-1"><Plus className="w-4 h-4" />Nova Poção</Button>
+      </motion.div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input placeholder="Buscar poções..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {allPotions.map(p => {
-          const isCustom = !!p.custom;
-          return (
-            <Card key={p.id} className="card-hover">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <FlaskConical className="w-5 h-5 text-primary flex-shrink-0" />
-                    <div>
-                      <h3 className="font-display font-semibold">{p.name}</h3>
-                      <p className="text-xs text-muted-foreground">{p.description}</p>
+        <AnimatePresence>
+          {filtered.map((p, i) => {
+            const isCustom = !!p.custom;
+            const result = results[p.id];
+            return (
+              <motion.div
+                key={p.id}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ delay: i * 0.03 }}
+                layout
+              >
+                <Card className="card-hover group h-full">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-primary/10">
+                          <FlaskConical className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-display font-semibold truncate">{p.name}</h3>
+                          <p className="text-xs text-muted-foreground">{p.description}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p, isCustom)}><Pencil className="w-3 h-3" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => duplicatePotion(p)}><Copy className="w-3 h-3" /></Button>
+                        {isCustom && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setCustomPotions(prev => prev.filter(cp => cp.id !== p.id))}><Trash2 className="w-3 h-3" /></Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(p, isCustom)}><Pencil className="w-3 h-3" /></Button>
-                    {isCustom && (
-                      <Button variant="ghost" size="icon" onClick={() => setCustomPotions(prev => prev.filter(cp => cp.id !== p.id))}><Trash2 className="w-3 h-3" /></Button>
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="text-sm text-muted-foreground font-mono">{formula(p)}</span>
+                      <div className="flex items-center gap-2">
+                        {result && (
+                          <motion.span
+                            key={result.value}
+                            initial={{ scale: 1.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="text-lg font-display font-bold text-primary"
+                          >
+                            {result.value}
+                          </motion.span>
+                        )}
+                        {p.diceCount > 0 && (
+                          <Button size="sm" variant="outline" onClick={() => rollPotion(p)} className="gap-1">
+                            <Dices className="w-3 h-3" />Rolar
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    {result && result.rolls.length > 1 && (
+                      <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-[10px] text-muted-foreground mt-1 font-mono"
+                      >
+                        [{result.rolls.join(', ')}]{p.modifier ? ` +${p.modifier}` : ''}
+                      </motion.p>
                     )}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-sm text-muted-foreground">{formula(p)}</span>
-                  <div className="flex items-center gap-2">
-                    {results[p.id] !== undefined && <span className="text-lg font-display font-bold text-primary">{results[p.id]}</span>}
-                    {p.diceCount > 0 && <Button size="sm" variant="outline" onClick={() => rollPotion(p)}><Dices className="w-3 h-3 mr-1" />Rolar</Button>}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -141,9 +193,9 @@ const Potions = () => {
               <p className="text-sm text-muted-foreground">Editando dados de <span className="font-semibold text-foreground">{form.name}</span></p>
             )}
             <div className="grid grid-cols-3 gap-3">
-              <div><label className="text-xs text-muted-foreground">Dados</label><Input type="number" min={0} value={form.diceCount} onChange={e => setForm(p => ({ ...p, diceCount: parseInt(e.target.value) || 0 }))} /></div>
-              <div><label className="text-xs text-muted-foreground">Lados</label><Input type="number" min={2} value={form.diceSides} onChange={e => setForm(p => ({ ...p, diceSides: parseInt(e.target.value) || 4 }))} /></div>
-              <div><label className="text-xs text-muted-foreground">Mod</label><Input type="number" value={form.modifier} onChange={e => setForm(p => ({ ...p, modifier: parseInt(e.target.value) || 0 }))} /></div>
+              <div><label className="text-xs text-muted-foreground">Dados</label><NumberInput min={0} value={form.diceCount} onChange={v => setForm(p => ({ ...p, diceCount: v }))} /></div>
+              <div><label className="text-xs text-muted-foreground">Lados</label><NumberInput min={2} value={form.diceSides} onChange={v => setForm(p => ({ ...p, diceSides: v }))} /></div>
+              <div><label className="text-xs text-muted-foreground">Mod</label><NumberInput value={form.modifier} onChange={v => setForm(p => ({ ...p, modifier: v }))} /></div>
             </div>
             <Button onClick={save} className="w-full">{editId ? 'Salvar' : 'Adicionar'}</Button>
           </div>

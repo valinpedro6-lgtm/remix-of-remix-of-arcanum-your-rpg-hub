@@ -2,8 +2,9 @@ import { useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Play, Pause, RotateCcw, Sun, Moon, Sunrise, Sunset, FastForward } from 'lucide-react';
+import { NumberInput } from '@/components/NumberInput';
+import { motion } from 'framer-motion';
 
 interface TimerState {
   realMinutesPerGameHour: number;
@@ -13,10 +14,10 @@ interface TimerState {
 }
 
 const getTimeOfDay = (hours: number) => {
-  if (hours >= 6 && hours < 12) return { label: 'Manhã', icon: Sunrise, emoji: '🌅' };
-  if (hours >= 12 && hours < 18) return { label: 'Tarde', icon: Sun, emoji: '☀️' };
-  if (hours >= 18 && hours < 21) return { label: 'Anoitecer', icon: Sunset, emoji: '🌇' };
-  return { label: 'Noite Profunda', icon: Moon, emoji: '🌙' };
+  if (hours >= 6 && hours < 12) return { label: 'Manhã', icon: Sunrise, emoji: '🌅', color: 'text-amber-400' };
+  if (hours >= 12 && hours < 18) return { label: 'Tarde', icon: Sun, emoji: '☀️', color: 'text-yellow-400' };
+  if (hours >= 18 && hours < 21) return { label: 'Anoitecer', icon: Sunset, emoji: '🌇', color: 'text-orange-400' };
+  return { label: 'Noite Profunda', icon: Moon, emoji: '🌙', color: 'text-blue-400' };
 };
 
 const GameTimer = () => {
@@ -27,7 +28,6 @@ const GameTimer = () => {
     lastTickTimestamp: 0,
   });
 
-  // Catch up on mount if timer was running
   useEffect(() => {
     if (timer.isRunning && timer.lastTickTimestamp > 0) {
       const realMsElapsed = Date.now() - timer.lastTickTimestamp;
@@ -42,7 +42,6 @@ const GameTimer = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Tick every second
   useEffect(() => {
     if (!timer.isRunning) return;
     const interval = setInterval(() => {
@@ -64,69 +63,101 @@ const GameTimer = () => {
   const timeOfDay = getTimeOfDay(hours);
   const TimeIcon = timeOfDay.icon;
 
+  // Day progress (0-100%) for visual bar
+  const dayProgress = ((totalMinutes % 1440) / 1440) * 100;
+
   const toggle = () => setTimer(prev => ({ ...prev, isRunning: !prev.isRunning, lastTickTimestamp: Date.now() }));
   const reset = () => setTimer(prev => ({ ...prev, isRunning: false, gameMinutesElapsed: 0, lastTickTimestamp: 0 }));
   const skip = (gameMinutes: number) => setTimer(prev => ({ ...prev, gameMinutesElapsed: prev.gameMinutesElapsed + gameMinutes }));
 
   return (
     <div className="space-y-6">
-      <h1 className="page-title">Timer do Jogo</h1>
+      <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="page-title">
+        Timer do Jogo
+      </motion.h1>
       <div className="max-w-lg mx-auto">
-        <Card className="card-hover">
-          <CardContent className="p-6 space-y-6">
-            <div>
-              <label className="text-sm text-muted-foreground mb-1.5 block">
-                Minutos reais = 1 hora no jogo
-              </label>
-              <Input
-                type="number"
-                min={0.1}
-                step={0.1}
-                value={timer.realMinutesPerGameHour}
-                onChange={e => setTimer(prev => ({ ...prev, realMinutesPerGameHour: Math.max(0.1, parseFloat(e.target.value) || 1) }))}
-                disabled={timer.isRunning}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                {timer.realMinutesPerGameHour} min real = 1h no jogo
-              </p>
-            </div>
-
-            <div className="text-center py-8">
-              <TimeIcon className="w-12 h-12 text-primary mx-auto mb-3 animate-pulse" />
-              <p className="text-sm text-primary font-semibold mb-2">{timeOfDay.emoji} {timeOfDay.label}</p>
-              <div className="text-5xl font-display font-bold text-primary dice-glow">
-                {days > 0 && <span>{days}d </span>}
-                {String(hours).padStart(2, '0')}:{String(minutes).padStart(2, '0')}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <Card className="card-hover glow-border">
+            <CardContent className="p-6 space-y-6">
+              <div>
+                <label className="text-sm text-muted-foreground mb-1.5 block">
+                  Minutos reais = 1 hora no jogo
+                </label>
+                <NumberInput
+                  min={1}
+                  value={timer.realMinutesPerGameHour}
+                  onChange={v => setTimer(prev => ({ ...prev, realMinutesPerGameHour: Math.max(1, v) }))}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {timer.realMinutesPerGameHour} min real = 1h no jogo
+                </p>
               </div>
-              <p className="text-muted-foreground mt-2">Tempo no jogo</p>
-            </div>
 
-            {/* Skip buttons */}
-            <div className="grid grid-cols-4 gap-2">
-              <Button variant="outline" size="sm" onClick={() => skip(15)}>
-                <FastForward className="w-3 h-3 mr-1" />15min
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => skip(60)}>
-                <FastForward className="w-3 h-3 mr-1" />1h
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => skip(360)}>
-                <FastForward className="w-3 h-3 mr-1" />6h
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => skip(1440)}>
-                <FastForward className="w-3 h-3 mr-1" />1 dia
-              </Button>
-            </div>
+              <div className="text-center py-8">
+                <motion.div
+                  key={timeOfDay.label}
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
+                >
+                  <TimeIcon className={`w-14 h-14 mx-auto mb-3 ${timeOfDay.color} ${timer.isRunning ? 'animate-pulse' : ''}`} />
+                </motion.div>
+                <p className="text-sm font-semibold text-primary mb-2">{timeOfDay.emoji} {timeOfDay.label}</p>
+                <motion.div
+                  key={totalMinutes}
+                  initial={{ scale: 1.05 }}
+                  animate={{ scale: 1 }}
+                  className="text-5xl md:text-6xl font-display font-bold text-primary dice-glow"
+                >
+                  {days > 0 && <span className="text-3xl text-muted-foreground">{days}d </span>}
+                  {String(hours).padStart(2, '0')}:{String(minutes).padStart(2, '0')}
+                </motion.div>
+                <p className="text-muted-foreground mt-2">Tempo no jogo</p>
 
-            <div className="flex gap-3">
-              <Button onClick={toggle} className="flex-1" size="lg">
-                {timer.isRunning ? <><Pause className="w-4 h-4 mr-2" />Pausar</> : <><Play className="w-4 h-4 mr-2" />Iniciar</>}
-              </Button>
-              <Button onClick={reset} variant="outline" size="lg">
-                <RotateCcw className="w-4 h-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                {/* Day cycle progress bar */}
+                <div className="mt-4 mx-auto max-w-xs">
+                  <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full bg-gradient-to-r from-blue-500 via-amber-400 via-50% to-blue-500"
+                      animate={{ width: `${dayProgress}%` }}
+                      transition={{ duration: 0.5 }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                    <span>🌙 00h</span>
+                    <span>🌅 06h</span>
+                    <span>☀️ 12h</span>
+                    <span>🌇 18h</span>
+                    <span>🌙 24h</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Skip buttons */}
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { label: '15min', mins: 15 },
+                  { label: '1h', mins: 60 },
+                  { label: '6h', mins: 360 },
+                  { label: '1 dia', mins: 1440 },
+                ].map(s => (
+                  <Button key={s.label} variant="outline" size="sm" onClick={() => skip(s.mins)} className="gap-1">
+                    <FastForward className="w-3 h-3" />{s.label}
+                  </Button>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <Button onClick={toggle} className="flex-1 gap-2" size="lg">
+                  {timer.isRunning ? <><Pause className="w-4 h-4" />Pausar</> : <><Play className="w-4 h-4" />Iniciar</>}
+                </Button>
+                <Button onClick={reset} variant="outline" size="lg">
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     </div>
   );
