@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2, Edit, Skull, Shield, Heart, Zap, Swords, BookOpen, X, ChevronDown, ChevronUp, RotateCcw, Copy, FileText, Save, FolderOpen } from 'lucide-react';
+import { NumberInput } from '@/components/NumberInput';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Attribute {
@@ -225,12 +226,12 @@ const Monsters = () => {
       <span className="text-sm font-semibold w-24 truncate">{a.name}</span>
       <div className="flex flex-col items-center gap-0.5">
         <label className="text-[10px] text-muted-foreground">Valor</label>
-        <Input type="number" className="w-16 h-8 text-center text-sm" value={a.value} onChange={e => setAttrValue(i, parseInt(e.target.value) || 0)} />
+        <NumberInput className="w-16 h-8 text-center text-sm" value={a.value} onChange={v => setAttrValue(i, v)} />
       </div>
       <div className="flex flex-col items-center gap-0.5">
         <label className="text-[10px] text-muted-foreground">Mod</label>
         <div className="flex items-center gap-1">
-          <Input type="number" className={`w-16 h-8 text-center text-sm ${a.manualModifier ? 'border-primary/50 bg-primary/5' : ''}`} value={a.modifier} onChange={e => setAttrModifier(i, parseInt(e.target.value) || 0)} />
+          <NumberInput className={`w-16 h-8 text-center text-sm ${a.manualModifier ? 'border-primary/50 bg-primary/5' : ''}`} value={a.modifier} onChange={v => setAttrModifier(i, v)} />
           {a.manualModifier && (
             <TooltipProvider><Tooltip><TooltipTrigger asChild>
               <Button variant="ghost" size="sm" className="p-0.5 h-auto" onClick={() => resetModifier(i)}><RotateCcw className="w-3 h-3 text-muted-foreground" /></Button>
@@ -483,14 +484,14 @@ const Monsters = () => {
               <TabsContent value="combat" className="space-y-3 mt-3">
                 {cf.hp && (
                   <div className="grid grid-cols-2 gap-3">
-                    <div><label className="text-xs text-muted-foreground">HP</label><Input type="number" value={editing.hp} onChange={e => setEditing({ ...editing, hp: parseInt(e.target.value) || 0 })} /></div>
-                    <div><label className="text-xs text-muted-foreground">HP Máximo</label><Input type="number" value={editing.maxHp} onChange={e => setEditing({ ...editing, maxHp: parseInt(e.target.value) || 0 })} /></div>
+                    <div><label className="text-xs text-muted-foreground">HP</label><NumberInput value={editing.hp} onChange={v => setEditing({ ...editing, hp: v })} /></div>
+                    <div><label className="text-xs text-muted-foreground">HP Máximo</label><NumberInput value={editing.maxHp} onChange={v => setEditing({ ...editing, maxHp: v })} /></div>
                   </div>
                 )}
                 {(cf.ca || cf.movement) && (
                   <div className="grid grid-cols-2 gap-3">
-                    {cf.ca && <div><label className="text-xs text-muted-foreground">CA</label><Input type="number" value={editing.ca} onChange={e => setEditing({ ...editing, ca: parseInt(e.target.value) || 0 })} /></div>}
-                    {cf.movement && <div><label className="text-xs text-muted-foreground">Deslocamento (m)</label><Input type="number" value={editing.movement} onChange={e => setEditing({ ...editing, movement: parseInt(e.target.value) || 0 })} /></div>}
+                    {cf.ca && <div><label className="text-xs text-muted-foreground">CA</label><NumberInput value={editing.ca} onChange={v => setEditing({ ...editing, ca: v })} /></div>}
+                    {cf.movement && <div><label className="text-xs text-muted-foreground">Deslocamento (m)</label><NumberInput value={editing.movement} onChange={v => setEditing({ ...editing, movement: v })} /></div>}
                   </div>
                 )}
 
