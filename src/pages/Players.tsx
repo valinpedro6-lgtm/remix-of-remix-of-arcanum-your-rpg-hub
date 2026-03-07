@@ -290,16 +290,15 @@ const Players = () => {
       <span className="text-sm font-semibold w-24 truncate">{a.name}</span>
       <div className="flex flex-col items-center gap-0.5">
         <label className="text-[10px] text-muted-foreground">Valor</label>
-        <Input type="number" className="w-16 h-8 text-center text-sm" value={a.value} onChange={e => setAttrValue(i, parseInt(e.target.value) || 0)} />
+        <NumberInput className="w-16 h-8 text-center text-sm" value={a.value} onChange={v => setAttrValue(i, v)} />
       </div>
       <div className="flex flex-col items-center gap-0.5">
         <label className="text-[10px] text-muted-foreground">Mod</label>
         <div className="flex items-center gap-1">
-          <Input
-            type="number"
+          <NumberInput
             className={`w-16 h-8 text-center text-sm ${a.manualModifier ? 'border-primary/50 bg-primary/5' : ''}`}
             value={a.modifier}
-            onChange={e => setAttrModifier(i, parseInt(e.target.value) || 0)}
+            onChange={v => setAttrModifier(i, v)}
           />
           {a.manualModifier && (
             <TooltipProvider>
@@ -332,7 +331,7 @@ const Players = () => {
       </button>
       <div className="flex flex-col items-center gap-0.5">
         <label className="text-[10px] text-muted-foreground">Bônus</label>
-        <Input type="number" className="w-16 h-8 text-center text-sm" value={s.bonus} onChange={e => setSkill(i, 'bonus', parseInt(e.target.value) || 0)} />
+        <NumberInput className="w-16 h-8 text-center text-sm" value={s.bonus} onChange={v => setSkill(i, 'bonus', v)} />
       </div>
       <span className="text-[10px] text-muted-foreground bg-secondary/60 px-1.5 py-0.5 rounded">{s.attribute}</span>
       <Button variant="ghost" size="sm" className="p-1 h-auto ml-auto text-muted-foreground hover:text-destructive" onClick={() => removeSkill(i)}>
@@ -626,8 +625,8 @@ const Players = () => {
                   <Input placeholder="Profissão" value={editing.profession} onChange={e => setEditing({ ...editing, profession: e.target.value })} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-xs text-muted-foreground">Nível</label><Input type="number" min={1} value={editing.level} onChange={e => setEditing({ ...editing, level: parseInt(e.target.value) || 1 })} /></div>
-                  <div><label className="text-xs text-muted-foreground">Experiência</label><Input type="number" min={0} value={editing.experience} onChange={e => setEditing({ ...editing, experience: parseInt(e.target.value) || 0 })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Nível</label><NumberInput min={1} value={editing.level} onChange={v => setEditing({ ...editing, level: v })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Experiência</label><NumberInput min={0} value={editing.experience} onChange={v => setEditing({ ...editing, experience: v })} /></div>
                 </div>
                 <Input placeholder="URL da Imagem" value={editing.image} onChange={e => setEditing({ ...editing, image: e.target.value })} />
               </TabsContent>
@@ -664,26 +663,26 @@ const Players = () => {
               <TabsContent value="combat" className="space-y-3 mt-3">
                 {cf.hp && (
                   <div className="grid grid-cols-2 gap-3">
-                    <div><label className="text-xs text-muted-foreground">HP Atual</label><Input type="number" value={editing.hp} onChange={e => setEditing({ ...editing, hp: parseInt(e.target.value) || 0 })} /></div>
-                    <div><label className="text-xs text-muted-foreground">HP Máximo</label><Input type="number" value={editing.maxHp} onChange={e => setEditing({ ...editing, maxHp: parseInt(e.target.value) || 0 })} /></div>
+                    <div><label className="text-xs text-muted-foreground">HP Atual</label><NumberInput value={editing.hp} onChange={v => setEditing({ ...editing, hp: v })} /></div>
+                    <div><label className="text-xs text-muted-foreground">HP Máximo</label><NumberInput value={editing.maxHp} onChange={v => setEditing({ ...editing, maxHp: v })} /></div>
                   </div>
                 )}
                 {cf.mana && (
                   <div className="grid grid-cols-2 gap-3">
-                    <div><label className="text-xs text-muted-foreground">Mana Atual</label><Input type="number" value={editing.mana} onChange={e => setEditing({ ...editing, mana: parseInt(e.target.value) || 0 })} /></div>
-                    <div><label className="text-xs text-muted-foreground">Mana Máxima</label><Input type="number" value={editing.maxMana} onChange={e => setEditing({ ...editing, maxMana: parseInt(e.target.value) || 0 })} /></div>
+                    <div><label className="text-xs text-muted-foreground">Mana Atual</label><NumberInput value={editing.mana} onChange={v => setEditing({ ...editing, mana: v })} /></div>
+                    <div><label className="text-xs text-muted-foreground">Mana Máxima</label><NumberInput value={editing.maxMana} onChange={v => setEditing({ ...editing, maxMana: v })} /></div>
                   </div>
                 )}
                 {cf.energy && (
                   <div className="grid grid-cols-2 gap-3">
-                    <div><label className="text-xs text-muted-foreground">Energia Atual</label><Input type="number" value={editing.energy} onChange={e => setEditing({ ...editing, energy: parseInt(e.target.value) || 0 })} /></div>
-                    <div><label className="text-xs text-muted-foreground">Energia Máxima</label><Input type="number" value={editing.maxEnergy} onChange={e => setEditing({ ...editing, maxEnergy: parseInt(e.target.value) || 0 })} /></div>
+                    <div><label className="text-xs text-muted-foreground">Energia Atual</label><NumberInput value={editing.energy} onChange={v => setEditing({ ...editing, energy: v })} /></div>
+                    <div><label className="text-xs text-muted-foreground">Energia Máxima</label><NumberInput value={editing.maxEnergy} onChange={v => setEditing({ ...editing, maxEnergy: v })} /></div>
                   </div>
                 )}
                 {(cf.ca || cf.movement) && (
                   <div className="grid grid-cols-2 gap-3">
-                    {cf.ca && <div><label className="text-xs text-muted-foreground">CA (Classe de Armadura)</label><Input type="number" value={editing.ca} onChange={e => setEditing({ ...editing, ca: parseInt(e.target.value) || 0 })} /></div>}
-                    {cf.movement && <div><label className="text-xs text-muted-foreground">Deslocamento (m)</label><Input type="number" value={editing.movement} onChange={e => setEditing({ ...editing, movement: parseInt(e.target.value) || 0 })} /></div>}
+                    {cf.ca && <div><label className="text-xs text-muted-foreground">CA (Classe de Armadura)</label><NumberInput value={editing.ca} onChange={v => setEditing({ ...editing, ca: v })} /></div>}
+                    {cf.movement && <div><label className="text-xs text-muted-foreground">Deslocamento (m)</label><NumberInput value={editing.movement} onChange={v => setEditing({ ...editing, movement: v })} /></div>}
                   </div>
                 )}
                 {!cf.hp && !cf.mana && !cf.energy && !cf.ca && !cf.movement && (
