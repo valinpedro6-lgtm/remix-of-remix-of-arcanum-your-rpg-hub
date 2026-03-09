@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Link } from 'react-router-dom';
-import { Play, Pause, Sun, Moon, Sunrise, Sunset, Clock } from 'lucide-react';
+import { Play, Pause, Sun, Moon, Sunrise, Sunset } from 'lucide-react';
 
 interface TimerState {
   realMinutesPerGameHour: number;
@@ -11,10 +11,10 @@ interface TimerState {
 }
 
 const getTimeOfDay = (hours: number) => {
-  if (hours >= 6 && hours < 12) return { label: 'Manhã', icon: Sunrise, emoji: '🌅' };
-  if (hours >= 12 && hours < 18) return { label: 'Tarde', icon: Sun, emoji: '☀️' };
-  if (hours >= 18 && hours < 21) return { label: 'Anoitecer', icon: Sunset, emoji: '🌇' };
-  return { label: 'Noite', icon: Moon, emoji: '🌙' };
+  if (hours >= 6 && hours < 12) return { icon: Sunrise };
+  if (hours >= 12 && hours < 18) return { icon: Sun };
+  if (hours >= 18 && hours < 21) return { icon: Sunset };
+  return { icon: Moon };
 };
 
 export const GlobalTimerBar = () => {
@@ -25,6 +25,27 @@ export const GlobalTimerBar = () => {
     lastTickTimestamp: 0,
   });
 
+  // On mount: recover elapsed time while page was closed
+  useEffect(() => {
+    const raw = localStorage.getItem('arcanum-timer');
+    if (!raw) return;
+    try {
+      const saved: TimerState = JSON.parse(raw);
+      if (saved.isRunning && saved.lastTickTimestamp > 0) {
+        const realMsElapsed = Date.now() - saved.lastTickTimestamp;
+        const realMinutesElapsed = realMsElapsed / 60000;
+        const gameMinutesGained = (realMinutesElapsed / saved.realMinutesPerGameHour) * 60;
+        setTimer({
+          ...saved,
+          gameMinutesElapsed: saved.gameMinutesElapsed + gameMinutesGained,
+          lastTickTimestamp: Date.now(),
+        });
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Single source of truth: only this component ticks the timer
   useEffect(() => {
     if (!timer.isRunning) return;
     const interval = setInterval(() => {
@@ -46,7 +67,11 @@ export const GlobalTimerBar = () => {
   const timeOfDay = getTimeOfDay(hours);
   const TimeIcon = timeOfDay.icon;
 
-  const toggle = () => setTimer(prev => ({ ...prev, isRunning: !prev.isRunning, lastTickTimestamp: Date.now() }));
+  const toggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setTimer(prev => ({ ...prev, isRunning: !prev.isRunning, lastTickTimestamp: Date.now() }));
+  };
 
   return (
     <Link
@@ -59,7 +84,7 @@ export const GlobalTimerBar = () => {
         {String(hours).padStart(2, '0')}:{String(minutes).padStart(2, '0')}
       </span>
       <button
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggle(); }}
+        onClick={toggle}
         className="p-0.5 rounded hover:bg-primary/10 transition-colors"
       >
         {timer.isRunning
