@@ -10,9 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, Edit, Shield, Heart, User, Zap, Swords, BookOpen, Backpack, Sparkles, X, ChevronDown, ChevronUp, RotateCcw, Copy, FileText, Save, FolderOpen } from 'lucide-react';
+import { Plus, Trash2, Edit, Shield, Heart, User, Zap, Swords, BookOpen, Backpack, Sparkles, X, ChevronDown, ChevronUp, RotateCcw, Copy, FileText, Save, FolderOpen, Gamepad2, Minus } from 'lucide-react';
 import { NumberInput } from '@/components/NumberInput';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PLAYER_SYSTEM_PRESETS } from '@/data/rpgSystemPresets';
 
 interface Attribute {
   name: string;
