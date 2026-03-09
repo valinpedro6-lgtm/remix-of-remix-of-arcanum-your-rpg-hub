@@ -45,7 +45,7 @@ export const GlobalTimerBar = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Single source of truth: only this component ticks the timer
+  // Single source of truth ticker
   useEffect(() => {
     if (!timer.isRunning) return;
     const interval = setInterval(() => {
