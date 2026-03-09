@@ -353,7 +353,7 @@ const Players = () => {
         <h1 className="page-title">Jogadores</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={openNewTemplate} className="gap-2"><FileText className="w-4 h-4" />Adicionar Modelo</Button>
-          <Button onClick={() => setPickerOpen(true)} className="gap-2"><Plus className="w-4 h-4" )} className="gap-2"><Plus className="w-4 h-4" />Adicionar</Button>
+          <Button onClick={() => setPickerOpen(true)} className="gap-2"><Plus className="w-4 h-4" />Adicionar</Button>
         </div>
       </div>
 
