@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,28 +20,12 @@ const getTimeOfDay = (hours: number) => {
 };
 
 const GameTimer = () => {
-  // Read-only: the GlobalTimerBar in Layout handles the ticking interval
   const [timer, setTimer] = useLocalStorage<TimerState>('arcanum-timer', {
     realMinutesPerGameHour: 1,
     isRunning: false,
     gameMinutesElapsed: 0,
     lastTickTimestamp: 0,
   });
-
-  // Force re-render every second to show updated time from localStorage
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Read latest from localStorage directly to stay in sync
-      try {
-        const raw = localStorage.getItem('arcanum-timer');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          setTimer(parsed);
-        }
-      } catch {}
-    }, 500);
-    return () => clearInterval(interval);
-  }, [setTimer]);
 
   const totalMinutes = Math.floor(timer.gameMinutesElapsed);
   const days = Math.floor(totalMinutes / 1440);
