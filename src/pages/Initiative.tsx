@@ -192,7 +192,7 @@ const Initiative = () => {
                 {bulkAdd && (
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs text-muted-foreground">Qtd:</span>
-                    <NumberInput min={2} max={20} value={bulkCount} onChange={setBulkCount} className="w-16 h-7 text-xs" />
+                    <NumberInput min={2} value={bulkCount} onChange={setBulkCount} className="w-16 h-7 text-xs" />
                   </div>
                 )}
               </div>
