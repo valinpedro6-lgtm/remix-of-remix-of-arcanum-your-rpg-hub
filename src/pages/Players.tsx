@@ -158,15 +158,25 @@ const Players = () => {
   // New player template picker
   const [pickerOpen, setPickerOpen] = useState(false);
 
+  // Helper to calculate skill bonus from attribute + proficiency
+  const calcSkillBonus = (skill: Skill, attributes: Attribute[], profBonus: number): number => {
+    const attr = attributes.find(a => a.name === skill.attribute);
+    const attrMod = attr ? (attr.manualModifier ? attr.modifier : calcModifier(attr.value)) : 0;
+    return skill.proficient ? attrMod + profBonus : attrMod;
+  };
+
   const save = () => {
     if (!editing?.name.trim()) return;
-    const updated = {
-      ...editing,
-      attributes: editing.attributes.map(a => ({
-        ...a,
-        modifier: a.manualModifier ? a.modifier : calcModifier(a.value),
-      })),
-    };
+    const updatedAttrs = editing.attributes.map(a => ({
+      ...a,
+      modifier: a.manualModifier ? a.modifier : calcModifier(a.value),
+    }));
+    const profBonus = editing.proficiencyBonus ?? 2;
+    const updatedSkills = editing.skills.map(s => ({
+      ...s,
+      bonus: calcSkillBonus(s, updatedAttrs, profBonus),
+    }));
+    const updated = { ...editing, attributes: updatedAttrs, skills: updatedSkills };
     setPlayers(prev => {
       const exists = prev.find(p => p.id === updated.id);
       return exists ? prev.map(p => p.id === updated.id ? updated : p) : [...prev, updated];
