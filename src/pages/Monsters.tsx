@@ -150,6 +150,11 @@ const Monsters = () => {
   };
 
   const remove = (id: string) => setMonsters(prev => prev.filter(m => m.id !== id));
+
+  const updateMonsterField = (id: string, field: keyof Monster, value: number) => {
+    setMonsters(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
+  };
+
   const duplicate = (m: Monster) => {
     const dup = { ...m, id: crypto.randomUUID(), name: `${m.name} (cópia)`, attributes: m.attributes.map(a => ({ ...a })) };
     setMonsters(prev => [...prev, dup]);
