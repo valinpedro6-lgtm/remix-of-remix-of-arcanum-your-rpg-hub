@@ -712,7 +712,7 @@ const Players = () => {
               </TabsContent>
 
               <TabsContent value="skills" className="space-y-3 mt-3">
-                <p className="text-xs text-muted-foreground">Clique no nome para proficiência. Remova perícias com o X.</p>
+                <p className="text-xs text-muted-foreground">Clique no nome para marcar proficiência. O bônus é calculado automaticamente: <span className="text-primary">modificador do atributo + bônus de proficiência ({modStr(editing.proficiencyBonus ?? 2)})</span>.</p>
                 <div className="space-y-2">
                   {editing.skills.map((s, i) => (
                     <SkillEditor key={`${s.name}-${i}`} s={s} i={i} />
