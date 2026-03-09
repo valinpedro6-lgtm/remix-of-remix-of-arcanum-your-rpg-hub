@@ -300,10 +300,23 @@ const Monsters = () => {
                     <div className="flex-1 min-w-0">
                       <h3 className="text-xl font-display font-bold truncate">{m.name || 'Sem nome'}</h3>
                       <p className="text-sm text-muted-foreground">{[m.size, m.type, m.alignment].filter(Boolean).join(' • ') || 'Sem tipo'}{m.challengeRating && ` • ND ${m.challengeRating}`}</p>
-                      <div className="flex flex-wrap gap-3 mt-2">
-                        <div className="flex items-center gap-1"><Heart className="w-4 h-4 text-accent" /><span className="text-sm font-semibold">{m.hp}/{m.maxHp || m.hp}</span></div>
-                        <div className="flex items-center gap-1"><Shield className="w-4 h-4 text-primary" /><span className="text-sm font-semibold">{m.ca}</span></div>
-                        {m.movement > 0 && <span className="text-sm text-muted-foreground">{m.movement}m</span>}
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
+                          <Heart className="w-3.5 h-3.5 text-accent shrink-0" />
+                          <button className="text-xs text-muted-foreground hover:text-accent transition-colors" onClick={(e) => { e.stopPropagation(); updateMonsterField(m.id, 'hp', Math.max(0, m.hp - 1)); }}><Minus className="w-3 h-3" /></button>
+                          <span className="text-sm font-semibold min-w-[3ch] text-center">{m.hp}</span>
+                          <button className="text-xs text-muted-foreground hover:text-accent transition-colors" onClick={(e) => { e.stopPropagation(); updateMonsterField(m.id, 'hp', Math.min(m.maxHp, m.hp + 1)); }}><Plus className="w-3 h-3" /></button>
+                          <span className="text-xs text-muted-foreground">/{m.maxHp || m.hp}</span>
+                        </div>
+                        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
+                          <Shield className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span className="text-sm font-semibold">{m.ca}</span>
+                        </div>
+                        {m.movement > 0 && (
+                          <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
+                            <span className="text-sm text-muted-foreground">{m.movement}m</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
