@@ -181,6 +181,10 @@ const Players = () => {
     setPlayers(prev => [...prev, dup]);
   };
 
+  const updatePlayerField = (id: string, field: keyof Player, value: number) => {
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
+  };
+
   const openNewWithTemplate = (t?: SheetTemplate) => {
     setEditing(emptyPlayer(t));
     setPickerOpen(false);
