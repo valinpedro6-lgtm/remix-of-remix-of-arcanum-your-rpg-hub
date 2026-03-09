@@ -10,9 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, Edit, Shield, Heart, User, Zap, Swords, BookOpen, Backpack, Sparkles, X, ChevronDown, ChevronUp, RotateCcw, Copy, FileText, Save, FolderOpen } from 'lucide-react';
+import { Plus, Trash2, Edit, Shield, Heart, User, Zap, Swords, BookOpen, Backpack, Sparkles, X, ChevronDown, ChevronUp, RotateCcw, Copy, FileText, Save, FolderOpen, Gamepad2, Minus } from 'lucide-react';
 import { NumberInput } from '@/components/NumberInput';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PLAYER_SYSTEM_PRESETS } from '@/data/rpgSystemPresets';
 
 interface Attribute {
   name: string;
@@ -178,6 +179,10 @@ const Players = () => {
   const duplicate = (p: Player) => {
     const dup = { ...p, id: crypto.randomUUID(), name: `${p.name} (cópia)`, attributes: p.attributes.map(a => ({ ...a })), skills: p.skills.map(s => ({ ...s })) };
     setPlayers(prev => [...prev, dup]);
+  };
+
+  const updatePlayerField = (id: string, field: keyof Player, value: number) => {
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
   };
 
   const openNewWithTemplate = (t?: SheetTemplate) => {
@@ -348,7 +353,7 @@ const Players = () => {
         <h1 className="page-title">Jogadores</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={openNewTemplate} className="gap-2"><FileText className="w-4 h-4" />Adicionar Modelo</Button>
-          <Button onClick={() => templates.length > 0 ? setPickerOpen(true) : openNewWithTemplate()} className="gap-2"><Plus className="w-4 h-4" />Adicionar</Button>
+          <Button onClick={() => setPickerOpen(true)} className="gap-2"><Plus className="w-4 h-4" />Adicionar</Button>
         </div>
       </div>
 
@@ -378,7 +383,7 @@ const Players = () => {
           <CardContent className="p-12 text-center">
             <User className="w-12 h-12 mx-auto text-muted-foreground/20 mb-3" />
             <p className="text-muted-foreground">Nenhum jogador cadastrado</p>
-            <Button variant="outline" className="mt-4" onClick={() => templates.length > 0 ? setPickerOpen(true) : openNewWithTemplate()}><Plus className="w-4 h-4 mr-2" />Criar primeiro personagem</Button>
+            <Button variant="outline" className="mt-4" onClick={() => setPickerOpen(true)}><Plus className="w-4 h-4 mr-2" />Criar primeiro personagem</Button>
           </CardContent>
         </Card>
       )}
@@ -400,11 +405,36 @@ const Players = () => {
                       {p.playerName && <p className="text-xs text-muted-foreground">Jogador: {p.playerName}</p>}
                       <p className="text-sm text-muted-foreground">{[p.race, p.className, p.profession].filter(Boolean).join(' • ')}{p.level > 0 && ` • Nv ${p.level}`}</p>
                       {p.experience > 0 && <p className="text-xs text-muted-foreground">XP: {p.experience.toLocaleString()}</p>}
-                      <div className="flex flex-wrap gap-3 mt-2">
-                        <div className="flex items-center gap-1"><Heart className="w-4 h-4 text-accent" /><span className="text-sm font-semibold">{p.hp}/{p.maxHp}</span></div>
-                        {p.maxMana > 0 && <div className="flex items-center gap-1"><Zap className="w-4 h-4 text-blue-400" /><span className="text-sm font-semibold">{p.mana}/{p.maxMana}</span></div>}
-                        {p.maxEnergy > 0 && <div className="flex items-center gap-1"><Sparkles className="w-4 h-4 text-yellow-400" /><span className="text-sm font-semibold">{p.energy}/{p.maxEnergy}</span></div>}
-                        <div className="flex items-center gap-1"><Shield className="w-4 h-4 text-primary" /><span className="text-sm font-semibold">{p.ca}</span></div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
+                          <Heart className="w-3.5 h-3.5 text-accent shrink-0" />
+                          <button className="text-xs text-muted-foreground hover:text-accent transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'hp', Math.max(0, p.hp - 1)); }}><Minus className="w-3 h-3" /></button>
+                          <span className="text-sm font-semibold min-w-[3ch] text-center">{p.hp}</span>
+                          <button className="text-xs text-muted-foreground hover:text-accent transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'hp', Math.min(p.maxHp, p.hp + 1)); }}><Plus className="w-3 h-3" /></button>
+                          <span className="text-xs text-muted-foreground">/{p.maxHp}</span>
+                        </div>
+                        {p.maxMana > 0 && (
+                          <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
+                            <Zap className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                            <button className="text-xs text-muted-foreground hover:text-blue-400 transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'mana', Math.max(0, p.mana - 1)); }}><Minus className="w-3 h-3" /></button>
+                            <span className="text-sm font-semibold min-w-[3ch] text-center">{p.mana}</span>
+                            <button className="text-xs text-muted-foreground hover:text-blue-400 transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'mana', Math.min(p.maxMana, p.mana + 1)); }}><Plus className="w-3 h-3" /></button>
+                            <span className="text-xs text-muted-foreground">/{p.maxMana}</span>
+                          </div>
+                        )}
+                        {p.maxEnergy > 0 && (
+                          <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
+                            <Sparkles className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                            <button className="text-xs text-muted-foreground hover:text-yellow-400 transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'energy', Math.max(0, p.energy - 1)); }}><Minus className="w-3 h-3" /></button>
+                            <span className="text-sm font-semibold min-w-[3ch] text-center">{p.energy}</span>
+                            <button className="text-xs text-muted-foreground hover:text-yellow-400 transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'energy', Math.min(p.maxEnergy, p.energy + 1)); }}><Plus className="w-3 h-3" /></button>
+                            <span className="text-xs text-muted-foreground">/{p.maxEnergy}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
+                          <Shield className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span className="text-sm font-semibold">{p.ca}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -482,6 +512,21 @@ const Players = () => {
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle className="font-display text-xl">Escolher Modelo</DialogTitle></DialogHeader>
           <div className="space-y-2">
+            <p className="text-xs text-muted-foreground flex items-center gap-1"><Gamepad2 className="w-3 h-3" />Sistemas de RPG</p>
+            {PLAYER_SYSTEM_PRESETS.map(preset => (
+              <Button key={preset.id} variant="outline" className="w-full justify-start gap-2" onClick={() => openNewWithTemplate({
+                id: preset.id, name: preset.name,
+                attributes: preset.attributes.map(a => ({ ...a })),
+                skills: preset.skills.map(s => ({ ...s })),
+                combatFields: { ...preset.combatFields },
+                hasInventory: preset.hasInventory, hasAbilities: preset.hasAbilities, hasNotes: preset.hasNotes,
+              })}>
+                <Gamepad2 className="w-4 h-4 text-primary" />{preset.name}
+                <span className="text-xs text-muted-foreground ml-auto">{preset.attributes.length} atr · {preset.skills.length} per</span>
+              </Button>
+            ))}
+            <Separator />
+            <p className="text-xs text-muted-foreground flex items-center gap-1"><FolderOpen className="w-3 h-3" />Outros</p>
             <Button variant="outline" className="w-full justify-start gap-2" onClick={() => openNewWithTemplate()}>
               <FileText className="w-4 h-4" />Ficha padrão (sem modelo)
             </Button>

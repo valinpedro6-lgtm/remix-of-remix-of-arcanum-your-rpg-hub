@@ -10,9 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, Edit, Skull, Shield, Heart, Zap, Swords, BookOpen, X, ChevronDown, ChevronUp, RotateCcw, Copy, FileText, Save, FolderOpen } from 'lucide-react';
+import { Plus, Trash2, Edit, Skull, Shield, Heart, Zap, Swords, BookOpen, X, ChevronDown, ChevronUp, RotateCcw, Copy, FileText, Save, FolderOpen, Gamepad2, Minus } from 'lucide-react';
 import { NumberInput } from '@/components/NumberInput';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MONSTER_SYSTEM_PRESETS } from '@/data/rpgSystemPresets';
 
 interface Attribute {
   name: string;
@@ -149,6 +150,11 @@ const Monsters = () => {
   };
 
   const remove = (id: string) => setMonsters(prev => prev.filter(m => m.id !== id));
+
+  const updateMonsterField = (id: string, field: keyof Monster, value: number) => {
+    setMonsters(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
+  };
+
   const duplicate = (m: Monster) => {
     const dup = { ...m, id: crypto.randomUUID(), name: `${m.name} (cópia)`, attributes: m.attributes.map(a => ({ ...a })) };
     setMonsters(prev => [...prev, dup]);
@@ -249,7 +255,7 @@ const Monsters = () => {
         <h1 className="page-title">Monstros</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={openNewTemplate} className="gap-2"><FileText className="w-4 h-4" />Adicionar Modelo</Button>
-          <Button onClick={() => templates.length > 0 ? setPickerOpen(true) : openNewWithTemplate()} className="gap-2"><Plus className="w-4 h-4" />Adicionar</Button>
+          <Button onClick={() => setPickerOpen(true)} className="gap-2"><Plus className="w-4 h-4" />Adicionar</Button>
         </div>
       </div>
 
@@ -274,7 +280,7 @@ const Monsters = () => {
           <CardContent className="p-12 text-center">
             <Skull className="w-12 h-12 mx-auto text-muted-foreground/20 mb-3" />
             <p className="text-muted-foreground">Nenhum monstro cadastrado</p>
-            <Button variant="outline" className="mt-4" onClick={() => templates.length > 0 ? setPickerOpen(true) : openNewWithTemplate()}><Plus className="w-4 h-4 mr-2" />Criar primeiro monstro</Button>
+            <Button variant="outline" className="mt-4" onClick={() => setPickerOpen(true)}><Plus className="w-4 h-4 mr-2" />Criar primeiro monstro</Button>
           </CardContent>
         </Card>
       )}
@@ -294,10 +300,23 @@ const Monsters = () => {
                     <div className="flex-1 min-w-0">
                       <h3 className="text-xl font-display font-bold truncate">{m.name || 'Sem nome'}</h3>
                       <p className="text-sm text-muted-foreground">{[m.size, m.type, m.alignment].filter(Boolean).join(' • ') || 'Sem tipo'}{m.challengeRating && ` • ND ${m.challengeRating}`}</p>
-                      <div className="flex flex-wrap gap-3 mt-2">
-                        <div className="flex items-center gap-1"><Heart className="w-4 h-4 text-accent" /><span className="text-sm font-semibold">{m.hp}/{m.maxHp || m.hp}</span></div>
-                        <div className="flex items-center gap-1"><Shield className="w-4 h-4 text-primary" /><span className="text-sm font-semibold">{m.ca}</span></div>
-                        {m.movement > 0 && <span className="text-sm text-muted-foreground">{m.movement}m</span>}
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
+                          <Heart className="w-3.5 h-3.5 text-accent shrink-0" />
+                          <button className="text-xs text-muted-foreground hover:text-accent transition-colors" onClick={(e) => { e.stopPropagation(); updateMonsterField(m.id, 'hp', Math.max(0, m.hp - 1)); }}><Minus className="w-3 h-3" /></button>
+                          <span className="text-sm font-semibold min-w-[3ch] text-center">{m.hp}</span>
+                          <button className="text-xs text-muted-foreground hover:text-accent transition-colors" onClick={(e) => { e.stopPropagation(); updateMonsterField(m.id, 'hp', Math.min(m.maxHp, m.hp + 1)); }}><Plus className="w-3 h-3" /></button>
+                          <span className="text-xs text-muted-foreground">/{m.maxHp || m.hp}</span>
+                        </div>
+                        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
+                          <Shield className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span className="text-sm font-semibold">{m.ca}</span>
+                        </div>
+                        {m.movement > 0 && (
+                          <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
+                            <span className="text-sm text-muted-foreground">{m.movement}m</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -362,6 +381,20 @@ const Monsters = () => {
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle className="font-display text-xl">Escolher Modelo</DialogTitle></DialogHeader>
           <div className="space-y-2">
+            <p className="text-xs text-muted-foreground flex items-center gap-1"><Gamepad2 className="w-3 h-3" />Sistemas de RPG</p>
+            {MONSTER_SYSTEM_PRESETS.map(preset => (
+              <Button key={preset.id} variant="outline" className="w-full justify-start gap-2" onClick={() => openNewWithTemplate({
+                id: preset.id, name: preset.name,
+                attributes: preset.attributes.map(a => ({ ...a })),
+                combatFields: { ...preset.combatFields },
+                sections: { ...preset.sections },
+              })}>
+                <Gamepad2 className="w-4 h-4 text-primary" />{preset.name}
+                <span className="text-xs text-muted-foreground ml-auto">{preset.attributes.length} atr</span>
+              </Button>
+            ))}
+            <Separator />
+            <p className="text-xs text-muted-foreground flex items-center gap-1"><FolderOpen className="w-3 h-3" />Outros</p>
             <Button variant="outline" className="w-full justify-start gap-2" onClick={() => openNewWithTemplate()}>
               <FileText className="w-4 h-4" />Ficha padrão (sem modelo)
             </Button>
