@@ -66,6 +66,7 @@ interface Player {
   maxEnergy: number;
   ca: number;
   movement: number;
+  proficiencyBonus: number;
   attributes: Attribute[];
   skills: Skill[];
   inventory: string;
@@ -126,7 +127,7 @@ const emptyPlayer = (template?: SheetTemplate): Player => {
   return {
     id: crypto.randomUUID(),
     name: '', playerName: '', race: '', className: '', profession: '', level: 1, experience: 0, image: '',
-    hp: 10, maxHp: 10, mana: 0, maxMana: 0, energy: 10, maxEnergy: 10, ca: 10, movement: 9,
+    hp: 10, maxHp: 10, mana: 0, maxMana: 0, energy: 10, maxEnergy: 10, ca: 10, movement: 9, proficiencyBonus: 2,
     attributes: makeAttrs(t.attributes),
     skills: makeSkills(t.skills),
     inventory: '', abilities: '', notes: '',
@@ -157,15 +158,25 @@ const Players = () => {
   // New player template picker
   const [pickerOpen, setPickerOpen] = useState(false);
 
+  // Helper to calculate skill bonus from attribute + proficiency
+  const calcSkillBonus = (skill: Skill, attributes: Attribute[], profBonus: number): number => {
+    const attr = attributes.find(a => a.name === skill.attribute);
+    const attrMod = attr ? (attr.manualModifier ? attr.modifier : calcModifier(attr.value)) : 0;
+    return skill.proficient ? attrMod + profBonus : attrMod;
+  };
+
   const save = () => {
     if (!editing?.name.trim()) return;
-    const updated = {
-      ...editing,
-      attributes: editing.attributes.map(a => ({
-        ...a,
-        modifier: a.manualModifier ? a.modifier : calcModifier(a.value),
-      })),
-    };
+    const updatedAttrs = editing.attributes.map(a => ({
+      ...a,
+      modifier: a.manualModifier ? a.modifier : calcModifier(a.value),
+    }));
+    const profBonus = editing.proficiencyBonus ?? 2;
+    const updatedSkills = editing.skills.map(s => ({
+      ...s,
+      bonus: calcSkillBonus(s, updatedAttrs, profBonus),
+    }));
+    const updated = { ...editing, attributes: updatedAttrs, skills: updatedSkills };
     setPlayers(prev => {
       const exists = prev.find(p => p.id === updated.id);
       return exists ? prev.map(p => p.id === updated.id ? updated : p) : [...prev, updated];
@@ -196,6 +207,7 @@ const Players = () => {
       ...p,
       attributes: p.attributes?.map(a => ({ ...a, manualModifier: a.manualModifier ?? false })) || makeAttrs(DEFAULT_ATTRIBUTES),
       skills: p.skills?.map(s => ({ ...s })) || makeSkills(DEFAULT_SKILLS),
+      proficiencyBonus: p.proficiencyBonus ?? 2,
       combatFields: p.combatFields || { ...DEFAULT_COMBAT },
       hasInventory: p.hasInventory ?? true,
       hasAbilities: p.hasAbilities ?? true,
@@ -325,25 +337,33 @@ const Players = () => {
     </div>
   );
 
-  const SkillEditor = ({ s, i }: { s: Skill; i: number }) => (
-    <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/50">
-      <button
-        className={`text-sm w-32 text-left truncate transition-colors ${s.proficient ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`}
-        onClick={() => setSkill(i, 'proficient', !s.proficient)}
-      >
-        <span className={`inline-block w-4 ${s.proficient ? 'text-primary' : ''}`}>{s.proficient ? '●' : '○'}</span>
-        {s.name}
-      </button>
-      <div className="flex flex-col items-center gap-0.5">
-        <label className="text-[10px] text-muted-foreground">Bônus</label>
-        <NumberInput className="w-16 h-8 text-center text-sm" value={s.bonus} onChange={v => setSkill(i, 'bonus', v)} />
+  const SkillEditor = ({ s, i }: { s: Skill; i: number }) => {
+    const autoBonus = editing ? calcSkillBonus(s, editing.attributes, editing.proficiencyBonus ?? 2) : s.bonus;
+    return (
+      <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/50">
+        <button
+          className={`text-sm w-32 text-left truncate transition-colors ${s.proficient ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`}
+          onClick={() => setSkill(i, 'proficient', !s.proficient)}
+        >
+          <span className={`inline-block w-4 ${s.proficient ? 'text-primary' : ''}`}>{s.proficient ? '●' : '○'}</span>
+          {s.name}
+        </button>
+        <div className="flex flex-col items-center gap-0.5">
+          <label className="text-[10px] text-muted-foreground">Bônus</label>
+          <span className={`w-16 h-8 flex items-center justify-center text-sm font-bold rounded-md border border-border/50 ${s.proficient ? 'text-primary bg-primary/5' : 'text-foreground bg-secondary/30'}`}>
+            {modStr(autoBonus)}
+          </span>
+        </div>
+        <span className="text-[10px] text-muted-foreground bg-secondary/60 px-1.5 py-0.5 rounded">{s.attribute}</span>
+        {s.proficient && (
+          <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">+{editing?.proficiencyBonus ?? 2} prof</span>
+        )}
+        <Button variant="ghost" size="sm" className="p-1 h-auto ml-auto text-muted-foreground hover:text-destructive" onClick={() => removeSkill(i)}>
+          <X className="w-3 h-3" />
+        </Button>
       </div>
-      <span className="text-[10px] text-muted-foreground bg-secondary/60 px-1.5 py-0.5 rounded">{s.attribute}</span>
-      <Button variant="ghost" size="sm" className="p-1 h-auto ml-auto text-muted-foreground hover:text-destructive" onClick={() => removeSkill(i)}>
-        <X className="w-3 h-3" />
-      </Button>
-    </div>
-  );
+    );
+  };
 
   const cf = editing?.combatFields || DEFAULT_COMBAT;
 
@@ -669,9 +689,10 @@ const Players = () => {
                   <Input placeholder="Classe" value={editing.className} onChange={e => setEditing({ ...editing, className: e.target.value })} />
                   <Input placeholder="Profissão" value={editing.profession} onChange={e => setEditing({ ...editing, profession: e.target.value })} />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div><label className="text-xs text-muted-foreground">Nível</label><NumberInput min={1} value={editing.level} onChange={v => setEditing({ ...editing, level: v })} /></div>
                   <div><label className="text-xs text-muted-foreground">Experiência</label><NumberInput min={0} value={editing.experience} onChange={v => setEditing({ ...editing, experience: v })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Bônus de Proficiência</label><NumberInput value={editing.proficiencyBonus ?? 2} onChange={v => setEditing({ ...editing, proficiencyBonus: v })} /></div>
                 </div>
                 <Input placeholder="URL da Imagem" value={editing.image} onChange={e => setEditing({ ...editing, image: e.target.value })} />
               </TabsContent>
@@ -691,7 +712,7 @@ const Players = () => {
               </TabsContent>
 
               <TabsContent value="skills" className="space-y-3 mt-3">
-                <p className="text-xs text-muted-foreground">Clique no nome para proficiência. Remova perícias com o X.</p>
+                <p className="text-xs text-muted-foreground">Clique no nome para marcar proficiência. O bônus é calculado automaticamente: <span className="text-primary">modificador do atributo + bônus de proficiência ({modStr(editing.proficiencyBonus ?? 2)})</span>.</p>
                 <div className="space-y-2">
                   {editing.skills.map((s, i) => (
                     <SkillEditor key={`${s.name}-${i}`} s={s} i={i} />
