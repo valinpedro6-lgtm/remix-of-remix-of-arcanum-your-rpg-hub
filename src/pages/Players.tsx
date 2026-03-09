@@ -353,7 +353,7 @@ const Players = () => {
         <h1 className="page-title">Jogadores</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={openNewTemplate} className="gap-2"><FileText className="w-4 h-4" />Adicionar Modelo</Button>
-          <Button onClick={() => setPickerOpen(true)} className="gap-2"><Plus className="w-4 h-4" />Adicionar</Button>
+          <Button onClick={() => setPickerOpen(true)} className="gap-2"><Plus className="w-4 h-4" )} className="gap-2"><Plus className="w-4 h-4" />Adicionar</Button>
         </div>
       </div>
 
@@ -383,7 +383,7 @@ const Players = () => {
           <CardContent className="p-12 text-center">
             <User className="w-12 h-12 mx-auto text-muted-foreground/20 mb-3" />
             <p className="text-muted-foreground">Nenhum jogador cadastrado</p>
-            <Button variant="outline" className="mt-4" onClick={() => templates.length > 0 ? setPickerOpen(true) : opsetPickerOpen(trueiro personagem</Button>
+            <Button varsetPickerOpen(true)}><Plus className="w-4 h-4 mr-2" />Criar prim> 0 ? setPickerOpen(true) : opsetPickerOpen(trueiro personagem</Button>
           </CardContent>
         </Card>
       )}
