@@ -401,11 +401,36 @@ const Players = () => {
                       {p.playerName && <p className="text-xs text-muted-foreground">Jogador: {p.playerName}</p>}
                       <p className="text-sm text-muted-foreground">{[p.race, p.className, p.profession].filter(Boolean).join(' • ')}{p.level > 0 && ` • Nv ${p.level}`}</p>
                       {p.experience > 0 && <p className="text-xs text-muted-foreground">XP: {p.experience.toLocaleString()}</p>}
-                      <div className="flex flex-wrap gap-3 mt-2">
-                        <div className="flex items-center gap-1"><Heart className="w-4 h-4 text-accent" /><span className="text-sm font-semibold">{p.hp}/{p.maxHp}</span></div>
-                        {p.maxMana > 0 && <div className="flex items-center gap-1"><Zap className="w-4 h-4 text-blue-400" /><span className="text-sm font-semibold">{p.mana}/{p.maxMana}</span></div>}
-                        {p.maxEnergy > 0 && <div className="flex items-center gap-1"><Sparkles className="w-4 h-4 text-yellow-400" /><span className="text-sm font-semibold">{p.energy}/{p.maxEnergy}</span></div>}
-                        <div className="flex items-center gap-1"><Shield className="w-4 h-4 text-primary" /><span className="text-sm font-semibold">{p.ca}</span></div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
+                          <Heart className="w-3.5 h-3.5 text-accent shrink-0" />
+                          <button className="text-xs text-muted-foreground hover:text-accent transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'hp', Math.max(0, p.hp - 1)); }}><Minus className="w-3 h-3" /></button>
+                          <span className="text-sm font-semibold min-w-[3ch] text-center">{p.hp}</span>
+                          <button className="text-xs text-muted-foreground hover:text-accent transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'hp', Math.min(p.maxHp, p.hp + 1)); }}><Plus className="w-3 h-3" /></button>
+                          <span className="text-xs text-muted-foreground">/{p.maxHp}</span>
+                        </div>
+                        {p.maxMana > 0 && (
+                          <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
+                            <Zap className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                            <button className="text-xs text-muted-foreground hover:text-blue-400 transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'mana', Math.max(0, p.mana - 1)); }}><Minus className="w-3 h-3" /></button>
+                            <span className="text-sm font-semibold min-w-[3ch] text-center">{p.mana}</span>
+                            <button className="text-xs text-muted-foreground hover:text-blue-400 transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'mana', Math.min(p.maxMana, p.mana + 1)); }}><Plus className="w-3 h-3" /></button>
+                            <span className="text-xs text-muted-foreground">/{p.maxMana}</span>
+                          </div>
+                        )}
+                        {p.maxEnergy > 0 && (
+                          <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
+                            <Sparkles className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                            <button className="text-xs text-muted-foreground hover:text-yellow-400 transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'energy', Math.max(0, p.energy - 1)); }}><Minus className="w-3 h-3" /></button>
+                            <span className="text-sm font-semibold min-w-[3ch] text-center">{p.energy}</span>
+                            <button className="text-xs text-muted-foreground hover:text-yellow-400 transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'energy', Math.min(p.maxEnergy, p.energy + 1)); }}><Plus className="w-3 h-3" /></button>
+                            <span className="text-xs text-muted-foreground">/{p.maxEnergy}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
+                          <Shield className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span className="text-sm font-semibold">{p.ca}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
