@@ -207,6 +207,7 @@ const Players = () => {
       ...p,
       attributes: p.attributes?.map(a => ({ ...a, manualModifier: a.manualModifier ?? false })) || makeAttrs(DEFAULT_ATTRIBUTES),
       skills: p.skills?.map(s => ({ ...s })) || makeSkills(DEFAULT_SKILLS),
+      proficiencyBonus: p.proficiencyBonus ?? 2,
       combatFields: p.combatFields || { ...DEFAULT_COMBAT },
       hasInventory: p.hasInventory ?? true,
       hasAbilities: p.hasAbilities ?? true,
