@@ -336,25 +336,33 @@ const Players = () => {
     </div>
   );
 
-  const SkillEditor = ({ s, i }: { s: Skill; i: number }) => (
-    <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/50">
-      <button
-        className={`text-sm w-32 text-left truncate transition-colors ${s.proficient ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`}
-        onClick={() => setSkill(i, 'proficient', !s.proficient)}
-      >
-        <span className={`inline-block w-4 ${s.proficient ? 'text-primary' : ''}`}>{s.proficient ? '●' : '○'}</span>
-        {s.name}
-      </button>
-      <div className="flex flex-col items-center gap-0.5">
-        <label className="text-[10px] text-muted-foreground">Bônus</label>
-        <NumberInput className="w-16 h-8 text-center text-sm" value={s.bonus} onChange={v => setSkill(i, 'bonus', v)} />
+  const SkillEditor = ({ s, i }: { s: Skill; i: number }) => {
+    const autoBonus = editing ? calcSkillBonus(s, editing.attributes, editing.proficiencyBonus ?? 2) : s.bonus;
+    return (
+      <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/50">
+        <button
+          className={`text-sm w-32 text-left truncate transition-colors ${s.proficient ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`}
+          onClick={() => setSkill(i, 'proficient', !s.proficient)}
+        >
+          <span className={`inline-block w-4 ${s.proficient ? 'text-primary' : ''}`}>{s.proficient ? '●' : '○'}</span>
+          {s.name}
+        </button>
+        <div className="flex flex-col items-center gap-0.5">
+          <label className="text-[10px] text-muted-foreground">Bônus</label>
+          <span className={`w-16 h-8 flex items-center justify-center text-sm font-bold rounded-md border border-border/50 ${s.proficient ? 'text-primary bg-primary/5' : 'text-foreground bg-secondary/30'}`}>
+            {modStr(autoBonus)}
+          </span>
+        </div>
+        <span className="text-[10px] text-muted-foreground bg-secondary/60 px-1.5 py-0.5 rounded">{s.attribute}</span>
+        {s.proficient && (
+          <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">+{editing?.proficiencyBonus ?? 2} prof</span>
+        )}
+        <Button variant="ghost" size="sm" className="p-1 h-auto ml-auto text-muted-foreground hover:text-destructive" onClick={() => removeSkill(i)}>
+          <X className="w-3 h-3" />
+        </Button>
       </div>
-      <span className="text-[10px] text-muted-foreground bg-secondary/60 px-1.5 py-0.5 rounded">{s.attribute}</span>
-      <Button variant="ghost" size="sm" className="p-1 h-auto ml-auto text-muted-foreground hover:text-destructive" onClick={() => removeSkill(i)}>
-        <X className="w-3 h-3" />
-      </Button>
-    </div>
-  );
+    );
+  };
 
   const cf = editing?.combatFields || DEFAULT_COMBAT;
 
