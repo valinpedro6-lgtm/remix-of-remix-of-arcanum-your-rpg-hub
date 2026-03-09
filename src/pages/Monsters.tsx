@@ -255,7 +255,7 @@ const Monsters = () => {
         <h1 className="page-title">Monstros</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={openNewTemplate} className="gap-2"><FileText className="w-4 h-4" />Adicionar Modelo</Button>
-          <Button onClick={() => templates.length > 0 ? setPickerOpen(true) : openNewWithTemplate()} className="gap-2"><Plus className="w-4 h-4" />Adicionar</Button>
+          <Button onClick={() => setPickerOpen(true)} className="gap-2"><Plus className="w-4 h-4" />Adicionar</Button>
         </div>
       </div>
 
