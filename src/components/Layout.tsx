@@ -6,6 +6,7 @@ import {
   Dices, Clock, Swords, Users, Skull, FlaskConical,
   Gamepad2, UserPlus, StickyNote, LayoutDashboard, Menu, CloudSun, Sword, Sparkles
 } from 'lucide-react';
+import { GlobalTimerBar } from '@/components/GlobalTimerBar';
 
 const navItems = [
   { path: '/', label: 'Início', icon: LayoutDashboard },
@@ -62,7 +63,8 @@ export const Layout = ({ children }: { children: ReactNode }) => {
         <nav className="flex flex-col gap-0.5 p-3 flex-1 overflow-y-auto">
           <NavLinks />
         </nav>
-        <div className="p-4 border-t border-border/50">
+        <div className="p-3 border-t border-border/50 space-y-2">
+          <GlobalTimerBar />
           <div className="text-[10px] text-muted-foreground/50 text-center">⚔️ Arcanum v1.0</div>
         </div>
       </aside>
@@ -86,6 +88,9 @@ export const Layout = ({ children }: { children: ReactNode }) => {
           </SheetContent>
         </Sheet>
         <h1 className="text-lg font-display font-bold gradient-text">Arcanum</h1>
+        <div className="ml-auto">
+          <GlobalTimerBar />
+        </div>
       </div>
 
       {/* Main content */}
