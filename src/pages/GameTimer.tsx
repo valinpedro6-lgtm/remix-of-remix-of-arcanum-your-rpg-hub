@@ -21,6 +21,7 @@ const getTimeOfDay = (hours: number) => {
 };
 
 const GameTimer = () => {
+  // Read-only: the GlobalTimerBar in Layout handles the ticking interval
   const [timer, setTimer] = useLocalStorage<TimerState>('arcanum-timer', {
     realMinutesPerGameHour: 1,
     isRunning: false,
@@ -28,32 +29,20 @@ const GameTimer = () => {
     lastTickTimestamp: 0,
   });
 
+  // Force re-render every second to show updated time from localStorage
   useEffect(() => {
-    if (timer.isRunning && timer.lastTickTimestamp > 0) {
-      const realMsElapsed = Date.now() - timer.lastTickTimestamp;
-      const realMinutesElapsed = realMsElapsed / 60000;
-      const gameMinutesGained = (realMinutesElapsed / timer.realMinutesPerGameHour) * 60;
-      setTimer(prev => ({
-        ...prev,
-        gameMinutesElapsed: prev.gameMinutesElapsed + gameMinutesGained,
-        lastTickTimestamp: Date.now(),
-      }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!timer.isRunning) return;
     const interval = setInterval(() => {
-      const gameMinutesPerRealSecond = 60 / (timer.realMinutesPerGameHour * 60);
-      setTimer(prev => ({
-        ...prev,
-        gameMinutesElapsed: prev.gameMinutesElapsed + gameMinutesPerRealSecond,
-        lastTickTimestamp: Date.now(),
-      }));
-    }, 1000);
+      // Read latest from localStorage directly to stay in sync
+      try {
+        const raw = localStorage.getItem('arcanum-timer');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          setTimer(parsed);
+        }
+      } catch {}
+    }, 500);
     return () => clearInterval(interval);
-  }, [timer.isRunning, timer.realMinutesPerGameHour, setTimer]);
+  }, [setTimer]);
 
   const totalMinutes = Math.floor(timer.gameMinutesElapsed);
   const days = Math.floor(totalMinutes / 1440);
@@ -62,13 +51,11 @@ const GameTimer = () => {
 
   const timeOfDay = getTimeOfDay(hours);
   const TimeIcon = timeOfDay.icon;
-
-  // Day progress (0-100%) for visual bar
   const dayProgress = ((totalMinutes % 1440) / 1440) * 100;
 
   const toggle = () => setTimer(prev => ({ ...prev, isRunning: !prev.isRunning, lastTickTimestamp: Date.now() }));
   const reset = () => setTimer(prev => ({ ...prev, isRunning: false, gameMinutesElapsed: 0, lastTickTimestamp: 0 }));
-  const skip = (gameMinutes: number) => setTimer(prev => ({ ...prev, gameMinutesElapsed: prev.gameMinutesElapsed + gameMinutes }));
+  const skip = (gameMinutes: number) => setTimer(prev => ({ ...prev, gameMinutesElapsed: prev.gameMinutesElapsed + gameMinutes, lastTickTimestamp: Date.now() }));
 
   return (
     <div className="space-y-6">
@@ -114,7 +101,6 @@ const GameTimer = () => {
                 </motion.div>
                 <p className="text-muted-foreground mt-2">Tempo no jogo</p>
 
-                {/* Day cycle progress bar */}
                 <div className="mt-4 mx-auto max-w-xs">
                   <div className="h-2 rounded-full bg-secondary overflow-hidden">
                     <motion.div
@@ -133,7 +119,6 @@ const GameTimer = () => {
                 </div>
               </div>
 
-              {/* Skip buttons */}
               <div className="grid grid-cols-4 gap-2">
                 {[
                   { label: '15min', mins: 15 },
