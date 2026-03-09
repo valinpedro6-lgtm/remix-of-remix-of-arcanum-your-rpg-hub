@@ -353,7 +353,9 @@ const Players = () => {
         <h1 className="page-title">Jogadores</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={openNewTemplate} className="gap-2"><FileText className="w-4 h-4" />Adicionar Modelo</Button>
-          <Button onClick={() => setPickerOpen(true)} className="gap-2"><Plus className="w-4 h-4" >
+          <Button onClick={() => setPickerOpen(true)} className="gap-2"><Plus className="w-4 h-4" />Adicionar</Button>
+        </div>
+      </div>
 
       {/* Templates bar */}
       {templates.length > 0 && (
@@ -381,7 +383,8 @@ const Players = () => {
           <CardContent className="p-12 text-center">
             <User className="w-12 h-12 mx-auto text-muted-foreground/20 mb-3" />
             <p className="text-muted-foreground">Nenhum jogador cadastrado</p>
-            <Button varsetPickerOpen(true)}><Plus className="w-4 h-4 miant="outline" className="mt-4" onClick={() => setPickerOpen(true)}><Plus className="w-4 h-4 mr-2" />Criar primt>
+            <Button variant="outline" className="mt-4" onClick={() => setPickerOpen(true)}><Plus className="w-4 h-4 mr-2" />Criar primeiro personagem</Button>
+          </CardContent>
         </Card>
       )}
 

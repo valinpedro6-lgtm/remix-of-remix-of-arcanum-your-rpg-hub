@@ -255,7 +255,9 @@ const Monsters = () => {
         <h1 className="page-title">Monstros</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={openNewTemplate} className="gap-2"><FileText className="w-4 h-4" />Adicionar Modelo</Button>
-          <Button onClick={() => setPickerOpen(true)} className="gap-2"><Plus className="w-4 h-4" >
+          <Button onClick={() => setPickerOpen(true)} className="gap-2"><Plus className="w-4 h-4" />Adicionar</Button>
+        </div>
+      </div>
 
       {templates.length > 0 && (
         <Card className="border-primary/20">
@@ -278,7 +280,9 @@ const Monsters = () => {
           <CardContent className="p-12 text-center">
             <Skull className="w-12 h-12 mx-auto text-muted-foreground/20 mb-3" />
             <p className="text-muted-foreground">Nenhum monstro cadastrado</p>
-            <Button varsetPickerOpen(true)}><Plus className="w-4 h-4 miant="outline" className="mt-4" onClick={() => setPickerOpen(true)}><Plus className="w-4 h-4 mr-2" />Criar prim        </Card>
+            <Button variant="outline" className="mt-4" onClick={() => setPickerOpen(true)}><Plus className="w-4 h-4 mr-2" />Criar primeiro monstro</Button>
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
