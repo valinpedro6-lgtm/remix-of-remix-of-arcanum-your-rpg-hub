@@ -127,7 +127,7 @@ const emptyPlayer = (template?: SheetTemplate): Player => {
   return {
     id: crypto.randomUUID(),
     name: '', playerName: '', race: '', className: '', profession: '', level: 1, experience: 0, image: '',
-    hp: 10, maxHp: 10, mana: 0, maxMana: 0, energy: 10, maxEnergy: 10, ca: 10, movement: 9,
+    hp: 10, maxHp: 10, mana: 0, maxMana: 0, energy: 10, maxEnergy: 10, ca: 10, movement: 9, proficiencyBonus: 2,
     attributes: makeAttrs(t.attributes),
     skills: makeSkills(t.skills),
     inventory: '', abilities: '', notes: '',
