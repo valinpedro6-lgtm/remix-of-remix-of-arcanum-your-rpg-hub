@@ -17,6 +17,8 @@ import Notes from "./pages/Notes";
 import Environment from "./pages/Environment";
 import Weapons from "./pages/Weapons";
 import Spells from "./pages/Spells";
+import Dashboard from "./pages/Dashboard";
+import LootGenerator from "./pages/LootGenerator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,7 @@ const App = () => (
         <Layout>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/painel" element={<Dashboard />} />
             <Route path="/dados" element={<DiceRoller />} />
             <Route path="/timer" element={<GameTimer />} />
             <Route path="/iniciativa" element={<Initiative />} />
@@ -42,6 +45,7 @@ const App = () => (
             <Route path="/ambiente" element={<Environment />} />
             <Route path="/armas" element={<Weapons />} />
             <Route path="/magias" element={<Spells />} />
+            <Route path="/loot" element={<LootGenerator />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>

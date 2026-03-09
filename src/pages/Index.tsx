@@ -2,23 +2,25 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Dices, Clock, Swords, Users, Skull, FlaskConical,
-  Gamepad2, UserPlus, StickyNote, CloudSun, Sword, Sparkles
+  Gamepad2, UserPlus, StickyNote, CloudSun, Sword, Sparkles, Coins, Gauge
 } from 'lucide-react';
 import heroBanner from '@/assets/hero-banner.jpg';
 import { motion } from 'framer-motion';
 
 const features = [
+  { path: '/painel', label: 'Painel do Mestre', desc: 'Dashboard com tudo resumido', icon: Gauge, accent: 'from-amber-500/20 to-yellow-500/10' },
   { path: '/dados', label: 'Rolagem de Dados', desc: 'D2 ao D1000 com modificadores', icon: Dices, accent: 'from-red-500/20 to-orange-500/10' },
   { path: '/timer', label: 'Timer do Jogo', desc: 'Controle o tempo no mundo', icon: Clock, accent: 'from-amber-500/20 to-yellow-500/10' },
-  { path: '/iniciativa', label: 'Iniciativa', desc: 'Ordem de combate', icon: Swords, accent: 'from-red-500/20 to-rose-500/10' },
+  { path: '/iniciativa', label: 'Iniciativa', desc: 'Combate com HP e condições', icon: Swords, accent: 'from-red-500/20 to-rose-500/10' },
   { path: '/jogadores', label: 'Jogadores', desc: 'Fichas completas', icon: Users, accent: 'from-blue-500/20 to-cyan-500/10' },
   { path: '/monstros', label: 'Monstros', desc: 'Bestiário com stats', icon: Skull, accent: 'from-purple-500/20 to-violet-500/10' },
   { path: '/magias', label: 'Grimório', desc: 'Magias com rolagem', icon: Sparkles, accent: 'from-indigo-500/20 to-blue-500/10' },
   { path: '/pocoes', label: 'Poções', desc: 'Efeitos e rolagens', icon: FlaskConical, accent: 'from-emerald-500/20 to-green-500/10' },
-  { path: '/taverna', label: 'Jogos de Taverna', desc: 'Diversão na taverna', icon: Gamepad2, accent: 'from-yellow-500/20 to-amber-500/10' },
-  { path: '/npc', label: 'Gerador de NPC', desc: 'NPCs aleatórios', icon: UserPlus, accent: 'from-teal-500/20 to-cyan-500/10' },
-  { path: '/ambiente', label: 'Ambiente', desc: 'Clima e eventos', icon: CloudSun, accent: 'from-sky-500/20 to-blue-500/10' },
   { path: '/armas', label: 'Armas', desc: 'Arsenal completo', icon: Sword, accent: 'from-orange-500/20 to-red-500/10' },
+  { path: '/loot', label: 'Gerador de Loot', desc: 'Tesouros aleatórios por nível', icon: Coins, accent: 'from-yellow-500/20 to-amber-500/10' },
+  { path: '/taverna', label: 'Jogos de Taverna', desc: 'Diversão na taverna', icon: Gamepad2, accent: 'from-yellow-500/20 to-amber-500/10' },
+  { path: '/npc', label: 'Gerador de NPC', desc: 'NPCs com psicologia', icon: UserPlus, accent: 'from-teal-500/20 to-cyan-500/10' },
+  { path: '/ambiente', label: 'Ambiente', desc: 'Clima e eventos', icon: CloudSun, accent: 'from-sky-500/20 to-blue-500/10' },
   { path: '/notas', label: 'Notas', desc: 'Anotações da campanha', icon: StickyNote, accent: 'from-pink-500/20 to-rose-500/10' },
 ];
 
@@ -42,29 +44,14 @@ const Index = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-background/60 to-transparent" />
         <div className="absolute inset-0 flex items-end p-6 md:p-10">
           <div>
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex items-center gap-2 mb-2"
-            >
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="flex items-center gap-2 mb-2">
               <div className="h-px w-8 bg-primary/60" />
               <span className="text-xs uppercase tracking-[0.2em] text-primary/80 font-semibold">Ferramentas para Mestres</span>
             </motion.div>
-            <motion.h1
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="text-5xl md:text-7xl font-display font-bold gradient-text dice-glow tracking-wide"
-            >
+            <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="text-5xl md:text-7xl font-display font-bold gradient-text dice-glow tracking-wide">
               Arcanum
             </motion.h1>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="text-foreground/70 mt-3 text-lg max-w-lg leading-relaxed"
-            >
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-foreground/70 mt-3 text-lg max-w-lg leading-relaxed">
               Tudo que você precisa para criar sessões épicas de RPG de mesa.
             </motion.p>
           </div>
