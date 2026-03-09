@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   UserPlus, Save, Trash2, Sparkles, Shield, Heart, Target,
-  Skull, Eye, EyeOff, ChevronDown, ChevronUp, Swords
+  Skull, Eye, EyeOff, ChevronDown, ChevronUp, Swords,
+  Flame, Brain, Zap, Crown, BookOpen
 } from 'lucide-react';
 
 // --- TYPES ---
@@ -31,6 +32,11 @@ interface NPC {
   ac: number;
   region: RegionType;
   isVillain: false;
+  fear: string;
+  desire: string;
+  hatred: string;
+  ambition: string;
+  memory: string;
 }
 
 interface Villain {
@@ -53,6 +59,11 @@ interface Villain {
   planPhase2: string;
   planFinal: string;
   hiddenWeaknesses: string[];
+  fear: string;
+  desire: string;
+  hatred: string;
+  ambition: string;
+  memory: string;
 }
 
 type Character = NPC | Villain;
@@ -170,6 +181,56 @@ const QUIRKS = [
   'Conta moedas obsessivamente', 'Desenha no chão enquanto fala', 'Cheira tudo antes de comer',
 ];
 
+// --- EMOTION DATA ---
+
+const FEARS = [
+  'Tem pavor de escuridão completa', 'Morre de medo de aranhas gigantes', 'Teme ser esquecido por todos',
+  'Tem terror de morrer sozinho', 'Pânico de alturas extremas', 'Medo irracional de magia descontrolada',
+  'Teme traição de quem ama', 'Pavor de ser enterrado vivo', 'Medo de perder a sanidade',
+  'Teme o som de trovões', 'Horror de criaturas mortas-vivas', 'Medo de fogo descontrolado',
+  'Teme que seu passado o alcance', 'Pânico em espaços fechados', 'Medo de água profunda',
+  'Teme profecias sobre sua morte', 'Pavor de dragões', 'Medo de ser controlado mentalmente',
+];
+
+const DESIRES = [
+  'Deseja encontrar seu verdadeiro lar', 'Quer ser lembrado como um herói', 'Busca o amor verdadeiro acima de tudo',
+  'Deseja riqueza suficiente para nunca mais passar fome', 'Quer encontrar a cura para uma doença de alguém querido',
+  'Busca conhecimento proibido', 'Deseja vingança contra quem destruiu sua vida', 'Quer provar seu valor ao mundo',
+  'Busca redenção por erros do passado', 'Deseja paz e uma vida simples', 'Quer se tornar o mais forte de todos',
+  'Busca imortalidade', 'Deseja libertar seu povo da opressão', 'Quer construir algo que dure para sempre',
+  'Busca reunir sua família perdida', 'Deseja descobrir a verdade sobre sua origem',
+];
+
+const HATREDS = [
+  'Odeia mentirosos acima de tudo', 'Detesta a nobreza e seus privilégios', 'Tem ódio profundo de mortos-vivos',
+  'Odeia quem maltrata os fracos', 'Detesta magia por uma experiência traumática', 'Odeia traidores com paixão',
+  'Tem rancor contra uma raça específica por algo do passado', 'Odeia covardes que fogem de luta',
+  'Detesta autoridade e ordens', 'Odeia a ideia de destino pré-definido', 'Tem raiva de deuses que ignoram súplicas',
+  'Detesta mercadores gananciosos', 'Odeia quem usa crianças como peões', 'Tem ódio de escravidão em qualquer forma',
+  'Detesta quem destrói a natureza', 'Odeia cultistas e fanáticos religiosos',
+];
+
+const AMBITIONS = [
+  'Quer fundar seu próprio reino', 'Almeja se tornar o maior mago da era', 'Planeja abrir a maior taverna do continente',
+  'Quer formar uma guilda de aventureiros lendária', 'Almeja derrotar um dragão ancestral sozinho',
+  'Planeja mapear todo o mundo conhecido', 'Quer criar uma arma lendária', 'Almeja se tornar conselheiro de um rei',
+  'Planeja construir uma escola de magia', 'Quer unir todas as raças em paz', 'Almeja encontrar o artefato mais poderoso',
+  'Planeja destruir uma organização maligna por dentro', 'Quer escrever o maior livro de história já feito',
+  'Almeja dominar todas as formas de combate', 'Planeja criar uma nova ordem de cavaleiros',
+  'Quer descobrir o que existe além do mapa', 'Almeja se tornar imortal através de seus feitos',
+];
+
+const MEMORIES = [
+  'Lembra-se vividamente do dia em que perdeu tudo em um incêndio', 'Guarda a memória de um mentor que morreu nos seus braços',
+  'Nunca esquece o cheiro da comida que sua mãe fazia', 'Tem uma memória recorrente de uma floresta que nunca visitou',
+  'Lembra-se de uma promessa feita a um amigo de infância que nunca cumpriu', 'Guarda a memória de ter visto um deus em sonho',
+  'Nunca esquece o rosto da primeira pessoa que matou', 'Tem uma lembrança feliz de dançar sob a chuva na juventude',
+  'Lembra-se de ter sido salvo por um estranho que nunca mais viu', 'Guarda a memória de uma canção que sua avó cantava',
+  'Nunca esquece a traição de seu melhor amigo', 'Tem uma memória vaga de uma vida passada como outra pessoa',
+  'Lembra-se de uma noite estrelada em que sentiu verdadeira paz', 'Guarda a memória de ter encontrado algo mágico na infância',
+  'Nunca esquece as últimas palavras de alguém que amava', 'Tem uma lembrança perturbadora de vozes sussurrando seu nome',
+];
+
 const SECRETS_BY_REGION: Record<RegionType, string[]> = {
   floresta: [
     'Sabe onde está uma árvore ancestral de poder imenso', 'É protegido por um espírito da floresta',
@@ -259,356 +320,83 @@ const SECRETS_BY_REGION: Record<RegionType, string[]> = {
 };
 
 const OBJECTIVES_BY_REGION: Record<RegionType, string[]> = {
-  floresta: [
-    'Proteger a floresta de invasores', 'Encontrar uma erva lendária para curar uma doença',
-    'Descobrir por que os animais estão fugindo', 'Vingar a destruição de sua aldeia',
-    'Estabelecer um santuário de criaturas mágicas', 'Recuperar um artefato druídico roubado',
-  ],
-  montanha: [
-    'Reclamar uma fortaleza anã perdida', 'Encontrar o túmulo de um herói lendário',
-    'Descobrir a fonte dos tremores recentes', 'Acumular riqueza para libertar seu clã',
-    'Escalar o pico mais alto em busca de iluminação', 'Forjar a arma definitiva',
-  ],
-  costa: [
-    'Encontrar um navio lendário naufragado', 'Proteger a vila de piratas',
-    'Descobrir o que está matando os peixes', 'Construir uma frota e explorar terras distantes',
-    'Recuperar algo perdido no fundo do mar', 'Estabelecer uma rota comercial lucrativa',
-  ],
-  deserto: [
-    'Encontrar o oásis perdido', 'Unir as tribos nômades contra uma ameaça',
-    'Recuperar uma relíquia de uma pirâmide', 'Escapar de uma maldição do deserto',
-    'Construir um assentamento permanente', 'Descobrir a verdade sobre ruínas enterradas',
-  ],
-  cidade: [
-    'Subir na hierarquia política', 'Desmascarar um conspirador na corte',
-    'Abrir o melhor estabelecimento da cidade', 'Encontrar um ente querido desaparecido',
-    'Limpar seu nome de uma acusação falsa', 'Infiltrar-se na guilda de ladrões',
-  ],
-  pantano: [
-    'Encontrar a cura para a maldição do pântano', 'Expulsar as criaturas que invadem sua terra',
-    'Localizar um artefato perdido na lama', 'Descobrir a origem de luzes estranhas no pântano',
-    'Proteger um vilarejo isolado', 'Negociar paz com as criaturas do pântano',
-  ],
-  subterraneo: [
-    'Encontrar a saída para a superfície', 'Reclamar território de outras facções',
-    'Descobrir o que está causando colapsos nos túneis', 'Roubar um tesouro guardado por aberrações',
-    'Estabelecer uma rota de comércio subterrânea', 'Selar uma fenda planar nas profundezas',
-  ],
-  tundra: [
-    'Encontrar a fortaleza perdida dos gigantes', 'Sobreviver ao inverno mais rigoroso de todos',
-    'Rastrear uma fera lendária do gelo', 'Unir os clãs nômades contra uma ameaça',
-    'Encontrar a fonte de calor mágico', 'Resgatar prisioneiros de um dragão branco',
-  ],
-  savana: [
-    'Proteger a manada sagrada', 'Encontrar a fonte de uma seca mágica',
-    'Unir as tribos contra invasores', 'Rastrear uma criatura lendária',
-    'Encontrar as minas de diamantes perdidas', 'Estabelecer paz com os leões telepáticos',
-  ],
-  vulcanico: [
-    'Impedir a erupção catastrófica', 'Encontrar a forja ancestral nas profundezas do vulcão',
-    'Resgatar prisioneiros dos elementais de fogo', 'Obter um fragmento de lava mágica',
-    'Fechar o portal para o Plano do Fogo', 'Forjar uma arma lendária na lava',
-  ],
-  arquipelago: [
-    'Mapear todas as ilhas do arquipélago', 'Encontrar a ilha lendária do tesouro',
-    'Estabelecer comércio entre as ilhas', 'Combater a pirataria nas rotas marítimas',
-    'Encontrar a cidade submersa', 'Proteger as ilhas de um monstro marinho',
-  ],
-  ruinas: [
-    'Descobrir o segredo da civilização perdida', 'Encontrar o artefato mais poderoso das ruínas',
-    'Mapear todas as câmaras secretas', 'Libertar um prisioneiro selado nas ruínas',
-    'Decifrar as inscrições antigas', 'Impedir que saqueadores destruam as relíquias',
-  ],
-  acampamento: [
-    'Proteger o acampamento de ataques', 'Encontrar suprimentos para o grupo',
-    'Descobrir o traidor entre os viajantes', 'Chegar ao destino final em segurança',
-    'Negociar com bandidos da estrada', 'Recrutar aliados para uma missão',
-  ],
-  navio: [
-    'Completar a rota comercial', 'Encontrar a ilha do tesouro',
-    'Sobreviver à travessia', 'Caçar um monstro marinho',
-    'Impedir o motim', 'Entregar a carga secreta',
-  ],
-  cemiterio: [
-    'Colocar um espírito para descansar', 'Encontrar o túmulo de um herói lendário',
-    'Impedir um ritual de necromancia', 'Descobrir quem profanou os túmulos',
-    'Encontrar uma relíquia sagrada enterrada', 'Purificar o cemitério da energia sombria',
-  ],
-  planicie: [
-    'Proteger a fazenda de bandidos', 'Encontrar as ruínas sob os campos',
-    'Rastrear uma criatura que ataca o gado', 'Estabelecer um posto avançado',
-    'Descobrir o segredo do carvalho solitário', 'Escoltar uma caravana pela planície',
-  ],
-  personalizado: [
-    'Buscar poder a qualquer custo', 'Encontrar um artefato lendário',
-    'Proteger alguém importante', 'Vingar-se de quem o traiu',
-    'Descobrir a verdade sobre seu passado', 'Construir algo grandioso',
-  ],
+  floresta: ['Proteger a floresta de invasores', 'Encontrar uma erva lendária para curar uma doença', 'Descobrir por que os animais estão fugindo', 'Vingar a destruição de sua aldeia', 'Estabelecer um santuário de criaturas mágicas', 'Recuperar um artefato druídico roubado'],
+  montanha: ['Reclamar uma fortaleza anã perdida', 'Encontrar o túmulo de um herói lendário', 'Descobrir a fonte dos tremores recentes', 'Acumular riqueza para libertar seu clã', 'Escalar o pico mais alto em busca de iluminação', 'Forjar a arma definitiva'],
+  costa: ['Encontrar um navio lendário naufragado', 'Proteger a vila de piratas', 'Descobrir o que está matando os peixes', 'Construir uma frota e explorar terras distantes', 'Recuperar algo perdido no fundo do mar', 'Estabelecer uma rota comercial lucrativa'],
+  deserto: ['Encontrar o oásis perdido', 'Unir as tribos nômades contra uma ameaça', 'Recuperar uma relíquia de uma pirâmide', 'Escapar de uma maldição do deserto', 'Construir um assentamento permanente', 'Descobrir a verdade sobre ruínas enterradas'],
+  cidade: ['Subir na hierarquia política', 'Desmascarar um conspirador na corte', 'Abrir o melhor estabelecimento da cidade', 'Encontrar um ente querido desaparecido', 'Limpar seu nome de uma acusação falsa', 'Infiltrar-se na guilda de ladrões'],
+  pantano: ['Encontrar a cura para a maldição do pântano', 'Expulsar as criaturas que invadem sua terra', 'Localizar um artefato perdido na lama', 'Descobrir a origem de luzes estranhas no pântano', 'Proteger um vilarejo isolado', 'Negociar paz com as criaturas do pântano'],
+  subterraneo: ['Encontrar a saída para a superfície', 'Reclamar território de outras facções', 'Descobrir o que está causando colapsos nos túneis', 'Roubar um tesouro guardado por aberrações', 'Estabelecer uma rota de comércio subterrânea', 'Selar uma fenda planar nas profundezas'],
+  tundra: ['Encontrar a fortaleza perdida dos gigantes', 'Sobreviver ao inverno mais rigoroso de todos', 'Rastrear uma fera lendária do gelo', 'Unir os clãs nômades contra uma ameaça', 'Encontrar a fonte de calor mágico', 'Resgatar prisioneiros de um dragão branco'],
+  savana: ['Proteger a manada sagrada', 'Encontrar a fonte de uma seca mágica', 'Unir as tribos contra invasores', 'Rastrear uma criatura lendária', 'Encontrar as minas de diamantes perdidas', 'Estabelecer paz com os leões telepáticos'],
+  vulcanico: ['Impedir a erupção catastrófica', 'Encontrar a forja ancestral nas profundezas do vulcão', 'Resgatar prisioneiros dos elementais de fogo', 'Obter um fragmento de lava mágica', 'Fechar o portal para o Plano do Fogo', 'Forjar uma arma lendária na lava'],
+  arquipelago: ['Mapear todas as ilhas do arquipélago', 'Encontrar a ilha lendária do tesouro', 'Estabelecer comércio entre as ilhas', 'Combater a pirataria nas rotas marítimas', 'Encontrar a cidade submersa', 'Proteger as ilhas de um monstro marinho'],
+  ruinas: ['Descobrir o segredo da civilização perdida', 'Encontrar o artefato mais poderoso das ruínas', 'Mapear todas as câmaras secretas', 'Libertar um prisioneiro selado nas ruínas', 'Decifrar as inscrições antigas', 'Impedir que saqueadores destruam as relíquias'],
+  acampamento: ['Proteger o acampamento de ataques', 'Encontrar suprimentos para o grupo', 'Descobrir o traidor entre os viajantes', 'Chegar ao destino final em segurança', 'Negociar com bandidos da estrada', 'Recrutar aliados para uma missão'],
+  navio: ['Completar a rota comercial', 'Encontrar a ilha do tesouro', 'Sobreviver à travessia', 'Caçar um monstro marinho', 'Impedir o motim', 'Entregar a carga secreta'],
+  cemiterio: ['Colocar um espírito para descansar', 'Encontrar o túmulo de um herói lendário', 'Impedir um ritual de necromancia', 'Descobrir quem profanou os túmulos', 'Encontrar uma relíquia sagrada enterrada', 'Purificar o cemitério da energia sombria'],
+  planicie: ['Proteger a fazenda de bandidos', 'Encontrar as ruínas sob os campos', 'Rastrear uma criatura que ataca o gado', 'Estabelecer um posto avançado', 'Descobrir o segredo do carvalho solitário', 'Escoltar uma caravana pela planície'],
+  personalizado: ['Buscar poder a qualquer custo', 'Encontrar um artefato lendário', 'Proteger alguém importante', 'Vingar-se de quem o traiu', 'Descobrir a verdade sobre seu passado', 'Construir algo grandioso'],
 };
 
 const BACKSTORIES_BY_REGION: Record<RegionType, string[]> = {
-  floresta: [
-    'Cresceu entre os elfos da floresta após ser abandonado quando bebê. Aprendeu a língua dos animais e a ler os sinais da natureza.',
-    'Era um lenhador até o dia em que cortou uma árvore sagrada. Desde então, busca redenção servindo como protetor da mata.',
-    'Sobrevivente de um incêndio florestal que destruiu sua aldeia. Vive sozinho, desconfiado de forasteiros.',
-    'Foi aprendiz de um druida poderoso que desapareceu misteriosamente. Busca respostas nas profundezas da floresta.',
-  ],
-  montanha: [
-    'Nasceu em uma fortaleza anã nas profundezas da montanha. Deixou seu lar após um desentendimento com o conselho de anciãos.',
-    'Era um pastor de cabras até encontrar uma caverna com escrituras antigas. Desde então, estuda os segredos da montanha.',
-    'Sobrevivente de uma avalanche que soterrou toda sua vila. Carrega a culpa de ser o único sobrevivente.',
-    'Treinou como monge em um monastério no pico da montanha. Desceu para cumprir uma missão sagrada.',
-  ],
-  costa: [
-    'Filho de pescadores, cresceu ouvindo lendas do mar. Um dia, viu algo no fundo do oceano que mudou sua vida para sempre.',
-    'Era marinheiro em um navio mercante até um naufrágio. Foi salvo por criaturas marinhas e agora protege a costa.',
-    'Cresceu em um farol isolado com apenas livros como companhia. Conhece todas as histórias do mar, mas nunca navegou.',
-    'Ex-pirata que abandonou a vida de crimes após uma tempestade que quase o matou. Agora vive uma vida pacata, mas o passado o persegue.',
-  ],
-  deserto: [
-    'Nasceu em uma caravana nômade que cruzava o grande deserto. Conhece cada duna e oásis como a palma de sua mão.',
-    'Era guarda de um sultão até descobrir seus planos sombrios. Fugiu para o deserto e agora vive como exilado.',
-    'Encontrou uma relíquia antiga enterrada na areia que lhe concedeu visões do passado. Busca entender seu significado.',
-    'Cresceu em um oásis isolado, acreditando que o deserto era o mundo inteiro. Descobriu a verdade e agora explora.',
-  ],
-  cidade: [
-    'Cresceu nas ruas da cidade, aprendendo a sobreviver com astúcia. Agora quer ser alguém respeitável, mas o passado insiste em voltar.',
-    'Herdeiro de uma família nobre em decadência. Mantém aparências enquanto busca restaurar a fortuna familiar.',
-    'Era aprendiz de um mago da academia até um experimento dar errado. Foi expulso e agora trabalha como artesão.',
-    'Chegou à cidade fugindo de um passado sombrio. Construiu uma nova identidade, mas vive com medo de ser descoberto.',
-  ],
-  pantano: [
-    'Nasceu e cresceu no pântano, em uma comunidade isolada que adora espíritos antigos. Foi exilado por questionar as tradições.',
-    'Era um estudioso que veio pesquisar o pântano e nunca mais conseguiu sair. Algo o prende aqui, algo que ele não entende.',
-    'Sobrevivente de uma expedição que deu errado. Todos morreram, menos ele. Agora vive no pântano, meio louco, meio sábio.',
-    'Curandeiro que usa as plantas raras do pântano. É respeitado e temido em igual medida pelos poucos que vivem aqui.',
-  ],
-  subterraneo: [
-    'Nasceu na escuridão e nunca viu a luz do sol. Conhece os túneis como ninguém e tem uma aversão profunda à superfície.',
-    'Era um minerador até encontrar uma caverna com cristais que sussurram. Desde então, ouve vozes que guiam seus passos.',
-    'Fugiu da superfície após cometer um crime terrível. Encontrou refúgio no subterrâneo, mas a culpa nunca o abandonou.',
-    'Membro de uma expedição de exploração que ficou preso quando os túneis colapsaram. Adaptou-se e fez do subterrâneo seu lar.',
-  ],
-  tundra: [
-    'Nasceu em um clã nômade que segue as manadas de renas. Quando o clã foi dizimado por gigantes do gelo, ficou sozinho.',
-    'Era um explorador que ficou perdido na tundra por meses. Sobreviveu graças a espíritos do gelo que o guiaram.',
-    'Cresceu em uma fortaleza isolada no gelo, protegendo uma passagem antiga contra ameaças desconhecidas.',
-    'Xamã que ouve as vozes dos ancestrais nas tempestades de neve. Busca unir os clãs antes do grande inverno.',
-  ],
-  savana: [
-    'Cresceu como caçador em uma tribo que venera os grandes felinos. Foi escolhido para uma missão sagrada pelo totem tribal.',
-    'Era um pastor até que uma seca mágica destruiu tudo. Agora busca a fonte da maldição para salvar sua terra.',
-    'Filho de um líder tribal, foi exilado após perder um duelo de honra. Vaga pela savana buscando redenção.',
-    'Rastreador lendário que conhece cada trilha da savana. Diz-se que conversa com os animais, mas ninguém sabe a verdade.',
-  ],
-  vulcanico: [
-    'Nasceu perto de um vulcão ativo e sempre sentiu afinidade com o fogo. Descobriu que é descendente de um elemental.',
-    'Era um ferreiro que forjava armas na lava do vulcão. Um acidente o marcou, mas também lhe deu poderes.',
-    'Sobrevivente de uma erupção que destruiu sua comunidade. Agora estuda o vulcão para prever futuras catástrofes.',
-    'Sacerdote de um culto do fogo que questiona os ensinamentos após descobrir uma verdade sombria sobre o vulcão.',
-  ],
-  arquipelago: [
-    'Cresceu navegando entre as ilhas, conhece cada recife e corrente. Sonha em encontrar a ilha mítica do fim do mundo.',
-    'Era um mergulhador de pérolas até encontrar algo no fundo do mar que mudou sua vida. Agora busca respostas nas ilhas.',
-    'Naufragou em uma ilha deserta e sobreviveu por anos. Foi resgatado, mas nunca mais foi o mesmo.',
-    'Comerciante que viaja entre as ilhas levando mercadorias e histórias. Conhece todos os segredos do arquipélago.',
-  ],
-  ruinas: [
-    'Arqueólogo obcecado com a civilização que construiu as ruínas. Passou anos decifrando seus segredos.',
-    'Encontrou as ruínas por acidente e foi amaldiçoado por um guardião antigo. Agora busca quebrar a maldição.',
-    'Descendente dos construtores originais das ruínas. Sente uma conexão mística com o lugar.',
-    'Saqueador que ficou preso nas ruínas por uma armadilha mágica. Quando escapou, já não era a mesma pessoa.',
-  ],
-  acampamento: [
-    'Viajante eterno que nunca fica no mesmo lugar por mais de uma semana. Carrega histórias de todas as terras.',
-    'Ex-soldado que desertou e agora vive na estrada. Oferece proteção em troca de comida e abrigo.',
-    'Mercador itinerante que conhece todas as rotas e todos os perigos. Sempre tem algo para vender ou trocar.',
-    'Fugitivo disfarçado de viajante comum. Sempre alerta, sempre pronto para partir.',
-  ],
-  navio: [
-    'Marinheiro desde criança, cresceu no mar e não sabe viver em terra. O navio é seu lar.',
-    'Capitão que perdeu seu navio anterior em uma tempestade. Agora serve como tripulante, esperando juntar ouro para um novo barco.',
-    'Cozinheiro de bordo que na verdade é um espião de outro reino. Coleta informações nas docas.',
-    'Ex-pirata que foi perdoado em troca de serviço naval. Luta contra velhos hábitos e velhos inimigos.',
-  ],
-  cemiterio: [
-    'Coveiro que trabalha no cemitério há décadas. Viu coisas que ninguém acreditaria, mas nunca conta.',
-    'Clérigo que cuida dos mortos e protege os vivos das ameaças que vêm das sepulturas.',
-    'Sobrevivente de um ritual necromântico que deu errado. Agora vive entre os mortos, meio vivo, meio morto.',
-    'Acadêmico que estuda os mortos para entender a vida. Suas pesquisas o levaram a lugares sombrios.',
-  ],
-  planicie: [
-    'Fazendeiro que descobriu que suas terras escondem um segredo ancestral. Agora protege o campo de invasores.',
-    'Cavaleiro errante que vaga pelas planícies buscando causas justas. Sua fama o precede, para o bem e para o mal.',
-    'Pastora que conhece cada colina e vale. Diz-se que os ventos lhe sussurram segredos.',
-    'Mercador de grãos que viaja entre vilas. Conhece todas as fofocas e rumores da região.',
-  ],
-  personalizado: [
-    'Tem um passado misterioso que poucos conhecem. Viaja de lugar em lugar sem criar raízes, sempre buscando algo que nem ele entende.',
-    'Era alguém importante em outro lugar, mas uma tragédia mudou tudo. Agora vive uma vida simples, esperando o momento certo.',
-    'Cresceu em circunstâncias difíceis e aprendeu que só pode contar consigo mesmo. Apesar disso, tem um bom coração escondido sob a casca dura.',
-    'Chegou aqui recentemente, vindo de terras distantes. Carrega histórias incríveis e cicatrizes que contam histórias que ele prefere esquecer.',
-  ],
+  floresta: ['Cresceu entre os elfos da floresta após ser abandonado quando bebê. Aprendeu a língua dos animais e a ler os sinais da natureza.', 'Era um lenhador até o dia em que cortou uma árvore sagrada. Desde então, busca redenção servindo como protetor da mata.', 'Sobrevivente de um incêndio florestal que destruiu sua aldeia. Vive sozinho, desconfiado de forasteiros.', 'Foi aprendiz de um druida poderoso que desapareceu misteriosamente. Busca respostas nas profundezas da floresta.'],
+  montanha: ['Nasceu em uma fortaleza anã nas profundezas da montanha. Deixou seu lar após um desentendimento com o conselho de anciãos.', 'Era um pastor de cabras até encontrar uma caverna com escrituras antigas. Desde então, estuda os segredos da montanha.', 'Sobrevivente de uma avalanche que soterrou toda sua vila. Carrega a culpa de ser o único sobrevivente.', 'Treinou como monge em um monastério no pico da montanha. Desceu para cumprir uma missão sagrada.'],
+  costa: ['Filho de pescadores, cresceu ouvindo lendas do mar. Um dia, viu algo no fundo do oceano que mudou sua vida para sempre.', 'Era marinheiro em um navio mercante até um naufrágio. Foi salvo por criaturas marinhas e agora protege a costa.', 'Cresceu em um farol isolado com apenas livros como companhia. Conhece todas as histórias do mar, mas nunca navegou.', 'Ex-pirata que abandonou a vida de crimes após uma tempestade que quase o matou. Agora vive uma vida pacata, mas o passado o persegue.'],
+  deserto: ['Nasceu em uma caravana nômade que cruzava o grande deserto. Conhece cada duna e oásis como a palma de sua mão.', 'Era guarda de um sultão até descobrir seus planos sombrios. Fugiu para o deserto e agora vive como exilado.', 'Encontrou uma relíquia antiga enterrada na areia que lhe concedeu visões do passado. Busca entender seu significado.', 'Cresceu em um oásis isolado, acreditando que o deserto era o mundo inteiro. Descobriu a verdade e agora explora.'],
+  cidade: ['Cresceu nas ruas da cidade, aprendendo a sobreviver com astúcia. Agora quer ser alguém respeitável, mas o passado insiste em voltar.', 'Herdeiro de uma família nobre em decadência. Mantém aparências enquanto busca restaurar a fortuna familiar.', 'Era aprendiz de um mago da academia até um experimento dar errado. Foi expulso e agora trabalha como artesão.', 'Chegou à cidade fugindo de um passado sombrio. Construiu uma nova identidade, mas vive com medo de ser descoberto.'],
+  pantano: ['Nasceu e cresceu no pântano, em uma comunidade isolada que adora espíritos antigos. Foi exilado por questionar as tradições.', 'Era um estudioso que veio pesquisar o pântano e nunca mais conseguiu sair. Algo o prende aqui, algo que ele não entende.', 'Sobrevivente de uma expedição que deu errado. Todos morreram, menos ele. Agora vive no pântano, meio louco, meio sábio.', 'Curandeiro que usa as plantas raras do pântano. É respeitado e temido em igual medida pelos poucos que vivem aqui.'],
+  subterraneo: ['Nasceu na escuridão e nunca viu a luz do sol. Conhece os túneis como ninguém e tem uma aversão profunda à superfície.', 'Era um minerador até encontrar uma caverna com cristais que sussurram. Desde então, ouve vozes que guiam seus passos.', 'Fugiu da superfície após cometer um crime terrível. Encontrou refúgio no subterrâneo, mas a culpa nunca o abandonou.', 'Membro de uma expedição de exploração que ficou preso quando os túneis colapsaram. Adaptou-se e fez do subterrâneo seu lar.'],
+  tundra: ['Nasceu em um clã nômade que segue as manadas de renas. Quando o clã foi dizimado por gigantes do gelo, ficou sozinho.', 'Era um explorador que ficou perdido na tundra por meses. Sobreviveu graças a espíritos do gelo que o guiaram.', 'Cresceu em uma fortaleza isolada no gelo, protegendo uma passagem antiga contra ameaças desconhecidas.', 'Xamã que ouve as vozes dos ancestrais nas tempestades de neve. Busca unir os clãs antes do grande inverno.'],
+  savana: ['Cresceu como caçador em uma tribo que venera os grandes felinos. Foi escolhido para uma missão sagrada pelo totem tribal.', 'Era um pastor até que uma seca mágica destruiu tudo. Agora busca a fonte da maldição para salvar sua terra.', 'Filho de um líder tribal, foi exilado após perder um duelo de honra. Vaga pela savana buscando redenção.', 'Rastreador lendário que conhece cada trilha da savana. Diz-se que conversa com os animais, mas ninguém sabe a verdade.'],
+  vulcanico: ['Nasceu perto de um vulcão ativo e sempre sentiu afinidade com o fogo. Descobriu que é descendente de um elemental.', 'Era um ferreiro que forjava armas na lava do vulcão. Um acidente o marcou, mas também lhe deu poderes.', 'Sobrevivente de uma erupção que destruiu sua comunidade. Agora estuda o vulcão para prever futuras catástrofes.', 'Sacerdote de um culto do fogo que questiona os ensinamentos após descobrir uma verdade sombria sobre o vulcão.'],
+  arquipelago: ['Cresceu navegando entre as ilhas, conhece cada recife e corrente. Sonha em encontrar a ilha mítica do fim do mundo.', 'Era um mergulhador de pérolas até encontrar algo no fundo do mar que mudou sua vida. Agora busca respostas nas ilhas.', 'Naufragou em uma ilha deserta e sobreviveu por anos. Foi resgatado, mas nunca mais foi o mesmo.', 'Comerciante que viaja entre as ilhas levando mercadorias e histórias. Conhece todos os segredos do arquipélago.'],
+  ruinas: ['Arqueólogo obcecado com a civilização que construiu as ruínas. Passou anos decifrando seus segredos.', 'Encontrou as ruínas por acidente e foi amaldiçoado por um guardião antigo. Agora busca quebrar a maldição.', 'Descendente dos construtores originais das ruínas. Sente uma conexão mística com o lugar.', 'Saqueador que ficou preso nas ruínas por uma armadilha mágica. Quando escapou, já não era a mesma pessoa.'],
+  acampamento: ['Viajante eterno que nunca fica no mesmo lugar por mais de uma semana. Carrega histórias de todas as terras.', 'Ex-soldado que desertou e agora vive na estrada. Oferece proteção em troca de comida e abrigo.', 'Mercador itinerante que conhece todas as rotas e todos os perigos. Sempre tem algo para vender ou trocar.', 'Fugitivo disfarçado de viajante comum. Sempre alerta, sempre pronto para partir.'],
+  navio: ['Marinheiro desde criança, cresceu no mar e não sabe viver em terra. O navio é seu lar.', 'Capitão que perdeu seu navio anterior em uma tempestade. Agora serve como tripulante, esperando juntar ouro para um novo barco.', 'Cozinheiro de bordo que na verdade é um espião de outro reino. Coleta informações nas docas.', 'Ex-pirata que foi perdoado em troca de serviço naval. Luta contra velhos hábitos e velhos inimigos.'],
+  cemiterio: ['Coveiro que trabalha no cemitério há décadas. Viu coisas que ninguém acreditaria, mas nunca conta.', 'Clérigo que cuida dos mortos e protege os vivos das ameaças que vêm das sepulturas.', 'Sobrevivente de um ritual necromântico que deu errado. Agora vive entre os mortos, meio vivo, meio morto.', 'Acadêmico que estuda os mortos para entender a vida. Suas pesquisas o levaram a lugares sombrios.'],
+  planicie: ['Fazendeiro que descobriu que suas terras escondem um segredo ancestral. Agora protege o campo de invasores.', 'Cavaleiro errante que vaga pelas planícies buscando causas justas. Sua fama o precede, para o bem e para o mal.', 'Pastora que conhece cada colina e vale. Diz-se que os ventos lhe sussurram segredos.', 'Mercador de grãos que viaja entre vilas. Conhece todas as fofocas e rumores da região.'],
+  personalizado: ['Tem um passado misterioso que poucos conhecem. Viaja de lugar em lugar sem criar raízes, sempre buscando algo que nem ele entende.', 'Era alguém importante em outro lugar, mas uma tragédia mudou tudo. Agora vive uma vida simples, esperando o momento certo.', 'Cresceu em circunstâncias difíceis e aprendeu que só pode contar consigo mesmo. Apesar disso, tem um bom coração escondido sob a casca dura.', 'Chegou aqui recentemente, vindo de terras distantes. Carrega histórias incríveis e cicatrizes que contam histórias que ele prefere esquecer.'],
 };
 
-// Villain-specific data
 const VILLAIN_MOTIVATIONS: Record<RegionType, string[]> = {
-  floresta: [
-    'Quer queimar a floresta para revelar ruínas antigas sob ela',
-    'Busca controlar todos os espíritos da natureza para obter poder absoluto',
-    'Acredita que a civilização é um câncer e quer destruir todas as cidades próximas',
-  ],
-  montanha: [
-    'Quer despertar o dragão adormecido sob a montanha para usá-lo como arma',
-    'Busca monopolizar todos os minérios e escravizar os mineradores',
-    'Pretende causar uma erupção/avalanche para destruir um reino rival',
-  ],
-  costa: [
-    'Quer invocar um leviatã para dominar as rotas marítimas',
-    'Busca um artefato no fundo do mar que pode controlar as marés',
-    'Planeja afundar uma cidade costeira em vingança por ter sido exilado',
-  ],
-  deserto: [
-    'Quer despertar uma entidade antiga selada sob as areias',
-    'Busca controlar todos os oásis para subjugar os nômades',
-    'Pretende usar magia proibida para transformar o deserto em seu reino pessoal',
-  ],
-  cidade: [
-    'Quer derrubar o governo e instaurar uma tirania',
-    'Busca controlar o submundo criminoso para dominar pelo medo',
-    'Planeja uma peste mágica para eliminar a nobreza e tomar o poder',
-  ],
-  pantano: [
-    'Quer espalhar a corrupção do pântano para o mundo inteiro',
-    'Busca completar um ritual que transformará todos em mortos-vivos',
-    'Pretende abrir um portal para o Shadowfell no coração do pântano',
-  ],
-  subterraneo: [
-    'Quer colapsar a superfície para expandir o reino subterrâneo',
-    'Busca libertar uma aberração selada nas profundezas',
-    'Planeja usar cristais mágicos para controlar as mentes de todos no subterrâneo',
-  ],
-  tundra: [
-    'Quer invocar um inverno eterno para cobrir o mundo de gelo',
-    'Busca despertar um dragão branco ancestral como arma de destruição',
-    'Pretende sacrificar os clãs para alimentar um ritual de poder absoluto',
-  ],
-  savana: [
-    'Quer exterminar todas as bestas mágicas para absorver sua essência',
-    'Busca invocar uma seca eterna para controlar quem vive e quem morre',
-    'Pretende unir todas as tribos sob seu domínio através do medo e da magia negra',
-  ],
-  vulcanico: [
-    'Quer provocar uma super erupção para destruir civilizações inteiras',
-    'Busca abrir um portal permanente para o Plano do Fogo',
-    'Pretende se transformar em um avatar do fogo usando a energia do vulcão',
-  ],
-  arquipelago: [
-    'Quer afundar todas as ilhas para criar um reino subaquático',
-    'Busca invocar um kraken ancião para dominar todos os mares',
-    'Pretende usar magia para criar tempestades perpétuas que isolem o arquipélago',
-  ],
-  ruinas: [
-    'Quer ativar uma arma antiga das ruínas capaz de destruir cidades',
-    'Busca completar o ritual que a civilização antiga não terminou',
-    'Pretende usar o conhecimento das ruínas para reescrever a realidade',
-  ],
-  acampamento: [
-    'Quer envenenar todas as rotas de comércio',
-    'Busca sequestrar viajantes para um ritual macabro',
-    'Pretende criar uma rede de bandidos que controle todas as estradas',
-  ],
-  navio: [
-    'Quer se tornar o Rei dos Piratas dominando todos os mares',
-    'Busca um artefato que controla os monstros marinhos',
-    'Pretende destruir todos os portos para dominar o comércio marítimo',
-  ],
-  cemiterio: [
-    'Quer criar um exército de mortos-vivos invencível',
-    'Busca o ritual de lichdom para viver eternamente',
-    'Pretende abrir um portal para o Plano da Morte e inundar o mundo com mortos-vivos',
-  ],
-  planicie: [
-    'Quer queimar todas as fazendas e causar uma fome apocalíptica',
-    'Busca invocar uma horda de aberrações enterradas sob os campos',
-    'Pretende dominar todas as rotas terrestres como um senhor da guerra',
-  ],
-  personalizado: [
-    'Busca poder absoluto, não importa o custo',
-    'Quer vingança contra o mundo que o rejeitou',
-    'Acredita que só através do caos pode haver verdadeira mudança',
-  ],
+  floresta: ['Quer queimar a floresta para revelar ruínas antigas sob ela', 'Busca controlar todos os espíritos da natureza para obter poder absoluto', 'Acredita que a civilização é um câncer e quer destruir todas as cidades próximas'],
+  montanha: ['Quer despertar o dragão adormecido sob a montanha para usá-lo como arma', 'Busca monopolizar todos os minérios e escravizar os mineradores', 'Pretende causar uma erupção/avalanche para destruir um reino rival'],
+  costa: ['Quer invocar um leviatã para dominar as rotas marítimas', 'Busca um artefato no fundo do mar que pode controlar as marés', 'Planeja afundar uma cidade costeira em vingança por ter sido exilado'],
+  deserto: ['Quer despertar uma entidade antiga selada sob as areias', 'Busca controlar todos os oásis para subjugar os nômades', 'Pretende usar magia proibida para transformar o deserto em seu reino pessoal'],
+  cidade: ['Quer derrubar o governo e instaurar uma tirania', 'Busca controlar o submundo criminoso para dominar pelo medo', 'Planeja uma peste mágica para eliminar a nobreza e tomar o poder'],
+  pantano: ['Quer espalhar a corrupção do pântano para o mundo inteiro', 'Busca completar um ritual que transformará todos em mortos-vivos', 'Pretende abrir um portal para o Shadowfell no coração do pântano'],
+  subterraneo: ['Quer colapsar a superfície para expandir o reino subterrâneo', 'Busca libertar uma aberração selada nas profundezas', 'Planeja usar cristais mágicos para controlar as mentes de todos no subterrâneo'],
+  tundra: ['Quer invocar um inverno eterno para cobrir o mundo de gelo', 'Busca despertar um dragão branco ancestral como arma de destruição', 'Pretende sacrificar os clãs para alimentar um ritual de poder absoluto'],
+  savana: ['Quer exterminar todas as bestas mágicas para absorver sua essência', 'Busca invocar uma seca eterna para controlar quem vive e quem morre', 'Pretende unir todas as tribos sob seu domínio através do medo e da magia negra'],
+  vulcanico: ['Quer provocar uma super erupção para destruir civilizações inteiras', 'Busca abrir um portal permanente para o Plano do Fogo', 'Pretende se transformar em um avatar do fogo usando a energia do vulcão'],
+  arquipelago: ['Quer afundar todas as ilhas para criar um reino subaquático', 'Busca invocar um kraken ancião para dominar todos os mares', 'Pretende usar magia para criar tempestades perpétuas que isolem o arquipélago'],
+  ruinas: ['Quer ativar uma arma antiga das ruínas capaz de destruir cidades', 'Busca completar o ritual que a civilização antiga não terminou', 'Pretende usar o conhecimento das ruínas para reescrever a realidade'],
+  acampamento: ['Quer envenenar todas as rotas de comércio', 'Busca sequestrar viajantes para um ritual macabro', 'Pretende criar uma rede de bandidos que controle todas as estradas'],
+  navio: ['Quer se tornar o Rei dos Piratas dominando todos os mares', 'Busca um artefato que controla os monstros marinhos', 'Pretende destruir todos os portos para dominar o comércio marítimo'],
+  cemiterio: ['Quer criar um exército de mortos-vivos invencível', 'Busca o ritual de lichdom para viver eternamente', 'Pretende abrir um portal para o Plano da Morte e inundar o mundo com mortos-vivos'],
+  planicie: ['Quer queimar todas as fazendas e causar uma fome apocalíptica', 'Busca invocar uma horda de aberrações enterradas sob os campos', 'Pretende dominar todas as rotas terrestres como um senhor da guerra'],
+  personalizado: ['Busca poder absoluto, não importa o custo', 'Quer vingança contra o mundo que o rejeitou', 'Acredita que só através do caos pode haver verdadeira mudança'],
 };
 
 const VILLAIN_PLANS: Record<RegionType, { phase1: string; phase2: string; final: string }[]> = {
-  floresta: [
-    { phase1: 'Corromper os protetores da floresta um por um', phase2: 'Envenenar a fonte de vida da floresta', final: 'Realizar o ritual no coração da mata durante o eclipse' },
-    { phase1: 'Caçar criaturas mágicas para absorver seu poder', phase2: 'Construir um exército de autômatos de madeira', final: 'Marchar contra as cidades vizinhas com a floresta como arma' },
-  ],
-  montanha: [
-    { phase1: 'Infiltrar-se nos clãs anões e causar discórdia', phase2: 'Tomar controle das forjas e armamentos', final: 'Usar as forjas para criar uma arma capaz de destruir montanhas' },
-    { phase1: 'Bloquear as passagens da montanha', phase2: 'Escravizar viajantes e mineradores', final: 'Despertar a entidade adormecida sob o pico mais alto' },
-  ],
-  costa: [
-    { phase1: 'Recrutar piratas e contrabandistas', phase2: 'Bloquear todas as rotas comerciais', final: 'Invocar uma tempestade permanente para isolar a região' },
-    { phase1: 'Roubar mapas náuticos e artefatos marinhos', phase2: 'Encontrar e ativar o farol amaldiçoado', final: 'Usar o farol para atrair e afundar todas as frotas' },
-  ],
-  deserto: [
-    { phase1: 'Envenenar os oásis um por um', phase2: 'Forçar os nômades a se submeterem por água', final: 'Abrir a tumba do rei-deus e absorver seu poder' },
-    { phase1: 'Reunir seguidores fanáticos', phase2: 'Encontrar os fragmentos da relíquia do sol', final: 'Transformar o deserto inteiro em um plano de fogo' },
-  ],
-  cidade: [
-    { phase1: 'Comprar influência e chantagear nobres', phase2: 'Eliminar líderes rivais discretamente', final: 'Executar um golpe durante o festival real' },
-    { phase1: 'Espalhar uma doença lenta entre a população', phase2: 'Oferecer a "cura" em troca de lealdade absoluta', final: 'Revelar-se como o novo governante "salvador"' },
-  ],
-  pantano: [
-    { phase1: 'Corromper as fontes de água da região', phase2: 'Criar um exército de mortos-vivos do pântano', final: 'Completar o ritual para fundir o plano material com o Shadowfell' },
-    { phase1: 'Capturar viajantes para experimentos', phase2: 'Criar quimeras usando magia e criaturas do pântano', final: 'Liberar as quimeras para devastar as terras vizinhas' },
-  ],
-  subterraneo: [
-    { phase1: 'Dominar os túneis e controlar o trânsito', phase2: 'Encontrar e ativar os cristais de controle mental', final: 'Escravizar toda a população subterrânea e invadir a superfície' },
-    { phase1: 'Cavar em direção ao selo antigo', phase2: 'Enfraquecer as proteções com sacrifícios', final: 'Quebrar o selo e libertar a aberração primordial' },
-  ],
-  tundra: [
-    { phase1: 'Corromper os xamãs dos clãs um por um', phase2: 'Canalizar o poder do inverno através de rituais', final: 'Invocar o Grande Inverno que congela tudo' },
-    { phase1: 'Caçar e escravizar gigantes do gelo', phase2: 'Forjar uma coroa de gelo eterno', final: 'Usar a coroa para controlar dragões brancos' },
-  ],
-  savana: [
-    { phase1: 'Envenenar as fontes de água da savana', phase2: 'Forçar as tribos a se renderem', final: 'Sacrificar os líderes tribais para despertar uma entidade ancestral' },
-    { phase1: 'Caçar bestas mágicas e absorver sua essência', phase2: 'Criar um exército de quimeras', final: 'Marchar contra as civilizações vizinhas' },
-  ],
-  vulcanico: [
-    { phase1: 'Realizar rituais de fogo no vulcão', phase2: 'Abrir fissuras de lava em toda a região', final: 'Provocar a super erupção que destruirá tudo' },
-    { phase1: 'Escravizar elementais de fogo', phase2: 'Construir uma fortaleza de magma', final: 'Abrir o portal para o Plano do Fogo e liberar um exército elemental' },
-  ],
-  arquipelago: [
-    { phase1: 'Cortar as rotas entre as ilhas', phase2: 'Afundar ilhas menores como demonstração de poder', final: 'Invocar um maremoto que destrua o arquipélago' },
-    { phase1: 'Recrutar piratas e contrabandistas', phase2: 'Encontrar e ativar a arma ancestral submersa', final: 'Usar a arma para controlar todos os mares' },
-  ],
-  ruinas: [
-    { phase1: 'Decifrar as inscrições de poder das ruínas', phase2: 'Reunir os fragmentos do artefato antigo', final: 'Ativar a arma ancestral que pode reescrever a realidade' },
-    { phase1: 'Eliminar outros exploradores e arqueólogos', phase2: 'Abrir as câmaras seladas uma por uma', final: 'Completar o ritual que a civilização antiga não terminou' },
-  ],
-  acampamento: [
-    { phase1: 'Infiltrar-se nos grupos de viajantes', phase2: 'Roubar suprimentos e semear desconfiança', final: 'Coordenar um ataque em massa nas rotas de comércio' },
-    { phase1: 'Envenenar as provisões dos acampamentos', phase2: 'Sequestrar viajantes importantes', final: 'Exigir resgate e poder político' },
-  ],
-  navio: [
-    { phase1: 'Amotinar tripulações de outros navios', phase2: 'Formar uma frota pirata', final: 'Atacar e conquistar todos os portos' },
-    { phase1: 'Encontrar mapas de artefatos marinhos', phase2: 'Recuperar a arma submarina ancestral', final: 'Usar a arma para submeter todas as nações costeiras' },
-  ],
-  cemiterio: [
-    { phase1: 'Profanar túmulos e coletar componentes necromânticos', phase2: 'Criar um exército de mortos-vivos', final: 'Abrir as portas da morte e inundar o mundo com mortos' },
-    { phase1: 'Estudar rituais de lichdom', phase2: 'Realizar sacrifícios para acumular poder', final: 'Completar a transformação em lich e se tornar imortal' },
-  ],
-  planicie: [
-    { phase1: 'Envenenar os campos e destruir colheitas', phase2: 'Causar fome e desespero', final: 'Oferecer salvação em troca de submissão absoluta' },
-    { phase1: 'Recrutar bandidos e desertores', phase2: 'Controlar todas as estradas e rotas', final: 'Se declarar senhor da guerra e dominar a região' },
-  ],
-  personalizado: [
-    { phase1: 'Reunir aliados e recursos em segredo', phase2: 'Eliminar oposição e consolidar poder', final: 'Executar o plano final com força esmagadora' },
-    { phase1: 'Estudar magia proibida e ganhar poder', phase2: 'Testar o poder em alvos menores', final: 'Desencadear destruição em escala catastrófica' },
-  ],
+  floresta: [{ phase1: 'Corromper os protetores da floresta um por um', phase2: 'Envenenar a fonte de vida da floresta', final: 'Realizar o ritual no coração da mata durante o eclipse' }, { phase1: 'Caçar criaturas mágicas para absorver seu poder', phase2: 'Construir um exército de autômatos de madeira', final: 'Marchar contra as cidades vizinhas com a floresta como arma' }],
+  montanha: [{ phase1: 'Infiltrar-se nos clãs anões e causar discórdia', phase2: 'Tomar controle das forjas e armamentos', final: 'Usar as forjas para criar uma arma capaz de destruir montanhas' }, { phase1: 'Bloquear as passagens da montanha', phase2: 'Escravizar viajantes e mineradores', final: 'Despertar a entidade adormecida sob o pico mais alto' }],
+  costa: [{ phase1: 'Recrutar piratas e contrabandistas', phase2: 'Bloquear todas as rotas comerciais', final: 'Invocar uma tempestade permanente para isolar a região' }, { phase1: 'Roubar mapas náuticos e artefatos marinhos', phase2: 'Encontrar e ativar o farol amaldiçoado', final: 'Usar o farol para atrair e afundar todas as frotas' }],
+  deserto: [{ phase1: 'Envenenar os oásis um por um', phase2: 'Forçar os nômades a se submeterem por água', final: 'Abrir a tumba do rei-deus e absorver seu poder' }, { phase1: 'Reunir seguidores fanáticos', phase2: 'Encontrar os fragmentos da relíquia do sol', final: 'Transformar o deserto inteiro em um plano de fogo' }],
+  cidade: [{ phase1: 'Comprar influência e chantagear nobres', phase2: 'Eliminar líderes rivais discretamente', final: 'Executar um golpe durante o festival real' }, { phase1: 'Espalhar uma doença lenta entre a população', phase2: 'Oferecer a "cura" em troca de lealdade absoluta', final: 'Revelar-se como o novo governante "salvador"' }],
+  pantano: [{ phase1: 'Corromper as fontes de água da região', phase2: 'Criar um exército de mortos-vivos do pântano', final: 'Completar o ritual para fundir o plano material com o Shadowfell' }, { phase1: 'Capturar viajantes para experimentos', phase2: 'Criar quimeras usando magia e criaturas do pântano', final: 'Liberar as quimeras para devastar as terras vizinhas' }],
+  subterraneo: [{ phase1: 'Dominar os túneis e controlar o trânsito', phase2: 'Encontrar e ativar os cristais de controle mental', final: 'Escravizar toda a população subterrânea e invadir a superfície' }, { phase1: 'Cavar em direção ao selo antigo', phase2: 'Enfraquecer as proteções com sacrifícios', final: 'Quebrar o selo e libertar a aberração primordial' }],
+  tundra: [{ phase1: 'Corromper os xamãs dos clãs um por um', phase2: 'Canalizar o poder do inverno através de rituais', final: 'Invocar o Grande Inverno que congela tudo' }, { phase1: 'Caçar e escravizar gigantes do gelo', phase2: 'Forjar uma coroa de gelo eterno', final: 'Usar a coroa para controlar dragões brancos' }],
+  savana: [{ phase1: 'Envenenar as fontes de água da savana', phase2: 'Forçar as tribos a se renderem', final: 'Sacrificar os líderes tribais para despertar uma entidade ancestral' }, { phase1: 'Caçar bestas mágicas e absorver sua essência', phase2: 'Criar um exército de quimeras', final: 'Marchar contra as civilizações vizinhas' }],
+  vulcanico: [{ phase1: 'Realizar rituais de fogo no vulcão', phase2: 'Abrir fissuras de lava em toda a região', final: 'Provocar a super erupção que destruirá tudo' }, { phase1: 'Escravizar elementais de fogo', phase2: 'Construir uma fortaleza de magma', final: 'Abrir o portal para o Plano do Fogo e liberar um exército elemental' }],
+  arquipelago: [{ phase1: 'Cortar as rotas entre as ilhas', phase2: 'Afundar ilhas menores como demonstração de poder', final: 'Invocar um maremoto que destrua o arquipélago' }, { phase1: 'Recrutar piratas e contrabandistas', phase2: 'Encontrar e ativar a arma ancestral submersa', final: 'Usar a arma para controlar todos os mares' }],
+  ruinas: [{ phase1: 'Decifrar as inscrições de poder das ruínas', phase2: 'Reunir os fragmentos do artefato antigo', final: 'Ativar a arma ancestral que pode reescrever a realidade' }, { phase1: 'Eliminar outros exploradores e arqueólogos', phase2: 'Abrir as câmaras seladas uma por uma', final: 'Completar o ritual que a civilização antiga não terminou' }],
+  acampamento: [{ phase1: 'Infiltrar-se nos grupos de viajantes', phase2: 'Roubar suprimentos e semear desconfiança', final: 'Coordenar um ataque em massa nas rotas de comércio' }, { phase1: 'Envenenar as provisões dos acampamentos', phase2: 'Sequestrar viajantes importantes', final: 'Exigir resgate e poder político' }],
+  navio: [{ phase1: 'Amotinar tripulações de outros navios', phase2: 'Formar uma frota pirata', final: 'Atacar e conquistar todos os portos' }, { phase1: 'Encontrar mapas de artefatos marinhos', phase2: 'Recuperar a arma submarina ancestral', final: 'Usar a arma para submeter todas as nações costeiras' }],
+  cemiterio: [{ phase1: 'Profanar túmulos e coletar componentes necromânticos', phase2: 'Criar um exército de mortos-vivos', final: 'Abrir as portas da morte e inundar o mundo com mortos' }, { phase1: 'Estudar rituais de lichdom', phase2: 'Realizar sacrifícios para acumular poder', final: 'Completar a transformação em lich e se tornar imortal' }],
+  planicie: [{ phase1: 'Envenenar os campos e destruir colheitas', phase2: 'Causar fome e desespero', final: 'Oferecer salvação em troca de submissão absoluta' }, { phase1: 'Recrutar bandidos e desertores', phase2: 'Controlar todas as estradas e rotas', final: 'Se declarar senhor da guerra e dominar a região' }],
+  personalizado: [{ phase1: 'Reunir aliados e recursos em segredo', phase2: 'Eliminar oposição e consolidar poder', final: 'Executar o plano final com força esmagadora' }, { phase1: 'Estudar magia proibida e ganhar poder', phase2: 'Testar o poder em alvos menores', final: 'Desencadear destruição em escala catastrófica' }],
 };
 
 const HIDDEN_WEAKNESSES = [
@@ -657,6 +445,11 @@ function generateNPC(region: RegionType): NPC {
     ac: rollDice(1, 6, 8),
     region,
     isVillain: false,
+    fear: pick(FEARS),
+    desire: pick(DESIRES),
+    hatred: pick(HATREDS),
+    ambition: pick(AMBITIONS),
+    memory: pick(MEMORIES),
   };
 }
 
@@ -685,6 +478,11 @@ function generateVillain(region: RegionType): Villain {
     planPhase2: plan.phase2,
     planFinal: plan.final,
     hiddenWeaknesses: shuffled.slice(0, weaknessCount),
+    fear: pick(FEARS),
+    desire: pick(DESIRES),
+    hatred: pick(HATREDS),
+    ambition: pick(AMBITIONS),
+    memory: pick(MEMORIES),
   };
 }
 
@@ -730,6 +528,16 @@ const NPCGenerator = () => {
     });
   };
 
+  const EmotionRow = ({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) => (
+    <div className={`flex items-start gap-2 text-sm p-2 rounded-lg bg-secondary/30 border border-border/30`}>
+      <span className={`shrink-0 mt-0.5 ${color}`}>{icon}</span>
+      <div>
+        <span className="font-semibold text-foreground">{label}:</span>{' '}
+        <span className="text-muted-foreground">{value}</span>
+      </div>
+    </div>
+  );
+
   const CharacterCard = ({ char, actions }: { char: Character; actions: React.ReactNode }) => {
     const isExpanded = expandedCards.has(char.id);
     const secretVisible = revealedSecrets.has(char.id);
@@ -772,6 +580,18 @@ const NPCGenerator = () => {
 
           <div className="text-sm"><span className="text-muted-foreground">Personalidade:</span> {char.personality}</div>
           <div className="text-sm"><span className="text-muted-foreground">Peculiaridade:</span> {char.quirk}</div>
+
+          {/* Emotions Section - always visible */}
+          <div className="space-y-1.5 pt-2 border-t border-border/40">
+            <h4 className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider mb-2">Psicologia</h4>
+            <div className="grid grid-cols-1 gap-1.5">
+              <EmotionRow icon={<Flame className="w-3.5 h-3.5" />} label="Medo" value={char.fear} color="text-orange-400" />
+              <EmotionRow icon={<Heart className="w-3.5 h-3.5" />} label="Desejo" value={char.desire} color="text-pink-400" />
+              <EmotionRow icon={<Zap className="w-3.5 h-3.5" />} label="Ódio" value={char.hatred} color="text-red-400" />
+              <EmotionRow icon={<Crown className="w-3.5 h-3.5" />} label="Ambição" value={char.ambition} color="text-amber-400" />
+              <EmotionRow icon={<BookOpen className="w-3.5 h-3.5" />} label="Memória" value={char.memory} color="text-blue-400" />
+            </div>
+          </div>
 
           {/* Expandable section */}
           <Button
