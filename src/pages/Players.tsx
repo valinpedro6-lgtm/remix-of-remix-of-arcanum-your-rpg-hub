@@ -66,6 +66,7 @@ interface Player {
   maxEnergy: number;
   ca: number;
   movement: number;
+  proficiencyBonus: number;
   attributes: Attribute[];
   skills: Skill[];
   inventory: string;
