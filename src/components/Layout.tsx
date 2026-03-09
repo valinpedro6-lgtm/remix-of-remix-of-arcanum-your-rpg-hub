@@ -4,12 +4,13 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
   Dices, Clock, Swords, Users, Skull, FlaskConical,
-  Gamepad2, UserPlus, StickyNote, LayoutDashboard, Menu, CloudSun, Sword, Sparkles
+  Gamepad2, UserPlus, StickyNote, LayoutDashboard, Menu, CloudSun, Sword, Sparkles, Coins, Gauge
 } from 'lucide-react';
 import { GlobalTimerBar } from '@/components/GlobalTimerBar';
 
 const navItems = [
   { path: '/', label: 'Início', icon: LayoutDashboard },
+  { path: '/painel', label: 'Painel', icon: Gauge },
   { path: '/dados', label: 'Dados', icon: Dices },
   { path: '/timer', label: 'Timer', icon: Clock },
   { path: '/iniciativa', label: 'Iniciativa', icon: Swords },
@@ -21,6 +22,7 @@ const navItems = [
   { path: '/ambiente', label: 'Ambiente', icon: CloudSun },
   { path: '/armas', label: 'Armas', icon: Sword },
   { path: '/magias', label: 'Magias', icon: Sparkles },
+  { path: '/loot', label: 'Loot', icon: Coins },
   { path: '/notas', label: 'Notas', icon: StickyNote },
 ];
 
@@ -65,7 +67,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
         </nav>
         <div className="p-3 border-t border-border/50 space-y-2">
           <GlobalTimerBar />
-          <div className="text-[10px] text-muted-foreground/50 text-center">⚔️ Arcanum v1.0</div>
+          <div className="text-[10px] text-muted-foreground/50 text-center">⚔️ Arcanum v2.0</div>
         </div>
       </aside>
 
