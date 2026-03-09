@@ -381,6 +381,20 @@ const Monsters = () => {
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle className="font-display text-xl">Escolher Modelo</DialogTitle></DialogHeader>
           <div className="space-y-2">
+            <p className="text-xs text-muted-foreground flex items-center gap-1"><Gamepad2 className="w-3 h-3" />Sistemas de RPG</p>
+            {MONSTER_SYSTEM_PRESETS.map(preset => (
+              <Button key={preset.id} variant="outline" className="w-full justify-start gap-2" onClick={() => openNewWithTemplate({
+                id: preset.id, name: preset.name,
+                attributes: preset.attributes.map(a => ({ ...a })),
+                combatFields: { ...preset.combatFields },
+                sections: { ...preset.sections },
+              })}>
+                <Gamepad2 className="w-4 h-4 text-primary" />{preset.name}
+                <span className="text-xs text-muted-foreground ml-auto">{preset.attributes.length} atr</span>
+              </Button>
+            ))}
+            <Separator />
+            <p className="text-xs text-muted-foreground flex items-center gap-1"><FolderOpen className="w-3 h-3" />Outros</p>
             <Button variant="outline" className="w-full justify-start gap-2" onClick={() => openNewWithTemplate()}>
               <FileText className="w-4 h-4" />Ficha padrão (sem modelo)
             </Button>
