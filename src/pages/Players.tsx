@@ -688,9 +688,10 @@ const Players = () => {
                   <Input placeholder="Classe" value={editing.className} onChange={e => setEditing({ ...editing, className: e.target.value })} />
                   <Input placeholder="Profissão" value={editing.profession} onChange={e => setEditing({ ...editing, profession: e.target.value })} />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div><label className="text-xs text-muted-foreground">Nível</label><NumberInput min={1} value={editing.level} onChange={v => setEditing({ ...editing, level: v })} /></div>
                   <div><label className="text-xs text-muted-foreground">Experiência</label><NumberInput min={0} value={editing.experience} onChange={v => setEditing({ ...editing, experience: v })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Bônus de Proficiência</label><NumberInput value={editing.proficiencyBonus ?? 2} onChange={v => setEditing({ ...editing, proficiencyBonus: v })} /></div>
                 </div>
                 <Input placeholder="URL da Imagem" value={editing.image} onChange={e => setEditing({ ...editing, image: e.target.value })} />
               </TabsContent>
