@@ -4,9 +4,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, ChevronRight, RotateCcw, Dices, Swords, Heart, Shield } from 'lucide-react';
+import { Plus, Trash2, ChevronRight, RotateCcw, Dices, Swords, Heart, Shield, Skull, User } from 'lucide-react';
 import { NumberInput } from '@/components/NumberInput';
-import { motion, AnimatePresence, Reorder } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Combatant {
   id: string;
@@ -16,6 +16,7 @@ interface Combatant {
   maxHp?: number;
   ca?: number;
   conditions?: string[];
+  type: 'player' | 'monster';
 }
 
 const CONDITION_OPTIONS = ['Atordoado', 'Envenenado', 'Incapacitado', 'Invisível', 'Prone', 'Restringido', 'Amedrontado', 'Agarrado', 'Concentrando'];
@@ -27,6 +28,7 @@ const Initiative = () => {
   const [name, setName] = useState('');
   const [init, setInit] = useState('');
   const [showHp, setShowHp] = useState(false);
+  const [combatantType, setCombatantType] = useState<'player' | 'monster'>('player');
 
   const sorted = [...combatants].sort((a, b) => b.initiative - a.initiative);
 
@@ -38,6 +40,7 @@ const Initiative = () => {
       initiative: parseInt(init) || 0,
       hp: 0, maxHp: 0, ca: 10,
       conditions: [],
+      type: combatantType,
     }]);
     setName('');
     setInit('');
@@ -90,8 +93,28 @@ const Initiative = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="card-hover glow-border">
             <CardContent className="p-4 space-y-3">
+              {/* Type selector */}
+              <div className="flex gap-1 p-1 bg-secondary/50 rounded-lg">
+                <Button
+                  variant={combatantType === 'player' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="flex-1 gap-1.5"
+                  onClick={() => setCombatantType('player')}
+                >
+                  <User className="w-3.5 h-3.5" />Jogador
+                </Button>
+                <Button
+                  variant={combatantType === 'monster' ? 'destructive' : 'ghost'}
+                  size="sm"
+                  className="flex-1 gap-1.5"
+                  onClick={() => setCombatantType('monster')}
+                >
+                  <Skull className="w-3.5 h-3.5" />Monstro
+                </Button>
+              </div>
+
               <div className="flex gap-2">
-                <Input placeholder="Nome" value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()} className="flex-1" />
+                <Input placeholder={combatantType === 'monster' ? 'Nome do Monstro' : 'Nome do Jogador'} value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()} className="flex-1" />
                 <div className="flex gap-1">
                   <Input placeholder="Init" type="number" value={init} onChange={e => setInit(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()} className="w-20" />
                   <Button variant="outline" size="icon" onClick={rollInit} title="Rolar d20">
@@ -135,6 +158,7 @@ const Initiative = () => {
                   const isActive = i === currentTurn % sorted.length;
                   const hpPercent = c.maxHp && c.maxHp > 0 ? Math.max(0, Math.min(100, ((c.hp || 0) / c.maxHp) * 100)) : null;
                   const expanded = expandedId === c.id;
+                  const isMonster = c.type === 'monster';
 
                   return (
                     <motion.div
@@ -144,7 +168,13 @@ const Initiative = () => {
                       exit={{ opacity: 0, x: 20, height: 0 }}
                       layout
                     >
-                      <Card className={`overflow-hidden transition-all duration-300 ${isActive ? 'border-primary/60 bg-primary/5 shadow-[0_0_15px_hsl(var(--primary)/0.15)]' : 'card-hover'}`}>
+                      <Card className={`overflow-hidden transition-all duration-300 ${
+                        isActive
+                          ? isMonster
+                            ? 'border-destructive/60 bg-destructive/5 shadow-[0_0_15px_hsl(var(--destructive)/0.15)]'
+                            : 'border-primary/60 bg-primary/5 shadow-[0_0_15px_hsl(var(--primary)/0.15)]'
+                          : 'card-hover'
+                      }`}>
                         <CardContent className="p-0">
                           <div
                             className="p-4 flex items-center justify-between cursor-pointer"
@@ -155,19 +185,23 @@ const Initiative = () => {
                                 <motion.div
                                   initial={{ scale: 0 }}
                                   animate={{ scale: 1 }}
-                                  className="w-3 h-3 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.6)]"
+                                  className={`w-3 h-3 rounded-full ${isMonster ? 'bg-destructive shadow-[0_0_8px_hsl(var(--destructive)/0.6)]' : 'bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.6)]'}`}
                                 />
                               )}
-                              <div>
-                                <span className={`font-semibold text-lg ${isActive ? 'text-primary' : ''}`}>{c.name}</span>
-                                {(c.conditions || []).length > 0 && (
-                                  <div className="flex flex-wrap gap-1 mt-0.5">
-                                    {c.conditions!.map(cond => (
-                                      <Badge key={cond} variant="secondary" className="text-[10px] px-1.5 py-0">{cond}</Badge>
-                                    ))}
-                                  </div>
+                              <div className="flex items-center gap-2">
+                                {isMonster && <Skull className="w-4 h-4 text-destructive" />}
+                                <span className={`font-semibold text-lg ${isActive ? (isMonster ? 'text-destructive' : 'text-primary') : ''}`}>{c.name}</span>
+                                {isMonster && (
+                                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Monstro</Badge>
                                 )}
                               </div>
+                              {(c.conditions || []).length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {c.conditions!.map(cond => (
+                                    <Badge key={cond} variant="secondary" className="text-[10px] px-1.5 py-0">{cond}</Badge>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                             <div className="flex items-center gap-3">
                               {showHp && hpPercent !== null && (
@@ -182,7 +216,7 @@ const Initiative = () => {
                                   <span className="text-sm font-semibold">{c.ca}</span>
                                 </div>
                               )}
-                              <span className="text-2xl font-display font-bold text-primary">{c.initiative}</span>
+                              <span className={`text-2xl font-display font-bold ${isMonster ? 'text-destructive' : 'text-primary'}`}>{c.initiative}</span>
                               <Button variant="ghost" size="icon" onClick={e => { e.stopPropagation(); remove(c.id); }}>
                                 <Trash2 className="w-4 h-4 text-muted-foreground" />
                               </Button>
