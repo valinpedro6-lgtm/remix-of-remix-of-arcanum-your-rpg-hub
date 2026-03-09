@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['Metal Mania', 'cursive'],
+        display: ['Cinzel', 'serif'],
         body: ['Rajdhani', 'sans-serif'],
       },
       colors: {
