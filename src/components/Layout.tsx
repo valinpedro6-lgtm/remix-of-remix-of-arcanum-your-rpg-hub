@@ -7,6 +7,7 @@ import {
   Gamepad2, UserPlus, StickyNote, LayoutDashboard, Menu, CloudSun, Sword, Sparkles, Coins, Gauge
 } from 'lucide-react';
 import { GlobalTimerBar } from '@/components/GlobalTimerBar';
+import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 
 const navItems = [
   { path: '/', label: 'Início', icon: LayoutDashboard },
