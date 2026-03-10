@@ -4,11 +4,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   UserPlus, Save, Trash2, Sparkles, Shield, Heart, Target,
   Skull, Eye, EyeOff, ChevronDown, ChevronUp, Swords,
-  Flame, Brain, Zap, Crown, BookOpen
+  Flame, Brain, Zap, Crown, BookOpen, Scroll
 } from 'lucide-react';
+import { PLAYER_SYSTEM_PRESETS, type PlayerPreset } from '@/data/rpgSystemPresets';
 
 // --- TYPES ---
 
