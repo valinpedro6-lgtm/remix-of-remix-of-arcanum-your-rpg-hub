@@ -451,7 +451,31 @@ function getCurrentRegion(): RegionType {
   return 'cidade';
 }
 
-function generateNPC(region: RegionType): NPC {
+function generateAttrsFromPreset(preset: PlayerPreset): GeneratedAttribute[] {
+  return preset.attributes.map(a => {
+    const value = rollDice(3, 6);
+    const modifier = Math.floor((value - 10) / 2);
+    return { name: a.name, value, modifier };
+  });
+}
+
+function generateSkillsFromPreset(preset: PlayerPreset, attrs: GeneratedAttribute[]): GeneratedSkill[] {
+  return preset.skills.map(s => {
+    const attr = attrs.find(a => a.name === s.attribute);
+    const profBonus = Math.random() < 0.3 ? rollDice(1, 4, 1) : 0;
+    const bonus = (attr?.modifier ?? 0) + profBonus;
+    return { name: s.name, attribute: s.attribute, bonus };
+  });
+}
+
+function generateNPC(region: RegionType, preset: PlayerPreset): NPC {
+  const attributes = generateAttrsFromPreset(preset);
+  const skills = generateSkillsFromPreset(preset, attributes);
+  const conAttr = attributes.find(a => a.name === 'Constituição' || a.name === 'Constitution' || a.name === 'Vigor' || a.name === 'Corpo' || a.name === 'Stamina' || a.name === 'Body');
+  const conMod = conAttr?.modifier ?? 0;
+  const dexAttr = attributes.find(a => a.name === 'Destreza' || a.name === 'Dexterity' || a.name === 'Agilidade' || a.name === 'Reflexos');
+  const dexMod = dexAttr?.modifier ?? 0;
+
   return {
     id: crypto.randomUUID(),
     name: pick(NAMES_BY_REGION[region]),
@@ -463,8 +487,8 @@ function generateNPC(region: RegionType): NPC {
     secret: pick(SECRETS_BY_REGION[region]),
     objective: pick(OBJECTIVES_BY_REGION[region]),
     backstory: pick(BACKSTORIES_BY_REGION[region]),
-    hp: rollDice(2, 10, 5),
-    ac: rollDice(1, 6, 8),
+    hp: Math.max(1, rollDice(2, 10, conMod * 2)),
+    ac: 10 + dexMod + rollDice(1, 4),
     region,
     isVillain: false,
     fear: pick(FEARS),
@@ -472,13 +496,25 @@ function generateNPC(region: RegionType): NPC {
     hatred: pick(HATREDS),
     ambition: pick(AMBITIONS),
     memory: pick(MEMORIES),
+    systemId: preset.id,
+    systemName: preset.name,
+    attributes,
+    skills,
   };
 }
 
-function generateVillain(region: RegionType): Villain {
+function generateVillain(region: RegionType, preset: PlayerPreset): Villain {
   const plan = pick(VILLAIN_PLANS[region]);
   const weaknessCount = Math.random() < 0.5 ? 2 : 3;
   const shuffled = [...HIDDEN_WEAKNESSES].sort(() => Math.random() - 0.5);
+  const attributes = generateAttrsFromPreset(preset);
+  const skills = generateSkillsFromPreset(preset, attributes);
+  // Villains get boosted stats
+  const boosted = attributes.map(a => ({ ...a, value: a.value + 4, modifier: Math.floor((a.value + 4 - 10) / 2) }));
+  const conAttr = boosted.find(a => a.name === 'Constituição' || a.name === 'Constitution' || a.name === 'Vigor' || a.name === 'Corpo');
+  const conMod = conAttr?.modifier ?? 0;
+  const dexAttr = boosted.find(a => a.name === 'Destreza' || a.name === 'Dexterity' || a.name === 'Agilidade' || a.name === 'Reflexos');
+  const dexMod = dexAttr?.modifier ?? 0;
 
   return {
     id: crypto.randomUUID(),
@@ -491,8 +527,8 @@ function generateVillain(region: RegionType): Villain {
     secret: pick(SECRETS_BY_REGION[region]),
     objective: pick(OBJECTIVES_BY_REGION[region]),
     backstory: pick(BACKSTORIES_BY_REGION[region]),
-    hp: rollDice(4, 12, 20),
-    ac: rollDice(1, 4, 14),
+    hp: Math.max(1, rollDice(4, 12, 20 + conMod * 4)),
+    ac: 14 + dexMod + rollDice(1, 4),
     region,
     isVillain: true,
     motivation: pick(VILLAIN_MOTIVATIONS[region]),
@@ -505,6 +541,10 @@ function generateVillain(region: RegionType): Villain {
     hatred: pick(HATREDS),
     ambition: pick(AMBITIONS),
     memory: pick(MEMORIES),
+    systemId: preset.id,
+    systemName: preset.name,
+    attributes: boosted,
+    skills,
   };
 }
 
