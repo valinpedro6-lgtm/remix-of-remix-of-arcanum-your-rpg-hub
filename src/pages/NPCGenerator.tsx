@@ -19,6 +19,18 @@ type RegionType =
   | 'tundra' | 'savana' | 'vulcanico' | 'arquipelago' | 'ruinas' | 'acampamento' | 'navio'
   | 'cemiterio' | 'planicie' | 'personalizado';
 
+interface GeneratedAttribute {
+  name: string;
+  value: number;
+  modifier: number;
+}
+
+interface GeneratedSkill {
+  name: string;
+  attribute: string;
+  bonus: number;
+}
+
 interface NPC {
   id: string;
   name: string;
@@ -39,6 +51,10 @@ interface NPC {
   hatred: string;
   ambition: string;
   memory: string;
+  systemId: string;
+  systemName: string;
+  attributes: GeneratedAttribute[];
+  skills: GeneratedSkill[];
 }
 
 interface Villain {
@@ -66,6 +82,10 @@ interface Villain {
   hatred: string;
   ambition: string;
   memory: string;
+  systemId: string;
+  systemName: string;
+  attributes: GeneratedAttribute[];
+  skills: GeneratedSkill[];
 }
 
 type Character = NPC | Villain;
