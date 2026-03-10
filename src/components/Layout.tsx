@@ -67,6 +67,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
           <NavLinks />
         </nav>
         <div className="p-3 border-t border-border/50 space-y-2">
+          <ThemeSwitcher />
           <GlobalTimerBar />
           <div className="text-[10px] text-muted-foreground/50 text-center">⚔️ Arcanum v2.0</div>
         </div>
