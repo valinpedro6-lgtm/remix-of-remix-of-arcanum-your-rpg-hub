@@ -554,8 +554,11 @@ const NPCGenerator = () => {
   const [current, setCurrent] = useState<Character | null>(null);
   const [saved, setSaved] = useLocalStorage<Character[]>('arcanum-npcs', []);
   const [region, setRegion] = useState<RegionType>(getCurrentRegion);
+  const [selectedSystem, setSelectedSystem] = useState<string>(PLAYER_SYSTEM_PRESETS[0].id);
   const [revealedSecrets, setRevealedSecrets] = useState<Set<string>>(new Set());
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+
+  const getPreset = () => PLAYER_SYSTEM_PRESETS.find(p => p.id === selectedSystem) || PLAYER_SYSTEM_PRESETS[0];
 
   // Sync region from environment
   useEffect(() => {
@@ -565,7 +568,7 @@ const NPCGenerator = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const generate = (villain: boolean) => setCurrent(villain ? generateVillain(region) : generateNPC(region));
+  const generate = (villain: boolean) => setCurrent(villain ? generateVillain(region, getPreset()) : generateNPC(region, getPreset()));
   const saveChar = () => {
     if (current) {
       setSaved(prev => [current, ...prev]);
