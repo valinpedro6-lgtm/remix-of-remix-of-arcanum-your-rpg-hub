@@ -1,7 +1,6 @@
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import {
   Swords, Clock, Dices, Users, Skull, StickyNote, FlaskConical,
@@ -11,10 +10,10 @@ import {
 import { motion } from 'framer-motion';
 
 interface TimerState {
-  speed: number;
-  running: boolean;
-  elapsed: number;
-  lastTickTimestamp: number | null;
+  realMinutesPerGameHour: number;
+  isRunning: boolean;
+  gameMinutesElapsed: number;
+  lastTickTimestamp: number;
 }
 
 interface Combatant {
@@ -45,13 +44,18 @@ const getTimeOfDay = (hours: number) => {
 };
 
 const Dashboard = () => {
-  const [timer] = useLocalStorage<TimerState>('arcanum-game-timer', { speed: 10, running: false, elapsed: 0, lastTickTimestamp: null });
+  const [timer] = useLocalStorage<TimerState>('arcanum-timer', {
+    realMinutesPerGameHour: 1,
+    isRunning: false,
+    gameMinutesElapsed: 0,
+    lastTickTimestamp: 0,
+  });
   const [combatants] = useLocalStorage<Combatant[]>('arcanum-initiative', []);
   const [currentTurn] = useLocalStorage<number>('arcanum-initiative-turn', 0);
   const [round] = useLocalStorage<number>('arcanum-initiative-round', 1);
   const [notes] = useLocalStorage<Note[]>('arcanum-notes', []);
 
-  const totalMinutes = Math.floor(timer.elapsed / 60);
+  const totalMinutes = Math.floor(timer.gameMinutesElapsed);
   const days = Math.floor(totalMinutes / 1440) + 1;
   const hours = Math.floor((totalMinutes % 1440) / 60);
   const minutes = totalMinutes % 60;
@@ -107,8 +111,8 @@ const Dashboard = () => {
                     <Clock className="w-5 h-5 text-primary" />
                     <h3 className="font-display font-semibold">Timer do Jogo</h3>
                   </div>
-                  <Badge variant={timer.running ? 'default' : 'secondary'} className="text-[10px]">
-                    {timer.running ? '▶ Rodando' : '⏸ Pausado'}
+                  <Badge variant={timer.isRunning ? 'default' : 'secondary'} className="text-[10px]">
+                    {timer.isRunning ? '▶ Rodando' : '⏸ Pausado'}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-3">
