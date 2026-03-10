@@ -4,11 +4,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   UserPlus, Save, Trash2, Sparkles, Shield, Heart, Target,
   Skull, Eye, EyeOff, ChevronDown, ChevronUp, Swords,
-  Flame, Brain, Zap, Crown, BookOpen
+  Flame, Brain, Zap, Crown, BookOpen, Scroll
 } from 'lucide-react';
+import { PLAYER_SYSTEM_PRESETS, type PlayerPreset } from '@/data/rpgSystemPresets';
 
 // --- TYPES ---
 
@@ -16,6 +18,18 @@ type RegionType =
   | 'floresta' | 'montanha' | 'costa' | 'deserto' | 'cidade' | 'pantano' | 'subterraneo'
   | 'tundra' | 'savana' | 'vulcanico' | 'arquipelago' | 'ruinas' | 'acampamento' | 'navio'
   | 'cemiterio' | 'planicie' | 'personalizado';
+
+interface GeneratedAttribute {
+  name: string;
+  value: number;
+  modifier: number;
+}
+
+interface GeneratedSkill {
+  name: string;
+  attribute: string;
+  bonus: number;
+}
 
 interface NPC {
   id: string;
@@ -37,6 +51,10 @@ interface NPC {
   hatred: string;
   ambition: string;
   memory: string;
+  systemId: string;
+  systemName: string;
+  attributes: GeneratedAttribute[];
+  skills: GeneratedSkill[];
 }
 
 interface Villain {
@@ -64,6 +82,10 @@ interface Villain {
   hatred: string;
   ambition: string;
   memory: string;
+  systemId: string;
+  systemName: string;
+  attributes: GeneratedAttribute[];
+  skills: GeneratedSkill[];
 }
 
 type Character = NPC | Villain;
@@ -429,7 +451,31 @@ function getCurrentRegion(): RegionType {
   return 'cidade';
 }
 
-function generateNPC(region: RegionType): NPC {
+function generateAttrsFromPreset(preset: PlayerPreset): GeneratedAttribute[] {
+  return preset.attributes.map(a => {
+    const value = rollDice(3, 6);
+    const modifier = Math.floor((value - 10) / 2);
+    return { name: a.name, value, modifier };
+  });
+}
+
+function generateSkillsFromPreset(preset: PlayerPreset, attrs: GeneratedAttribute[]): GeneratedSkill[] {
+  return preset.skills.map(s => {
+    const attr = attrs.find(a => a.name === s.attribute);
+    const profBonus = Math.random() < 0.3 ? rollDice(1, 4, 1) : 0;
+    const bonus = (attr?.modifier ?? 0) + profBonus;
+    return { name: s.name, attribute: s.attribute, bonus };
+  });
+}
+
+function generateNPC(region: RegionType, preset: PlayerPreset): NPC {
+  const attributes = generateAttrsFromPreset(preset);
+  const skills = generateSkillsFromPreset(preset, attributes);
+  const conAttr = attributes.find(a => a.name === 'Constituição' || a.name === 'Constitution' || a.name === 'Vigor' || a.name === 'Corpo' || a.name === 'Stamina' || a.name === 'Body');
+  const conMod = conAttr?.modifier ?? 0;
+  const dexAttr = attributes.find(a => a.name === 'Destreza' || a.name === 'Dexterity' || a.name === 'Agilidade' || a.name === 'Reflexos');
+  const dexMod = dexAttr?.modifier ?? 0;
+
   return {
     id: crypto.randomUUID(),
     name: pick(NAMES_BY_REGION[region]),
@@ -441,8 +487,8 @@ function generateNPC(region: RegionType): NPC {
     secret: pick(SECRETS_BY_REGION[region]),
     objective: pick(OBJECTIVES_BY_REGION[region]),
     backstory: pick(BACKSTORIES_BY_REGION[region]),
-    hp: rollDice(2, 10, 5),
-    ac: rollDice(1, 6, 8),
+    hp: Math.max(1, rollDice(2, 10, conMod * 2)),
+    ac: 10 + dexMod + rollDice(1, 4),
     region,
     isVillain: false,
     fear: pick(FEARS),
@@ -450,13 +496,25 @@ function generateNPC(region: RegionType): NPC {
     hatred: pick(HATREDS),
     ambition: pick(AMBITIONS),
     memory: pick(MEMORIES),
+    systemId: preset.id,
+    systemName: preset.name,
+    attributes,
+    skills,
   };
 }
 
-function generateVillain(region: RegionType): Villain {
+function generateVillain(region: RegionType, preset: PlayerPreset): Villain {
   const plan = pick(VILLAIN_PLANS[region]);
   const weaknessCount = Math.random() < 0.5 ? 2 : 3;
   const shuffled = [...HIDDEN_WEAKNESSES].sort(() => Math.random() - 0.5);
+  const attributes = generateAttrsFromPreset(preset);
+  const skills = generateSkillsFromPreset(preset, attributes);
+  // Villains get boosted stats
+  const boosted = attributes.map(a => ({ ...a, value: a.value + 4, modifier: Math.floor((a.value + 4 - 10) / 2) }));
+  const conAttr = boosted.find(a => a.name === 'Constituição' || a.name === 'Constitution' || a.name === 'Vigor' || a.name === 'Corpo');
+  const conMod = conAttr?.modifier ?? 0;
+  const dexAttr = boosted.find(a => a.name === 'Destreza' || a.name === 'Dexterity' || a.name === 'Agilidade' || a.name === 'Reflexos');
+  const dexMod = dexAttr?.modifier ?? 0;
 
   return {
     id: crypto.randomUUID(),
@@ -469,8 +527,8 @@ function generateVillain(region: RegionType): Villain {
     secret: pick(SECRETS_BY_REGION[region]),
     objective: pick(OBJECTIVES_BY_REGION[region]),
     backstory: pick(BACKSTORIES_BY_REGION[region]),
-    hp: rollDice(4, 12, 20),
-    ac: rollDice(1, 4, 14),
+    hp: Math.max(1, rollDice(4, 12, 20 + conMod * 4)),
+    ac: 14 + dexMod + rollDice(1, 4),
     region,
     isVillain: true,
     motivation: pick(VILLAIN_MOTIVATIONS[region]),
@@ -483,6 +541,10 @@ function generateVillain(region: RegionType): Villain {
     hatred: pick(HATREDS),
     ambition: pick(AMBITIONS),
     memory: pick(MEMORIES),
+    systemId: preset.id,
+    systemName: preset.name,
+    attributes: boosted,
+    skills,
   };
 }
 
@@ -492,8 +554,11 @@ const NPCGenerator = () => {
   const [current, setCurrent] = useState<Character | null>(null);
   const [saved, setSaved] = useLocalStorage<Character[]>('arcanum-npcs', []);
   const [region, setRegion] = useState<RegionType>(getCurrentRegion);
+  const [selectedSystem, setSelectedSystem] = useState<string>(PLAYER_SYSTEM_PRESETS[0].id);
   const [revealedSecrets, setRevealedSecrets] = useState<Set<string>>(new Set());
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+
+  const getPreset = () => PLAYER_SYSTEM_PRESETS.find(p => p.id === selectedSystem) || PLAYER_SYSTEM_PRESETS[0];
 
   // Sync region from environment
   useEffect(() => {
@@ -503,7 +568,7 @@ const NPCGenerator = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const generate = (villain: boolean) => setCurrent(villain ? generateVillain(region) : generateNPC(region));
+  const generate = (villain: boolean) => setCurrent(villain ? generateVillain(region, getPreset()) : generateNPC(region, getPreset()));
   const saveChar = () => {
     if (current) {
       setSaved(prev => [current, ...prev]);
@@ -560,7 +625,7 @@ const NPCGenerator = () => {
           </div>
 
           {/* Stats */}
-          <div className="flex gap-3 text-sm">
+          <div className="flex flex-wrap gap-3 text-sm">
             <div className="flex items-center gap-1">
               <Heart className="w-3.5 h-3.5 text-destructive" />
               <span className="font-semibold">{char.hp} HP</span>
@@ -569,7 +634,47 @@ const NPCGenerator = () => {
               <Shield className="w-3.5 h-3.5 text-primary" />
               <span className="font-semibold">CA {char.ac}</span>
             </div>
+            <Badge variant="outline" className="text-xs">
+              <Scroll className="w-3 h-3 mr-1" />{char.systemName}
+            </Badge>
           </div>
+
+          {/* Attributes */}
+          {char.attributes && char.attributes.length > 0 && (
+            <div className="pt-2 border-t border-border/40">
+              <h4 className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider mb-2">Atributos</h4>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                {char.attributes.map(a => (
+                  <div key={a.name} className="bg-secondary/40 rounded-lg p-1.5 text-center">
+                    <div className="text-[10px] text-muted-foreground truncate">{a.name}</div>
+                    <div className="text-lg font-bold leading-tight">{a.value}</div>
+                    <div className={`text-xs font-semibold ${a.modifier >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {a.modifier >= 0 ? '+' : ''}{a.modifier}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Skills (top 5) */}
+          {char.skills && char.skills.length > 0 && (
+            <div className="pt-2 border-t border-border/40">
+              <h4 className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                Perícias (top {Math.min(char.skills.length, 5)})
+              </h4>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm">
+                {[...char.skills].sort((a, b) => b.bonus - a.bonus).slice(0, 5).map(s => (
+                  <div key={s.name} className="flex justify-between">
+                    <span className="text-muted-foreground truncate">{s.name}</span>
+                    <span className={`font-semibold ${s.bonus >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {s.bonus >= 0 ? '+' : ''}{s.bonus}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Basic info */}
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
@@ -688,20 +793,35 @@ const NPCGenerator = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="page-title">Gerador de NPC</h1>
-          <p className="text-sm text-muted-foreground">
-            Região atual: <span className="text-primary font-semibold">{REGION_LABELS[region]}</span>
-          </p>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="page-title">Gerador de NPC</h1>
+            <p className="text-sm text-muted-foreground">
+              Região atual: <span className="text-primary font-semibold">{REGION_LABELS[region]}</span>
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => generate(false)}>
+              <Sparkles className="w-4 h-4 mr-2" />NPC
+            </Button>
+            <Button variant="destructive" onClick={() => generate(true)}>
+              <Skull className="w-4 h-4 mr-2" />Vilão
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => generate(false)}>
-            <Sparkles className="w-4 h-4 mr-2" />NPC
-          </Button>
-          <Button variant="destructive" onClick={() => generate(true)}>
-            <Skull className="w-4 h-4 mr-2" />Vilão
-          </Button>
+        <div className="flex items-center gap-2">
+          <Scroll className="w-4 h-4 text-muted-foreground shrink-0" />
+          <Select value={selectedSystem} onValueChange={setSelectedSystem}>
+            <SelectTrigger className="w-full sm:w-64">
+              <SelectValue placeholder="Sistema de RPG" />
+            </SelectTrigger>
+            <SelectContent>
+              {PLAYER_SYSTEM_PRESETS.map(p => (
+                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

@@ -86,9 +86,12 @@ export const Layout = ({ children }: { children: ReactNode }) => {
               <h1 className="text-2xl font-display font-bold gradient-text">Arcanum</h1>
               <p className="text-xs text-muted-foreground mt-0.5">Ferramentas para Mestres</p>
             </div>
-            <nav className="flex flex-col gap-0.5 p-3">
+            <nav className="flex flex-col gap-0.5 p-3 flex-1 overflow-y-auto">
               <NavLinks />
             </nav>
+            <div className="p-3 border-t border-border/50">
+              <ThemeSwitcher />
+            </div>
           </SheetContent>
         </Sheet>
         <h1 className="text-lg font-display font-bold gradient-text">Arcanum</h1>
