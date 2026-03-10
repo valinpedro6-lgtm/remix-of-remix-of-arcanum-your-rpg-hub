@@ -753,20 +753,35 @@ const NPCGenerator = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="page-title">Gerador de NPC</h1>
-          <p className="text-sm text-muted-foreground">
-            Região atual: <span className="text-primary font-semibold">{REGION_LABELS[region]}</span>
-          </p>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="page-title">Gerador de NPC</h1>
+            <p className="text-sm text-muted-foreground">
+              Região atual: <span className="text-primary font-semibold">{REGION_LABELS[region]}</span>
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => generate(false)}>
+              <Sparkles className="w-4 h-4 mr-2" />NPC
+            </Button>
+            <Button variant="destructive" onClick={() => generate(true)}>
+              <Skull className="w-4 h-4 mr-2" />Vilão
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => generate(false)}>
-            <Sparkles className="w-4 h-4 mr-2" />NPC
-          </Button>
-          <Button variant="destructive" onClick={() => generate(true)}>
-            <Skull className="w-4 h-4 mr-2" />Vilão
-          </Button>
+        <div className="flex items-center gap-2">
+          <Scroll className="w-4 h-4 text-muted-foreground shrink-0" />
+          <Select value={selectedSystem} onValueChange={setSelectedSystem}>
+            <SelectTrigger className="w-full sm:w-64">
+              <SelectValue placeholder="Sistema de RPG" />
+            </SelectTrigger>
+            <SelectContent>
+              {PLAYER_SYSTEM_PRESETS.map(p => (
+                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
