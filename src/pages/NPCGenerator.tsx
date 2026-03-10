@@ -625,7 +625,7 @@ const NPCGenerator = () => {
           </div>
 
           {/* Stats */}
-          <div className="flex gap-3 text-sm">
+          <div className="flex flex-wrap gap-3 text-sm">
             <div className="flex items-center gap-1">
               <Heart className="w-3.5 h-3.5 text-destructive" />
               <span className="font-semibold">{char.hp} HP</span>
@@ -634,7 +634,47 @@ const NPCGenerator = () => {
               <Shield className="w-3.5 h-3.5 text-primary" />
               <span className="font-semibold">CA {char.ac}</span>
             </div>
+            <Badge variant="outline" className="text-xs">
+              <Scroll className="w-3 h-3 mr-1" />{char.systemName}
+            </Badge>
           </div>
+
+          {/* Attributes */}
+          {char.attributes && char.attributes.length > 0 && (
+            <div className="pt-2 border-t border-border/40">
+              <h4 className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider mb-2">Atributos</h4>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                {char.attributes.map(a => (
+                  <div key={a.name} className="bg-secondary/40 rounded-lg p-1.5 text-center">
+                    <div className="text-[10px] text-muted-foreground truncate">{a.name}</div>
+                    <div className="text-lg font-bold leading-tight">{a.value}</div>
+                    <div className={`text-xs font-semibold ${a.modifier >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {a.modifier >= 0 ? '+' : ''}{a.modifier}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Skills (top 5) */}
+          {char.skills && char.skills.length > 0 && (
+            <div className="pt-2 border-t border-border/40">
+              <h4 className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                Perícias (top {Math.min(char.skills.length, 5)})
+              </h4>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm">
+                {[...char.skills].sort((a, b) => b.bonus - a.bonus).slice(0, 5).map(s => (
+                  <div key={s.name} className="flex justify-between">
+                    <span className="text-muted-foreground truncate">{s.name}</span>
+                    <span className={`font-semibold ${s.bonus >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {s.bonus >= 0 ? '+' : ''}{s.bonus}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Basic info */}
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
