@@ -15,7 +15,6 @@ interface SavedSheet {
   maxHp?: number;
   ca?: number;
 }
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface Combatant {
   id: string;
