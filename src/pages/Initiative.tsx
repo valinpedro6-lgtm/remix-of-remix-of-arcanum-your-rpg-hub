@@ -377,7 +377,17 @@ const Initiative = () => {
                                   <span className="text-sm font-semibold">{c.ca}</span>
                                 </div>
                               )}
-                              <span className={`text-2xl font-display font-bold ${isMonster ? 'text-destructive' : 'text-primary'}`}>{c.initiative}</span>
+                              <div onClick={e => e.stopPropagation()} className="flex items-center gap-1">
+                                <NumberInput
+                                  value={c.initiative}
+                                  onChange={v => updateField(c.id, 'initiative', v)}
+                                  className={`w-16 h-9 text-center text-lg font-display font-bold ${isMonster ? 'text-destructive border-destructive/40' : 'text-primary border-primary/40'}`}
+                                />
+                                <Button variant="ghost" size="icon" className="h-7 w-7" title="Rerolar d20"
+                                  onClick={() => updateField(c.id, 'initiative', Math.floor(Math.random() * 20) + 1)}>
+                                  <Dices className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
                               <Button variant="ghost" size="icon" onClick={e => { e.stopPropagation(); remove(c.id); }}>
                                 <Trash2 className="w-4 h-4 text-muted-foreground" />
                               </Button>
