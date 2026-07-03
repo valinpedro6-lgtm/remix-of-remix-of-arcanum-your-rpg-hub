@@ -209,9 +209,9 @@ const Initiative = () => {
               </div>
 
               {/* Bulk add toggle */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Button variant={bulkAdd ? 'default' : 'outline'} size="sm" onClick={() => setBulkAdd(!bulkAdd)} className="text-xs gap-1">
-                  <Copy className="w-3 h-3" />{bulkAdd ? 'Adição em grupo ON' : 'Adicionar em grupo'}
+                  <Copy className="w-3 h-3" />{bulkAdd ? 'Grupo ON' : 'Em grupo'}
                 </Button>
                 {bulkAdd && (
                   <div className="flex items-center gap-1.5">
@@ -219,7 +219,66 @@ const Initiative = () => {
                     <NumberInput min={2} value={bulkCount} onChange={setBulkCount} className="w-16 h-7 text-xs" />
                   </div>
                 )}
+                <Button
+                  variant={showImport ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowImport(v => !v)}
+                  className="text-xs gap-1 ml-auto"
+                >
+                  <UserPlus className="w-3 h-3" />
+                  Importar Fichas ({savedPlayers.length + savedMonsters.length})
+                </Button>
               </div>
+
+              {/* Import saved sheets */}
+              <AnimatePresence>
+                {showImport && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="pt-2 space-y-3 border-t border-border/50">
+                      {savedPlayers.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-primary mb-1.5">
+                            <Users className="w-3 h-3" /> Jogadores Salvos
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {savedPlayers.map(p => (
+                              <Button key={p.id} variant="outline" size="sm" className="h-7 text-xs gap-1 hover:bg-primary/10"
+                                onClick={() => importSheet(p, 'player')}>
+                                <Plus className="w-3 h-3" />{p.name || 'Sem nome'}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {savedMonsters.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-destructive mb-1.5">
+                            <Skull className="w-3 h-3" /> Monstros Salvos
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {savedMonsters.map(m => (
+                              <Button key={m.id} variant="outline" size="sm" className="h-7 text-xs gap-1 hover:bg-destructive/10"
+                                onClick={() => importSheet(m, 'monster')}>
+                                <Plus className="w-3 h-3" />{m.name || 'Sem nome'}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {savedPlayers.length === 0 && savedMonsters.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-2">
+                          Nenhuma ficha salva. Cadastre em Jogadores ou Monstros.
+                        </p>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </CardContent>
           </Card>
         </motion.div>
