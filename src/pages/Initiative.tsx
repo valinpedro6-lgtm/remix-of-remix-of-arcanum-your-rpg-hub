@@ -4,8 +4,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, ChevronRight, RotateCcw, Dices, Swords, Heart, Shield, Skull, User, Zap, Minus, Copy } from 'lucide-react';
+import { Plus, Trash2, ChevronRight, RotateCcw, Dices, Swords, Heart, Shield, Skull, User, Zap, Minus, Copy, UserPlus, Users } from 'lucide-react';
 import { NumberInput } from '@/components/NumberInput';
+import { motion, AnimatePresence } from 'framer-motion';
+
+interface SavedSheet {
+  id: string;
+  name: string;
+  hp?: number;
+  maxHp?: number;
+  ca?: number;
+}
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Combatant {
@@ -45,6 +54,8 @@ const Initiative = () => {
   const [combatants, setCombatants] = useLocalStorage<Combatant[]>('arcanum-initiative', []);
   const [currentTurn, setCurrentTurn] = useLocalStorage<number>('arcanum-initiative-turn', 0);
   const [round, setRound] = useLocalStorage<number>('arcanum-initiative-round', 1);
+  const [savedPlayers] = useLocalStorage<SavedSheet[]>('arcanum-players', []);
+  const [savedMonsters] = useLocalStorage<SavedSheet[]>('arcanum-monsters', []);
   const [name, setName] = useState('');
   const [init, setInit] = useState('');
   const [showHp, setShowHp] = useState(true);
@@ -52,6 +63,20 @@ const Initiative = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [bulkAdd, setBulkAdd] = useState(false);
   const [bulkCount, setBulkCount] = useState(3);
+  const [showImport, setShowImport] = useState(false);
+
+  const importSheet = (sheet: SavedSheet, type: 'player' | 'monster') => {
+    setCombatants(prev => [...prev, {
+      id: crypto.randomUUID(),
+      name: sheet.name || 'Sem Nome',
+      initiative: Math.floor(Math.random() * 20) + 1,
+      hp: sheet.hp ?? sheet.maxHp ?? 0,
+      maxHp: sheet.maxHp ?? sheet.hp ?? 0,
+      ca: sheet.ca ?? 10,
+      conditions: [],
+      type,
+    }]);
+  };
 
   const sorted = [...combatants].sort((a, b) => b.initiative - a.initiative);
 
