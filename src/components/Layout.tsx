@@ -81,7 +81,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
               <Menu className="w-5 h-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0 bg-card/95 backdrop-blur-lg border-border/50">
+          <SheetContent side="left" className="w-64 p-0 bg-card/95 backdrop-blur-lg border-border/50 flex flex-col h-full">
             <div className="p-5 border-b border-border/50">
               <h1 className="text-2xl font-display font-bold gradient-text">Arcanum</h1>
               <p className="text-xs text-muted-foreground mt-0.5">Ferramentas para Mestres</p>
