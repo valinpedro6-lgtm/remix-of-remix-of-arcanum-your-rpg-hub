@@ -524,7 +524,14 @@ const Monsters = () => {
                   <Input placeholder="Alinhamento" value={editing.alignment} onChange={e => setEditing({ ...editing, alignment: e.target.value })} />
                   <Input placeholder="Nível de Desafio" value={editing.challengeRating} onChange={e => setEditing({ ...editing, challengeRating: e.target.value })} />
                 </div>
-                <Input placeholder="URL da Imagem" value={editing.image} onChange={e => setEditing({ ...editing, image: e.target.value })} />
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Retrato / Ilustração</label>
+                  <ImageUploader value={editing.image} onChange={v => setEditing({ ...editing, image: v })} fallbackIcon={<Skull className="w-8 h-8 text-muted-foreground/40" />} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Condições / Status</label>
+                  <StatusConditions conditions={editing.conditions ?? []} onChange={next => setEditing({ ...editing, conditions: next })} />
+                </div>
               </TabsContent>
 
               <TabsContent value="attributes" className="space-y-3 mt-3">
