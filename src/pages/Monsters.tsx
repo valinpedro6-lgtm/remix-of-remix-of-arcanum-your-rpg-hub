@@ -118,7 +118,8 @@ const emptyMonster = (template?: MonsterTemplate): Monster => {
   return {
     id: crypto.randomUUID(),
     name: '', type: '', size: 'Médio', alignment: '', challengeRating: '', image: '',
-    hp: 10, maxHp: 10, ca: 10, movement: 9,
+    hp: 10, maxHp: 10, tempHp: 0, ca: 10, movement: 9,
+    conditions: [],
     attributes: makeAttrs(t.attributes),
     skills: '', attacks: '', abilities: '', resistances: '', immunities: '', senses: '', languages: '', inventory: '', notes: '',
     combatFields: { ...t.combatFields },
