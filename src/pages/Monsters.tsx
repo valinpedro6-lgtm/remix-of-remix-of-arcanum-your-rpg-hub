@@ -173,11 +173,17 @@ const Monsters = () => {
   const openEdit = (m: Monster) => {
     setEditing({
       ...m,
+      tempHp: m.tempHp ?? 0,
+      conditions: m.conditions ?? [],
       attributes: m.attributes?.map(a => ({ ...a, manualModifier: a.manualModifier ?? false })) || makeAttrs(DEFAULT_ATTRIBUTES),
       combatFields: m.combatFields || { ...DEFAULT_COMBAT },
       sections: m.sections || { ...DEFAULT_SECTIONS },
     });
     setOpen(true);
+  };
+
+  const updateMonsterConditions = (id: string, next: string[]) => {
+    setMonsters(prev => prev.map(m => m.id === id ? { ...m, conditions: next } : m));
   };
 
   const setAttrValue = (i: number, val: number) => {
