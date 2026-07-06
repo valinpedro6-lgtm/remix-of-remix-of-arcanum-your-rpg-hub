@@ -211,6 +211,8 @@ const Players = () => {
   const openEdit = (p: Player) => {
     setEditing({
       ...p,
+      tempHp: p.tempHp ?? 0,
+      conditions: p.conditions ?? [],
       attributes: p.attributes?.map(a => ({ ...a, manualModifier: a.manualModifier ?? false })) || makeAttrs(DEFAULT_ATTRIBUTES),
       skills: p.skills?.map(s => ({ ...s })) || makeSkills(DEFAULT_SKILLS),
       proficiencyBonus: p.proficiencyBonus ?? 2,
@@ -220,6 +222,10 @@ const Players = () => {
       hasNotes: p.hasNotes ?? true,
     });
     setOpen(true);
+  };
+
+  const updateConditions = (id: string, next: string[]) => {
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, conditions: next } : p));
   };
 
   // Attribute helpers
