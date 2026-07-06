@@ -14,6 +14,9 @@ import { Plus, Trash2, Edit, Skull, Shield, Heart, Zap, Swords, BookOpen, X, Che
 import { NumberInput } from '@/components/NumberInput';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MONSTER_SYSTEM_PRESETS } from '@/data/rpgSystemPresets';
+import { ImageUploader } from '@/components/ImageUploader';
+import { StatusConditions } from '@/components/StatusConditions';
+import { HPBar } from '@/components/HPBar';
 
 interface Attribute {
   name: string;
@@ -58,8 +61,10 @@ interface Monster {
   image: string;
   hp: number;
   maxHp: number;
+  tempHp: number;
   ca: number;
   movement: number;
+  conditions: string[];
   attributes: Attribute[];
   skills: string;
   attacks: string;
@@ -113,7 +118,8 @@ const emptyMonster = (template?: MonsterTemplate): Monster => {
   return {
     id: crypto.randomUUID(),
     name: '', type: '', size: 'Médio', alignment: '', challengeRating: '', image: '',
-    hp: 10, maxHp: 10, ca: 10, movement: 9,
+    hp: 10, maxHp: 10, tempHp: 0, ca: 10, movement: 9,
+    conditions: [],
     attributes: makeAttrs(t.attributes),
     skills: '', attacks: '', abilities: '', resistances: '', immunities: '', senses: '', languages: '', inventory: '', notes: '',
     combatFields: { ...t.combatFields },
@@ -167,11 +173,17 @@ const Monsters = () => {
   const openEdit = (m: Monster) => {
     setEditing({
       ...m,
+      tempHp: m.tempHp ?? 0,
+      conditions: m.conditions ?? [],
       attributes: m.attributes?.map(a => ({ ...a, manualModifier: a.manualModifier ?? false })) || makeAttrs(DEFAULT_ATTRIBUTES),
       combatFields: m.combatFields || { ...DEFAULT_COMBAT },
       sections: m.sections || { ...DEFAULT_SECTIONS },
     });
     setOpen(true);
+  };
+
+  const updateMonsterConditions = (id: string, next: string[]) => {
+    setMonsters(prev => prev.map(m => m.id === id ? { ...m, conditions: next } : m));
   };
 
   const setAttrValue = (i: number, val: number) => {
@@ -289,37 +301,52 @@ const Monsters = () => {
         <AnimatePresence>
           {monsters.map(m => (
             <motion.div key={m.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} layout>
-              <Card className="card-hover overflow-hidden">
-                <CardContent className="p-0">
+              <Card className={`card-hover overflow-hidden relative ${m.hp === 0 ? 'grayscale opacity-80' : ''} ${m.hp > 0 && m.hp / Math.max(1, m.maxHp) <= 0.25 ? 'ring-1 ring-red-500/40' : ''}`}>
+                {m.image && (
+                  <div className="absolute inset-0 opacity-[0.07] pointer-events-none">
+                    <img src={m.image} alt="" className="w-full h-full object-cover blur-sm" />
+                  </div>
+                )}
+                <CardContent className="p-0 relative">
                   <div className="flex items-start gap-4 p-4">
                     {m.image ? (
-                      <div className="w-20 h-20 rounded-xl bg-secondary overflow-hidden shrink-0 ring-2 ring-primary/20"><img src={m.image} alt={m.name} className="w-full h-full object-cover" /></div>
+                      <div className="w-24 h-24 rounded-xl bg-secondary overflow-hidden shrink-0 ring-2 ring-primary/40 shadow-[0_4px_16px_hsl(var(--primary)/0.25)]">
+                        <img src={m.image} alt={m.name} className="w-full h-full object-cover" />
+                      </div>
                     ) : (
-                      <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-secondary to-secondary/50 flex items-center justify-center shrink-0 ring-2 ring-border"><Skull className="w-8 h-8 text-muted-foreground/30" /></div>
+                      <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-secondary via-secondary/60 to-secondary/30 flex items-center justify-center shrink-0 ring-2 ring-border">
+                        <Skull className="w-10 h-10 text-muted-foreground/30" />
+                      </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-xl font-display font-bold truncate">{m.name || 'Sem nome'}</h3>
-                      <p className="text-sm text-muted-foreground">{[m.size, m.type, m.alignment].filter(Boolean).join(' • ') || 'Sem tipo'}{m.challengeRating && ` • ND ${m.challengeRating}`}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
-                          <Heart className="w-3.5 h-3.5 text-accent shrink-0" />
-                          <button className="text-xs text-muted-foreground hover:text-accent transition-colors" onClick={(e) => { e.stopPropagation(); updateMonsterField(m.id, 'hp', Math.max(0, m.hp - 1)); }}><Minus className="w-3 h-3" /></button>
-                          <span className="text-sm font-semibold min-w-[3ch] text-center">{m.hp}</span>
-                          <button className="text-xs text-muted-foreground hover:text-accent transition-colors" onClick={(e) => { e.stopPropagation(); updateMonsterField(m.id, 'hp', Math.min(m.maxHp, m.hp + 1)); }}><Plus className="w-3 h-3" /></button>
-                          <span className="text-xs text-muted-foreground">/{m.maxHp || m.hp}</span>
-                        </div>
-                        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
-                          <Shield className="w-3.5 h-3.5 text-primary shrink-0" />
-                          <span className="text-sm font-semibold">{m.ca}</span>
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div>
+                        <h3 className="text-xl font-display font-bold truncate leading-tight">{m.name || 'Sem nome'}</h3>
+                        <p className="text-sm text-muted-foreground">{[m.size, m.type, m.alignment].filter(Boolean).join(' • ') || 'Sem tipo'}{m.challengeRating && ` • ND ${m.challengeRating}`}</p>
+                      </div>
+                      <HPBar
+                        hp={m.hp}
+                        maxHp={m.maxHp}
+                        tempHp={m.tempHp ?? 0}
+                        onHpChange={v => updateMonsterField(m.id, 'hp', v)}
+                        onTempHpChange={v => updateMonsterField(m.id, 'tempHp', v)}
+                      />
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
+                        <div className="flex items-center gap-1 bg-secondary/50 rounded-md px-2 py-0.5">
+                          <Shield className="w-3 h-3 text-primary" />
+                          <span className="text-xs font-semibold">CA {m.ca}</span>
                         </div>
                         {m.movement > 0 && (
-                          <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
-                            <span className="text-sm text-muted-foreground">{m.movement}m</span>
+                          <div className="flex items-center gap-1 bg-secondary/50 rounded-md px-2 py-0.5">
+                            <span className="text-[10px] text-muted-foreground">{m.movement}m</span>
                           </div>
                         )}
                       </div>
+                      <div className="pt-1">
+                        <StatusConditions conditions={m.conditions ?? []} onChange={next => updateMonsterConditions(m.id, next)} compact />
+                      </div>
                     </div>
                   </div>
+
 
                   <div className="px-4 pb-2">
                     <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground" onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}>
@@ -497,7 +524,14 @@ const Monsters = () => {
                   <Input placeholder="Alinhamento" value={editing.alignment} onChange={e => setEditing({ ...editing, alignment: e.target.value })} />
                   <Input placeholder="Nível de Desafio" value={editing.challengeRating} onChange={e => setEditing({ ...editing, challengeRating: e.target.value })} />
                 </div>
-                <Input placeholder="URL da Imagem" value={editing.image} onChange={e => setEditing({ ...editing, image: e.target.value })} />
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Retrato / Ilustração</label>
+                  <ImageUploader value={editing.image} onChange={v => setEditing({ ...editing, image: v })} fallbackIcon={<Skull className="w-8 h-8 text-muted-foreground/40" />} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Condições / Status</label>
+                  <StatusConditions conditions={editing.conditions ?? []} onChange={next => setEditing({ ...editing, conditions: next })} />
+                </div>
               </TabsContent>
 
               <TabsContent value="attributes" className="space-y-3 mt-3">
@@ -516,9 +550,10 @@ const Monsters = () => {
 
               <TabsContent value="combat" className="space-y-3 mt-3">
                 {cf.hp && (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div><label className="text-xs text-muted-foreground">HP</label><NumberInput value={editing.hp} onChange={v => setEditing({ ...editing, hp: v })} /></div>
                     <div><label className="text-xs text-muted-foreground">HP Máximo</label><NumberInput value={editing.maxHp} onChange={v => setEditing({ ...editing, maxHp: v })} /></div>
+                    <div><label className="text-xs text-cyan-400">HP Temp</label><NumberInput min={0} value={editing.tempHp ?? 0} onChange={v => setEditing({ ...editing, tempHp: v })} /></div>
                   </div>
                 )}
                 {(cf.ca || cf.movement) && (

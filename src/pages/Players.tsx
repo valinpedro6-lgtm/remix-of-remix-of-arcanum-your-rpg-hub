@@ -14,6 +14,9 @@ import { Plus, Trash2, Edit, Shield, Heart, User, Zap, Swords, BookOpen, Backpac
 import { NumberInput } from '@/components/NumberInput';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PLAYER_SYSTEM_PRESETS } from '@/data/rpgSystemPresets';
+import { ImageUploader } from '@/components/ImageUploader';
+import { StatusConditions } from '@/components/StatusConditions';
+import { HPBar } from '@/components/HPBar';
 
 interface Attribute {
   name: string;
@@ -60,6 +63,7 @@ interface Player {
   image: string;
   hp: number;
   maxHp: number;
+  tempHp: number;
   mana: number;
   maxMana: number;
   energy: number;
@@ -67,6 +71,7 @@ interface Player {
   ca: number;
   movement: number;
   proficiencyBonus: number;
+  conditions: string[];
   attributes: Attribute[];
   skills: Skill[];
   inventory: string;
@@ -127,7 +132,8 @@ const emptyPlayer = (template?: SheetTemplate): Player => {
   return {
     id: crypto.randomUUID(),
     name: '', playerName: '', race: '', className: '', profession: '', level: 1, experience: 0, image: '',
-    hp: 10, maxHp: 10, mana: 0, maxMana: 0, energy: 10, maxEnergy: 10, ca: 10, movement: 9, proficiencyBonus: 2,
+    hp: 10, maxHp: 10, tempHp: 0, mana: 0, maxMana: 0, energy: 10, maxEnergy: 10, ca: 10, movement: 9, proficiencyBonus: 2,
+    conditions: [],
     attributes: makeAttrs(t.attributes),
     skills: makeSkills(t.skills),
     inventory: '', abilities: '', notes: '',
@@ -205,6 +211,8 @@ const Players = () => {
   const openEdit = (p: Player) => {
     setEditing({
       ...p,
+      tempHp: p.tempHp ?? 0,
+      conditions: p.conditions ?? [],
       attributes: p.attributes?.map(a => ({ ...a, manualModifier: a.manualModifier ?? false })) || makeAttrs(DEFAULT_ATTRIBUTES),
       skills: p.skills?.map(s => ({ ...s })) || makeSkills(DEFAULT_SKILLS),
       proficiencyBonus: p.proficiencyBonus ?? 2,
@@ -214,6 +222,10 @@ const Players = () => {
       hasNotes: p.hasNotes ?? true,
     });
     setOpen(true);
+  };
+
+  const updateConditions = (id: string, next: string[]) => {
+    setPlayers(prev => prev.map(p => p.id === id ? { ...p, conditions: next } : p));
   };
 
   // Attribute helpers
@@ -412,49 +424,66 @@ const Players = () => {
         <AnimatePresence>
           {players.map(p => (
             <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} layout>
-              <Card className="card-hover overflow-hidden">
-                <CardContent className="p-0">
+              <Card className={`card-hover overflow-hidden relative group ${p.hp === 0 ? 'grayscale opacity-80' : ''} ${p.hp > 0 && p.hp / Math.max(1, p.maxHp) <= 0.25 ? 'ring-1 ring-red-500/40' : ''}`}>
+                {/* Portrait backdrop */}
+                {p.image && (
+                  <div className="absolute inset-0 opacity-[0.07] pointer-events-none">
+                    <img src={p.image} alt="" className="w-full h-full object-cover blur-sm" />
+                  </div>
+                )}
+                <CardContent className="p-0 relative">
                   <div className="flex items-start gap-4 p-4">
                     {p.image ? (
-                      <div className="w-20 h-20 rounded-xl bg-secondary overflow-hidden shrink-0 ring-2 ring-primary/20"><img src={p.image} alt={p.name} className="w-full h-full object-cover" /></div>
+                      <div className="w-24 h-24 rounded-xl bg-secondary overflow-hidden shrink-0 ring-2 ring-primary/40 shadow-[0_4px_16px_hsl(var(--primary)/0.25)]">
+                        <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                      </div>
                     ) : (
-                      <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-secondary to-secondary/50 flex items-center justify-center shrink-0 ring-2 ring-border"><User className="w-8 h-8 text-muted-foreground/30" /></div>
+                      <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-secondary via-secondary/60 to-secondary/30 flex items-center justify-center shrink-0 ring-2 ring-border">
+                        <User className="w-10 h-10 text-muted-foreground/30" />
+                      </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-xl font-display font-bold truncate">{p.name || 'Sem nome'}</h3>
-                      {p.playerName && <p className="text-xs text-muted-foreground">Jogador: {p.playerName}</p>}
-                      <p className="text-sm text-muted-foreground">{[p.race, p.className, p.profession].filter(Boolean).join(' • ')}{p.level > 0 && ` • Nv ${p.level}`}</p>
-                      {p.experience > 0 && <p className="text-xs text-muted-foreground">XP: {p.experience.toLocaleString()}</p>}
-                    <div className="flex flex-wrap gap-2 mt-2">
-                        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
-                          <Heart className="w-3.5 h-3.5 text-accent shrink-0" />
-                          <button className="text-xs text-muted-foreground hover:text-accent transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'hp', Math.max(0, p.hp - 1)); }}><Minus className="w-3 h-3" /></button>
-                          <span className="text-sm font-semibold min-w-[3ch] text-center">{p.hp}</span>
-                          <button className="text-xs text-muted-foreground hover:text-accent transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'hp', Math.min(p.maxHp, p.hp + 1)); }}><Plus className="w-3 h-3" /></button>
-                          <span className="text-xs text-muted-foreground">/{p.maxHp}</span>
-                        </div>
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div>
+                        <h3 className="text-xl font-display font-bold truncate leading-tight">{p.name || 'Sem nome'}</h3>
+                        {p.playerName && <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Jogador: {p.playerName}</p>}
+                        <p className="text-sm text-muted-foreground">{[p.race, p.className, p.profession].filter(Boolean).join(' • ')}{p.level > 0 && ` • Nv ${p.level}`}</p>
+                      </div>
+                      <HPBar
+                        hp={p.hp}
+                        maxHp={p.maxHp}
+                        tempHp={p.tempHp ?? 0}
+                        onHpChange={v => updatePlayerField(p.id, 'hp', v)}
+                        onTempHpChange={v => updatePlayerField(p.id, 'tempHp', v)}
+                      />
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
                         {p.maxMana > 0 && (
-                          <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
-                            <Zap className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                            <button className="text-xs text-muted-foreground hover:text-blue-400 transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'mana', Math.max(0, p.mana - 1)); }}><Minus className="w-3 h-3" /></button>
-                            <span className="text-sm font-semibold min-w-[3ch] text-center">{p.mana}</span>
-                            <button className="text-xs text-muted-foreground hover:text-blue-400 transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'mana', Math.min(p.maxMana, p.mana + 1)); }}><Plus className="w-3 h-3" /></button>
-                            <span className="text-xs text-muted-foreground">/{p.maxMana}</span>
+                          <div className="flex items-center gap-1 bg-secondary/50 rounded-md px-2 py-0.5">
+                            <Zap className="w-3 h-3 text-blue-400" />
+                            <button className="hover:text-blue-400" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'mana', Math.max(0, p.mana - 1)); }}><Minus className="w-2.5 h-2.5" /></button>
+                            <span className="text-xs font-semibold tabular-nums">{p.mana}/{p.maxMana}</span>
+                            <button className="hover:text-blue-400" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'mana', Math.min(p.maxMana, p.mana + 1)); }}><Plus className="w-2.5 h-2.5" /></button>
                           </div>
                         )}
                         {p.maxEnergy > 0 && (
-                          <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
-                            <Sparkles className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
-                            <button className="text-xs text-muted-foreground hover:text-yellow-400 transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'energy', Math.max(0, p.energy - 1)); }}><Minus className="w-3 h-3" /></button>
-                            <span className="text-sm font-semibold min-w-[3ch] text-center">{p.energy}</span>
-                            <button className="text-xs text-muted-foreground hover:text-yellow-400 transition-colors" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'energy', Math.min(p.maxEnergy, p.energy + 1)); }}><Plus className="w-3 h-3" /></button>
-                            <span className="text-xs text-muted-foreground">/{p.maxEnergy}</span>
+                          <div className="flex items-center gap-1 bg-secondary/50 rounded-md px-2 py-0.5">
+                            <Sparkles className="w-3 h-3 text-yellow-400" />
+                            <button className="hover:text-yellow-400" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'energy', Math.max(0, p.energy - 1)); }}><Minus className="w-2.5 h-2.5" /></button>
+                            <span className="text-xs font-semibold tabular-nums">{p.energy}/{p.maxEnergy}</span>
+                            <button className="hover:text-yellow-400" onClick={(e) => { e.stopPropagation(); updatePlayerField(p.id, 'energy', Math.min(p.maxEnergy, p.energy + 1)); }}><Plus className="w-2.5 h-2.5" /></button>
                           </div>
                         )}
-                        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
-                          <Shield className="w-3.5 h-3.5 text-primary shrink-0" />
-                          <span className="text-sm font-semibold">{p.ca}</span>
+                        <div className="flex items-center gap-1 bg-secondary/50 rounded-md px-2 py-0.5">
+                          <Shield className="w-3 h-3 text-primary" />
+                          <span className="text-xs font-semibold">CA {p.ca}</span>
                         </div>
+                        {p.experience > 0 && (
+                          <div className="flex items-center gap-1 bg-secondary/50 rounded-md px-2 py-0.5">
+                            <span className="text-[10px] text-muted-foreground">XP {p.experience.toLocaleString()}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="pt-1">
+                        <StatusConditions conditions={p.conditions ?? []} onChange={next => updateConditions(p.id, next)} compact />
                       </div>
                     </div>
                   </div>
@@ -694,7 +723,14 @@ const Players = () => {
                   <div><label className="text-xs text-muted-foreground">Experiência</label><NumberInput min={0} value={editing.experience} onChange={v => setEditing({ ...editing, experience: v })} /></div>
                   <div><label className="text-xs text-muted-foreground">Bônus de Proficiência</label><NumberInput value={editing.proficiencyBonus ?? 2} onChange={v => setEditing({ ...editing, proficiencyBonus: v })} /></div>
                 </div>
-                <Input placeholder="URL da Imagem" value={editing.image} onChange={e => setEditing({ ...editing, image: e.target.value })} />
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Retrato do Personagem</label>
+                  <ImageUploader value={editing.image} onChange={v => setEditing({ ...editing, image: v })} fallbackIcon={<User className="w-8 h-8 text-muted-foreground/40" />} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Condições / Status</label>
+                  <StatusConditions conditions={editing.conditions ?? []} onChange={next => setEditing({ ...editing, conditions: next })} />
+                </div>
               </TabsContent>
 
               <TabsContent value="attributes" className="space-y-3 mt-3">
@@ -728,9 +764,10 @@ const Players = () => {
 
               <TabsContent value="combat" className="space-y-3 mt-3">
                 {cf.hp && (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div><label className="text-xs text-muted-foreground">HP Atual</label><NumberInput value={editing.hp} onChange={v => setEditing({ ...editing, hp: v })} /></div>
                     <div><label className="text-xs text-muted-foreground">HP Máximo</label><NumberInput value={editing.maxHp} onChange={v => setEditing({ ...editing, maxHp: v })} /></div>
+                    <div><label className="text-xs text-cyan-400">HP Temp</label><NumberInput min={0} value={editing.tempHp ?? 0} onChange={v => setEditing({ ...editing, tempHp: v })} /></div>
                   </div>
                 )}
                 {cf.mana && (
