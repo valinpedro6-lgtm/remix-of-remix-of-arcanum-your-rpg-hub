@@ -301,37 +301,52 @@ const Monsters = () => {
         <AnimatePresence>
           {monsters.map(m => (
             <motion.div key={m.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} layout>
-              <Card className="card-hover overflow-hidden">
-                <CardContent className="p-0">
+              <Card className={`card-hover overflow-hidden relative ${m.hp === 0 ? 'grayscale opacity-80' : ''} ${m.hp > 0 && m.hp / Math.max(1, m.maxHp) <= 0.25 ? 'ring-1 ring-red-500/40' : ''}`}>
+                {m.image && (
+                  <div className="absolute inset-0 opacity-[0.07] pointer-events-none">
+                    <img src={m.image} alt="" className="w-full h-full object-cover blur-sm" />
+                  </div>
+                )}
+                <CardContent className="p-0 relative">
                   <div className="flex items-start gap-4 p-4">
                     {m.image ? (
-                      <div className="w-20 h-20 rounded-xl bg-secondary overflow-hidden shrink-0 ring-2 ring-primary/20"><img src={m.image} alt={m.name} className="w-full h-full object-cover" /></div>
+                      <div className="w-24 h-24 rounded-xl bg-secondary overflow-hidden shrink-0 ring-2 ring-primary/40 shadow-[0_4px_16px_hsl(var(--primary)/0.25)]">
+                        <img src={m.image} alt={m.name} className="w-full h-full object-cover" />
+                      </div>
                     ) : (
-                      <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-secondary to-secondary/50 flex items-center justify-center shrink-0 ring-2 ring-border"><Skull className="w-8 h-8 text-muted-foreground/30" /></div>
+                      <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-secondary via-secondary/60 to-secondary/30 flex items-center justify-center shrink-0 ring-2 ring-border">
+                        <Skull className="w-10 h-10 text-muted-foreground/30" />
+                      </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-xl font-display font-bold truncate">{m.name || 'Sem nome'}</h3>
-                      <p className="text-sm text-muted-foreground">{[m.size, m.type, m.alignment].filter(Boolean).join(' • ') || 'Sem tipo'}{m.challengeRating && ` • ND ${m.challengeRating}`}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
-                          <Heart className="w-3.5 h-3.5 text-accent shrink-0" />
-                          <button className="text-xs text-muted-foreground hover:text-accent transition-colors" onClick={(e) => { e.stopPropagation(); updateMonsterField(m.id, 'hp', Math.max(0, m.hp - 1)); }}><Minus className="w-3 h-3" /></button>
-                          <span className="text-sm font-semibold min-w-[3ch] text-center">{m.hp}</span>
-                          <button className="text-xs text-muted-foreground hover:text-accent transition-colors" onClick={(e) => { e.stopPropagation(); updateMonsterField(m.id, 'hp', Math.min(m.maxHp, m.hp + 1)); }}><Plus className="w-3 h-3" /></button>
-                          <span className="text-xs text-muted-foreground">/{m.maxHp || m.hp}</span>
-                        </div>
-                        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
-                          <Shield className="w-3.5 h-3.5 text-primary shrink-0" />
-                          <span className="text-sm font-semibold">{m.ca}</span>
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div>
+                        <h3 className="text-xl font-display font-bold truncate leading-tight">{m.name || 'Sem nome'}</h3>
+                        <p className="text-sm text-muted-foreground">{[m.size, m.type, m.alignment].filter(Boolean).join(' • ') || 'Sem tipo'}{m.challengeRating && ` • ND ${m.challengeRating}`}</p>
+                      </div>
+                      <HPBar
+                        hp={m.hp}
+                        maxHp={m.maxHp}
+                        tempHp={m.tempHp ?? 0}
+                        onHpChange={v => updateMonsterField(m.id, 'hp', v)}
+                        onTempHpChange={v => updateMonsterField(m.id, 'tempHp', v)}
+                      />
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
+                        <div className="flex items-center gap-1 bg-secondary/50 rounded-md px-2 py-0.5">
+                          <Shield className="w-3 h-3 text-primary" />
+                          <span className="text-xs font-semibold">CA {m.ca}</span>
                         </div>
                         {m.movement > 0 && (
-                          <div className="flex items-center gap-1 bg-secondary/50 rounded-lg px-2 py-1">
-                            <span className="text-sm text-muted-foreground">{m.movement}m</span>
+                          <div className="flex items-center gap-1 bg-secondary/50 rounded-md px-2 py-0.5">
+                            <span className="text-[10px] text-muted-foreground">{m.movement}m</span>
                           </div>
                         )}
                       </div>
+                      <div className="pt-1">
+                        <StatusConditions conditions={m.conditions ?? []} onChange={next => updateMonsterConditions(m.id, next)} compact />
+                      </div>
                     </div>
                   </div>
+
 
                   <div className="px-4 pb-2">
                     <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-foreground" onClick={() => setExpandedId(expandedId === m.id ? null : m.id)}>
