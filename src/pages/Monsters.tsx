@@ -14,6 +14,9 @@ import { Plus, Trash2, Edit, Skull, Shield, Heart, Zap, Swords, BookOpen, X, Che
 import { NumberInput } from '@/components/NumberInput';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MONSTER_SYSTEM_PRESETS } from '@/data/rpgSystemPresets';
+import { ImageUploader } from '@/components/ImageUploader';
+import { StatusConditions } from '@/components/StatusConditions';
+import { HPBar } from '@/components/HPBar';
 
 interface Attribute {
   name: string;
