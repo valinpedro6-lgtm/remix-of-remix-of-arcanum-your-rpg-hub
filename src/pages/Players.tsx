@@ -63,6 +63,7 @@ interface Player {
   image: string;
   hp: number;
   maxHp: number;
+  tempHp: number;
   mana: number;
   maxMana: number;
   energy: number;
@@ -70,6 +71,7 @@ interface Player {
   ca: number;
   movement: number;
   proficiencyBonus: number;
+  conditions: string[];
   attributes: Attribute[];
   skills: Skill[];
   inventory: string;
