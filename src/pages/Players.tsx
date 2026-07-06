@@ -764,9 +764,10 @@ const Players = () => {
 
               <TabsContent value="combat" className="space-y-3 mt-3">
                 {cf.hp && (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div><label className="text-xs text-muted-foreground">HP Atual</label><NumberInput value={editing.hp} onChange={v => setEditing({ ...editing, hp: v })} /></div>
                     <div><label className="text-xs text-muted-foreground">HP Máximo</label><NumberInput value={editing.maxHp} onChange={v => setEditing({ ...editing, maxHp: v })} /></div>
+                    <div><label className="text-xs text-cyan-400">HP Temp</label><NumberInput min={0} value={editing.tempHp ?? 0} onChange={v => setEditing({ ...editing, tempHp: v })} /></div>
                   </div>
                 )}
                 {cf.mana && (
