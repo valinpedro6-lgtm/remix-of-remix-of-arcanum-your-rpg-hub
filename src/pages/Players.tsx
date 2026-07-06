@@ -723,7 +723,14 @@ const Players = () => {
                   <div><label className="text-xs text-muted-foreground">Experiência</label><NumberInput min={0} value={editing.experience} onChange={v => setEditing({ ...editing, experience: v })} /></div>
                   <div><label className="text-xs text-muted-foreground">Bônus de Proficiência</label><NumberInput value={editing.proficiencyBonus ?? 2} onChange={v => setEditing({ ...editing, proficiencyBonus: v })} /></div>
                 </div>
-                <Input placeholder="URL da Imagem" value={editing.image} onChange={e => setEditing({ ...editing, image: e.target.value })} />
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Retrato do Personagem</label>
+                  <ImageUploader value={editing.image} onChange={v => setEditing({ ...editing, image: v })} fallbackIcon={<User className="w-8 h-8 text-muted-foreground/40" />} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Condições / Status</label>
+                  <StatusConditions conditions={editing.conditions ?? []} onChange={next => setEditing({ ...editing, conditions: next })} />
+                </div>
               </TabsContent>
 
               <TabsContent value="attributes" className="space-y-3 mt-3">
