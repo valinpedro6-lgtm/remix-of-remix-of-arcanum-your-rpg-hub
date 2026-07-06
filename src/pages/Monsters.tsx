@@ -61,8 +61,10 @@ interface Monster {
   image: string;
   hp: number;
   maxHp: number;
+  tempHp: number;
   ca: number;
   movement: number;
+  conditions: string[];
   attributes: Attribute[];
   skills: string;
   attacks: string;
