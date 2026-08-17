@@ -3,8 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
-  Dices, Clock, Swords, Users, Skull, FlaskConical,
-  Gamepad2, UserPlus, StickyNote, LayoutDashboard, Menu, CloudSun, Sword, Sparkles, Coins, Gauge
+  Users, StickyNote, LayoutDashboard, Menu, Gauge, Dices, Wand2, BookOpen
 } from 'lucide-react';
 import { GlobalTimerBar } from '@/components/GlobalTimerBar';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
@@ -12,20 +11,13 @@ import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 const navItems = [
   { path: '/', label: 'Início', icon: LayoutDashboard },
   { path: '/painel', label: 'Painel', icon: Gauge },
-  { path: '/dados', label: 'Dados', icon: Dices },
-  { path: '/timer', label: 'Timer', icon: Clock },
-  { path: '/iniciativa', label: 'Iniciativa', icon: Swords },
-  { path: '/jogadores', label: 'Jogadores', icon: Users },
-  { path: '/monstros', label: 'Monstros', icon: Skull },
-  { path: '/pocoes', label: 'Poções', icon: FlaskConical },
-  { path: '/taverna', label: 'Taverna', icon: Gamepad2 },
-  { path: '/npc', label: 'NPC', icon: UserPlus },
-  { path: '/ambiente', label: 'Ambiente', icon: CloudSun },
-  { path: '/armas', label: 'Armas', icon: Sword },
-  { path: '/magias', label: 'Magias', icon: Sparkles },
-  { path: '/loot', label: 'Loot', icon: Coins },
+  { path: '/mesa', label: 'Mesa', icon: Dices },
+  { path: '/fichas', label: 'Fichas', icon: Users },
+  { path: '/geradores', label: 'Geradores', icon: Wand2 },
+  { path: '/compendio', label: 'Compêndio', icon: BookOpen },
   { path: '/notas', label: 'Notas', icon: StickyNote },
 ];
+
 
 export const Layout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
