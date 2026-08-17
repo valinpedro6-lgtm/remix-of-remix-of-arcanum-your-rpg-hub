@@ -103,7 +103,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Timer Card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-          <Link to="/timer">
+          <Link to="/mesa?t=timer">
             <Card className="card-hover glow-border h-full group">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-3">
@@ -135,7 +135,7 @@ const Dashboard = () => {
 
         {/* Initiative Card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <Link to="/iniciativa">
+          <Link to="/mesa?t=iniciativa">
             <Card className="card-hover h-full group">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-3">
