@@ -75,7 +75,7 @@ export const GlobalTimerBar = () => {
 
   return (
     <Link
-      to="/timer"
+      to="/mesa?t=timer"
       className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/50 border border-border/50 hover:border-primary/30 transition-all cursor-pointer group"
     >
       <TimeIcon className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
