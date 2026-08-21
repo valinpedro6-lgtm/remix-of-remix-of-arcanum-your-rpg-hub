@@ -11,6 +11,7 @@ import TableHub from "./pages/TableHub";
 import SheetsHub from "./pages/SheetsHub";
 import GeneratorsHub from "./pages/GeneratorsHub";
 import CompendiumHub from "./pages/CompendiumHub";
+import MindMap from "./pages/MindMap";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/geradores" element={<GeneratorsHub />} />
             <Route path="/compendio" element={<CompendiumHub />} />
             <Route path="/notas" element={<Notes />} />
+            <Route path="/mapa" element={<MindMap />} />
 
             {/* Rotas antigas → novos hubs */}
             <Route path="/dados" element={<Navigate to="/mesa?t=dados" replace />} />
