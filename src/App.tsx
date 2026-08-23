@@ -53,6 +53,7 @@ const App = () => (
           </Routes>
         </Layout>
       </HashRouter>
+      </AccessGate>
     </TooltipProvider>
   </QueryClientProvider>
 );
