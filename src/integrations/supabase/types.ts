@@ -14,7 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      access_gate: {
+        Row: {
+          code_updated_at: string
+          current_code: string
+          id: number
+          master_password: string
+        }
+        Insert: {
+          code_updated_at?: string
+          current_code: string
+          id?: number
+          master_password: string
+        }
+        Update: {
+          code_updated_at?: string
+          current_code?: string
+          id?: number
+          master_password?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
