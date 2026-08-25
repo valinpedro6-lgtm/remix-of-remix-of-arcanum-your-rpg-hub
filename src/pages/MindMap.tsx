@@ -49,18 +49,30 @@ const KINDS: { key: NodeKind; label: string; icon: typeof Lightbulb }[] = [
   { key: 'trama', label: 'Trama', icon: ScrollText },
 ];
 
-const COLORS = [
-  { key: 'primary', label: 'Primária' },
-  { key: 'gold', label: 'Ouro' },
-  { key: 'ember', label: 'Brasa' },
-  { key: 'muted', label: 'Neutra' },
+const COLORS: { key: string; label: string; css: string }[] = [
+  { key: 'primary', label: 'Primária', css: 'hsl(var(--primary))' },
+  { key: 'gold', label: 'Ouro', css: 'hsl(var(--gold))' },
+  { key: 'ember', label: 'Brasa', css: 'hsl(var(--ember))' },
+  { key: 'muted', label: 'Neutra', css: 'hsl(var(--muted-foreground))' },
+  { key: 'red', label: 'Sangue', css: 'hsl(0 78% 55%)' },
+  { key: 'orange', label: 'Laranja', css: 'hsl(24 92% 55%)' },
+  { key: 'amber', label: 'Âmbar', css: 'hsl(43 96% 56%)' },
+  { key: 'lime', label: 'Limo', css: 'hsl(84 70% 50%)' },
+  { key: 'green', label: 'Esmeralda', css: 'hsl(150 65% 45%)' },
+  { key: 'teal', label: 'Turquesa', css: 'hsl(174 70% 45%)' },
+  { key: 'cyan', label: 'Gelo', css: 'hsl(190 90% 55%)' },
+  { key: 'blue', label: 'Arcano', css: 'hsl(217 90% 60%)' },
+  { key: 'indigo', label: 'Índigo', css: 'hsl(250 75% 65%)' },
+  { key: 'purple', label: 'Sombra', css: 'hsl(280 70% 62%)' },
+  { key: 'pink', label: 'Feitiço', css: 'hsl(330 80% 62%)' },
+  { key: 'rose', label: 'Rosa', css: 'hsl(350 80% 62%)' },
+  { key: 'slate', label: 'Pedra', css: 'hsl(215 15% 62%)' },
+  { key: 'white', label: 'Osso', css: 'hsl(40 25% 90%)' },
 ];
 
-const colorVar = (key: string) =>
-  key === 'gold' ? 'hsl(var(--gold))'
-  : key === 'ember' ? 'hsl(var(--ember))'
-  : key === 'muted' ? 'hsl(var(--muted-foreground))'
-  : 'hsl(var(--primary))';
+const COLOR_MAP = Object.fromEntries(COLORS.map(c => [c.key, c.css]));
+const colorVar = (key: string) => COLOR_MAP[key] ?? 'hsl(var(--primary))';
+
 
 const NODE_W = 180;
 const GRID = 24;
