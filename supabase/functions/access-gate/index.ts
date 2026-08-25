@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
       const a = await getAttempts(ip);
       if (a.locked_until && new Date(a.locked_until).getTime() > Date.now()) {
         const retryAfter = Math.ceil((new Date(a.locked_until).getTime() - Date.now()) / 1000);
-        return json({ ok: false, locked: true, retryAfter, lockedUntil: a.locked_until }, 429);
+        return json({ ok: false, locked: true, retryAfter, lockedUntil: a.locked_until });
       }
     }
 
