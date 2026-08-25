@@ -233,13 +233,15 @@ const MasterPanel = ({ locked, onLock }: { locked: boolean; onLock: (ms: number)
           <Input
             type="password"
             value={master}
+            disabled={locked}
             onChange={e => setMaster(e.target.value)}
             placeholder="Senha de mestre"
             maxLength={64}
           />
-          <Button variant="secondary" className="w-full" onClick={unlock} disabled={loading || !master.trim()}>
+          <Button variant="secondary" className="w-full" onClick={unlock} disabled={loading || locked || !master.trim()}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Acessar painel'}
           </Button>
+
         </>
       ) : (
         <>
