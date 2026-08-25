@@ -119,8 +119,43 @@ const edgePath = (a: MapNode, b: MapNode) => {
 
 /* ────────────────────────────── página ────────────────────────────── */
 
+const EMPTY: MindMapData = { nodes: [], edges: [] };
+
 const MindMap = () => {
-  const [data, setData] = useLocalStorage<MindMapData>('arcanum-mindmap', { nodes: [], edges: [] });
+  /* múltiplos mapas salvos */
+  const [docs, setDocs] = useLocalStorage<MindMapDoc[]>('arcanum-mindmaps', []);
+  const [activeId, setActiveId] = useLocalStorage<string>('arcanum-mindmap-active', '');
+  const [mapsOpen, setMapsOpen] = useState(false);
+
+  // migração do mapa único antigo + garantia de ao menos um mapa
+  useEffect(() => {
+    if (docs.length) {
+      if (!docs.some(d => d.id === activeId)) setActiveId(docs[0].id);
+      return;
+    }
+    let legacy: MindMapData = EMPTY;
+    try {
+      const raw = localStorage.getItem('arcanum-mindmap');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed?.nodes)) legacy = { nodes: parsed.nodes, edges: parsed.edges ?? [] };
+      }
+    } catch { /* ignora */ }
+    const first: MindMapDoc = { id: uid(), name: 'Mapa 1', data: legacy };
+    setDocs([first]);
+    setActiveId(first.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docs.length]);
+
+  const activeDoc = docs.find(d => d.id === activeId) ?? docs[0];
+  const data = activeDoc?.data ?? EMPTY;
+
+  const setData = useCallback((value: MindMapData | ((prev: MindMapData) => MindMapData)) => {
+    setDocs(prev => prev.map(d => (d.id === (activeId || prev[0]?.id)
+      ? { ...d, data: value instanceof Function ? value(d.data) : value }
+      : d)));
+  }, [setDocs, activeId]);
+
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [selected, setSelected] = useState<string | null>(null);
