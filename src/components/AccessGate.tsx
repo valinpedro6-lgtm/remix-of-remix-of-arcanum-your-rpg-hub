@@ -171,7 +171,7 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
 };
 
 
-const MasterPanel = () => {
+const MasterPanel = ({ locked, onLock }: { locked: boolean; onLock: (ms: number) => void }) => {
   const [master, setMaster] = useState(() => localStorage.getItem(MASTER_KEY) ?? '');
   const [unlocked, setUnlocked] = useState(false);
   const [current, setCurrent] = useState('');
@@ -192,9 +192,17 @@ const MasterPanel = () => {
         localStorage.setItem(MASTER_KEY, master.trim());
         setCurrent(res.currentCode);
         setUnlocked(true);
+      } else if (res?.locked && res.retryAfter) {
+        onLock(res.retryAfter * 1000);
+        toast({ title: 'Bloqueado por tentativas demais', variant: 'destructive' });
       } else {
-        toast({ title: 'Senha de mestre incorreta', variant: 'destructive' });
+        toast({
+          title: 'Senha de mestre incorreta',
+          description: typeof res?.remaining === 'number' ? `Restam ${res.remaining} tentativa(s).` : undefined,
+          variant: 'destructive',
+        });
       }
+
     } catch {
       toast({ title: 'Erro de conexão', variant: 'destructive' });
     } finally {
