@@ -39,6 +39,12 @@ interface MindMapData {
   nodes: MapNode[];
   edges: MapEdge[];
 }
+interface MindMapDoc {
+  id: string;
+  name: string;
+  data: MindMapData;
+}
+
 
 const KINDS: { key: NodeKind; label: string; icon: typeof Lightbulb }[] = [
   { key: 'ideia', label: 'Ideia', icon: Lightbulb },
