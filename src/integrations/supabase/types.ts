@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_attempts: {
+        Row: {
+          fails: number
+          ip: string
+          locked_until: string | null
+          strikes: number
+          updated_at: string
+        }
+        Insert: {
+          fails?: number
+          ip: string
+          locked_until?: string | null
+          strikes?: number
+          updated_at?: string
+        }
+        Update: {
+          fails?: number
+          ip?: string
+          locked_until?: string | null
+          strikes?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       access_gate: {
         Row: {
           code_updated_at: string
