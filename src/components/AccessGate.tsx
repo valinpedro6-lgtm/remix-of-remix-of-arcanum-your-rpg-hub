@@ -1,20 +1,60 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { KeyRound, Shield, Loader2, Copy, RefreshCw } from 'lucide-react';
+import { KeyRound, Shield, Loader2, Copy, RefreshCw, Lock, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
 const GRANT_KEY = 'arcanum-access-granted';
 const MASTER_KEY = 'arcanum-master-key';
+const LOCK_KEY = 'arcanum-access-lock';
+
+const fmt = (s: number) => {
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+};
+
+/** conta regressiva compartilhada */
+const useCountdown = (until: number | null, onDone: () => void) => {
+  const [left, setLeft] = useState(() => (until ? Math.max(0, Math.ceil((until - Date.now()) / 1000)) : 0));
+  useEffect(() => {
+    if (!until) { setLeft(0); return; }
+    const tick = () => {
+      const s = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+      setLeft(s);
+      if (s <= 0) onDone();
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [until, onDone]);
+  return left;
+};
 
 export const AccessGate = ({ children }: { children: ReactNode }) => {
   const [granted, setGranted] = useState(() => localStorage.getItem(GRANT_KEY) === 'true');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [masterMode, setMasterMode] = useState(false);
+  const [remaining, setRemaining] = useState<number | null>(null);
+  const [lockUntil, setLockUntil] = useState<number | null>(() => {
+    const v = Number(localStorage.getItem(LOCK_KEY) ?? 0);
+    return v > Date.now() ? v : null;
+  });
+
+  const clearLock = () => { localStorage.removeItem(LOCK_KEY); setLockUntil(null); };
+  const secondsLeft = useCountdown(lockUntil, clearLock);
+  const locked = !!lockUntil && secondsLeft > 0;
+
+  const applyLock = (ms: number) => {
+    const until = Date.now() + ms;
+    localStorage.setItem(LOCK_KEY, String(until));
+    setLockUntil(until);
+    setRemaining(null);
+  };
 
   const call = async (payload: Record<string, unknown>) => {
     const { data, error } = await supabase.functions.invoke('access-gate', { body: payload });
@@ -24,18 +64,39 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (locked) return;
     const value = code.trim();
     if (!value) return;
     setLoading(true);
     try {
       const res = await call({ action: 'verify', code: value });
       if (res?.ok) {
+        localStorage.removeItem(LOCK_KEY);
+        setLockUntil(null);
+        setRemaining(null);
         localStorage.setItem(GRANT_KEY, 'true');
         if (res.master) localStorage.setItem(MASTER_KEY, value);
         setGranted(true);
-      } else {
-        toast({ title: 'Código inválido', description: 'Peça um novo código ao mestre.', variant: 'destructive' });
+        return;
       }
+      if (res?.locked && res.retryAfter) {
+        applyLock(res.retryAfter * 1000);
+        toast({
+          title: 'Acesso bloqueado temporariamente',
+          description: `Tente novamente em ${fmt(res.retryAfter)}.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+      setCode('');
+      setRemaining(typeof res?.remaining === 'number' ? res.remaining : null);
+      toast({
+        title: 'Código inválido',
+        description: typeof res?.remaining === 'number'
+          ? `Restam ${res.remaining} tentativa(s) antes do bloqueio.`
+          : 'Peça um novo código ao mestre.',
+        variant: 'destructive',
+      });
     } catch {
       toast({ title: 'Erro de conexão', description: 'Tente novamente.', variant: 'destructive' });
     } finally {
@@ -52,27 +113,46 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
           <CardContent className="p-6 space-y-5">
             <div className="text-center space-y-1">
               <div className="mx-auto w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-2">
-                <KeyRound className="w-6 h-6" />
+                {locked ? <Lock className="w-6 h-6" /> : <KeyRound className="w-6 h-6" />}
               </div>
               <h1 className="text-3xl font-display font-bold gradient-text">Arcanum</h1>
-              <p className="text-sm text-muted-foreground">Digite o código de acesso para entrar</p>
+              <p className="text-sm text-muted-foreground">
+                {locked ? 'Muitas tentativas erradas' : 'Digite o código de acesso para entrar'}
+              </p>
             </div>
+
+            {locked && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-center space-y-1">
+                <p className="text-xs uppercase tracking-widest text-destructive flex items-center justify-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5" /> Bloqueado
+                </p>
+                <p className="text-2xl font-display font-bold tabular-nums text-destructive">{fmt(secondsLeft)}</p>
+                <p className="text-[11px] text-muted-foreground">Aguarde para tentar de novo.</p>
+              </div>
+            )}
 
             <form onSubmit={submit} className="space-y-3">
               <Input
                 type="password"
                 inputMode="numeric"
                 autoFocus
+                disabled={locked || loading}
                 value={code}
                 onChange={e => setCode(e.target.value)}
                 placeholder="Código de acesso"
                 maxLength={64}
                 className="text-center tracking-[0.3em] text-lg"
               />
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Entrar'}
+              <Button type="submit" className="w-full" disabled={loading || locked}>
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : locked ? `Aguarde ${fmt(secondsLeft)}` : 'Entrar'}
               </Button>
             </form>
+
+            {!locked && remaining !== null && (
+              <p className="text-center text-xs text-destructive">
+                {remaining === 0 ? 'Próximo erro bloqueia o acesso.' : `Restam ${remaining} tentativa(s)`}
+              </p>
+            )}
 
             <button
               type="button"
@@ -82,13 +162,14 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
               <Shield className="w-3.5 h-3.5" /> Área do Mestre
             </button>
 
-            {masterMode && <MasterPanel />}
+            {masterMode && <MasterPanel locked={locked} onLock={applyLock} />}
           </CardContent>
         </Card>
       </motion.div>
     </div>
   );
 };
+
 
 const MasterPanel = () => {
   const [master, setMaster] = useState(() => localStorage.getItem(MASTER_KEY) ?? '');
