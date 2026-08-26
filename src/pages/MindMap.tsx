@@ -11,7 +11,7 @@ import {
 import {
   Plus, Trash2, Link2, ZoomIn, ZoomOut, Crosshair, Pencil, Network, Download, Upload,
   Maximize2, Minimize2, Image as ImageIcon, Undo2, Redo2, Search, Grid3x3, Copy,
-  Lightbulb, User, MapPin, Skull, ScrollText, KeyRound, X,
+  Lightbulb, User, MapPin, Skull, ScrollText, KeyRound, X, Layers,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -569,11 +569,77 @@ const MindMap = () => {
       n.title.toLowerCase().includes(q) || (n.text ?? '').toLowerCase().includes(q)).slice(0, 8);
   }, [query, data.nodes]);
 
+  /* ── gestão de mapas salvos ── */
+  const switchMap = (id: string) => {
+    history.current = { past: [], future: [] };
+    setActiveId(id);
+    setSelected(null);
+    setMapsOpen(false);
+    setTimeout(fitView, 80);
+  };
+
+  const newMap = () => {
+    const doc: MindMapDoc = { id: uid(), name: `Mapa ${docs.length + 1}`, data: { nodes: [], edges: [] } };
+    setDocs(prev => [...prev, doc]);
+    history.current = { past: [], future: [] };
+    setActiveId(doc.id);
+    setSelected(null);
+    setScale(1); setPan({ x: 0, y: 0 });
+    toast({ title: 'Novo mapa criado', description: 'Os anteriores continuam salvos.' });
+  };
+
+  const duplicateMap = (doc: MindMapDoc) => {
+    const copy: MindMapDoc = { id: uid(), name: `${doc.name} (cópia)`, data: JSON.parse(JSON.stringify(doc.data)) };
+    setDocs(prev => [...prev, copy]);
+    setActiveId(copy.id);
+    toast({ title: 'Mapa duplicado' });
+  };
+
+  const renameMap = (id: string, name: string) =>
+    setDocs(prev => prev.map(d => (d.id === id ? { ...d, name } : d)));
+
+  const deleteMap = (id: string) => {
+    setDocs(prev => {
+      const rest = prev.filter(d => d.id !== id);
+      if (!rest.length) {
+        const fresh: MindMapDoc = { id: uid(), name: 'Mapa 1', data: { nodes: [], edges: [] } };
+        setActiveId(fresh.id);
+        return [fresh];
+      }
+      if (id === activeId) setActiveId(rest[0].id);
+      return rest;
+    });
+    history.current = { past: [], future: [] };
+  };
+
   /* ────────────────────────────── UI ────────────────────────────── */
 
   const iconBtn = 'h-10 w-10 md:h-9 md:w-9';
 
+  const mapsBar = (
+    <div className="flex items-center gap-2 overflow-x-auto pb-1 -mb-1 scrollbar-none">
+      {docs.map(d => (
+        <button key={d.id} onClick={() => switchMap(d.id)}
+          className={`shrink-0 px-3 h-9 rounded-full border text-sm font-semibold transition ${
+            d.id === activeDoc?.id
+              ? 'bg-primary/15 border-primary text-primary'
+              : 'border-border/60 text-muted-foreground hover:text-foreground'
+          }`}>
+          {d.name}
+          <span className="ml-1.5 text-[10px] opacity-70">{d.data.nodes.length}</span>
+        </button>
+      ))}
+      <Button variant="outline" size="sm" className="shrink-0 h-9 gap-1.5" onClick={newMap}>
+        <Plus className="w-4 h-4" />Novo mapa
+      </Button>
+      <Button variant="ghost" size="sm" className="shrink-0 h-9 gap-1.5" onClick={() => setMapsOpen(true)}>
+        <Layers className="w-4 h-4" />Gerenciar
+      </Button>
+    </div>
+  );
+
   const toolbar = (
+
     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mb-1 scrollbar-none">
       <Button onClick={addNodeCenter} className="gap-2 shrink-0 h-10 md:h-9"><Plus className="w-4 h-4" />Bloco</Button>
       <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Desfazer"
@@ -614,7 +680,7 @@ const MindMap = () => {
         setEditing(addNodeAt(w.x, w.y));
       }}
       className={`relative w-full overflow-hidden glass-card glow-border touch-none select-none ${
-        fullscreen ? 'flex-1 rounded-xl' : 'h-[62dvh] md:h-[74dvh] rounded-xl'
+        fullscreen ? 'flex-1 rounded-xl' : 'h-[68dvh] md:h-[74dvh] rounded-xl'
       }`}
       style={{
         backgroundImage:
@@ -811,11 +877,11 @@ const MindMap = () => {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-2">Cor</p>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-6 gap-2">
                   {COLORS.map(c => (
-                    <button key={c.key} type="button" aria-label={c.label}
+                    <button key={c.key} type="button" aria-label={c.label} title={c.label}
                       onClick={() => setEditing({ ...editing, color: c.key })}
-                      className={`w-9 h-9 rounded-full border-2 transition ${editing.color === c.key ? 'border-foreground scale-110' : 'border-transparent'}`}
+                      className={`w-full aspect-square rounded-full border-2 transition ${editing.color === c.key ? 'border-foreground scale-110' : 'border-transparent'}`}
                       style={{ background: colorVar(c.key) }} />
                   ))}
                 </div>
@@ -867,12 +933,36 @@ const MindMap = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={mapsOpen} onOpenChange={setMapsOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle className="font-display">Meus mapas</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            {docs.map(d => (
+              <div key={d.id} className={`flex items-center gap-2 rounded-lg border p-2 ${d.id === activeDoc?.id ? 'border-primary/60 bg-primary/5' : 'border-border'}`}>
+                <Input value={d.name} onChange={e => renameMap(d.id, e.target.value)} className="h-9" />
+                <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0" title="Abrir" onClick={() => switchMap(d.id)}>
+                  <Network className="w-4 h-4" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0" title="Duplicar" onClick={() => duplicateMap(d)}>
+                  <Copy className="w-4 h-4" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0 text-destructive" title="Apagar" onClick={() => deleteMap(d.id)}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+            <Button className="w-full gap-2" onClick={newMap}><Plus className="w-4 h-4" />Criar novo mapa</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 
   if (fullscreen) {
     return (
       <div className="fixed inset-0 z-[60] bg-background flex flex-col p-2 gap-2">
+        {mapsBar}
         {toolbar}
         {canvas}
         {dialogs}
@@ -886,6 +976,7 @@ const MindMap = () => {
         <h1 className="page-title flex items-center gap-2"><Network className="w-7 h-7" />Mapa Mental</h1>
         <p className="text-sm text-muted-foreground">Conecte ideias, NPCs e tramas numa grade infinita</p>
       </div>
+      {mapsBar}
       {toolbar}
       {canvas}
       <p className="text-xs text-muted-foreground">
