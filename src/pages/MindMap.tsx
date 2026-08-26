@@ -11,7 +11,7 @@ import {
 import {
   Plus, Trash2, Link2, ZoomIn, ZoomOut, Crosshair, Pencil, Network, Download, Upload,
   Maximize2, Minimize2, Image as ImageIcon, Undo2, Redo2, Search, Grid3x3, Copy,
-  Lightbulb, User, MapPin, Skull, ScrollText, KeyRound, X,
+  Lightbulb, User, MapPin, Skull, ScrollText, KeyRound, X, Layers,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -877,11 +877,11 @@ const MindMap = () => {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-2">Cor</p>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-6 gap-2">
                   {COLORS.map(c => (
-                    <button key={c.key} type="button" aria-label={c.label}
+                    <button key={c.key} type="button" aria-label={c.label} title={c.label}
                       onClick={() => setEditing({ ...editing, color: c.key })}
-                      className={`w-9 h-9 rounded-full border-2 transition ${editing.color === c.key ? 'border-foreground scale-110' : 'border-transparent'}`}
+                      className={`w-full aspect-square rounded-full border-2 transition ${editing.color === c.key ? 'border-foreground scale-110' : 'border-transparent'}`}
                       style={{ background: colorVar(c.key) }} />
                   ))}
                 </div>
@@ -933,12 +933,36 @@ const MindMap = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={mapsOpen} onOpenChange={setMapsOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle className="font-display">Meus mapas</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            {docs.map(d => (
+              <div key={d.id} className={`flex items-center gap-2 rounded-lg border p-2 ${d.id === activeDoc?.id ? 'border-primary/60 bg-primary/5' : 'border-border'}`}>
+                <Input value={d.name} onChange={e => renameMap(d.id, e.target.value)} className="h-9" />
+                <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0" title="Abrir" onClick={() => switchMap(d.id)}>
+                  <Network className="w-4 h-4" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0" title="Duplicar" onClick={() => duplicateMap(d)}>
+                  <Copy className="w-4 h-4" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0 text-destructive" title="Apagar" onClick={() => deleteMap(d.id)}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+            <Button className="w-full gap-2" onClick={newMap}><Plus className="w-4 h-4" />Criar novo mapa</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 
   if (fullscreen) {
     return (
       <div className="fixed inset-0 z-[60] bg-background flex flex-col p-2 gap-2">
+        {mapsBar}
         {toolbar}
         {canvas}
         {dialogs}
@@ -952,6 +976,7 @@ const MindMap = () => {
         <h1 className="page-title flex items-center gap-2"><Network className="w-7 h-7" />Mapa Mental</h1>
         <p className="text-sm text-muted-foreground">Conecte ideias, NPCs e tramas numa grade infinita</p>
       </div>
+      {mapsBar}
       {toolbar}
       {canvas}
       <p className="text-xs text-muted-foreground">
