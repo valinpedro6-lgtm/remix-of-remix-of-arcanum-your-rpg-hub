@@ -569,11 +569,77 @@ const MindMap = () => {
       n.title.toLowerCase().includes(q) || (n.text ?? '').toLowerCase().includes(q)).slice(0, 8);
   }, [query, data.nodes]);
 
+  /* ── gestão de mapas salvos ── */
+  const switchMap = (id: string) => {
+    history.current = { past: [], future: [] };
+    setActiveId(id);
+    setSelected(null);
+    setMapsOpen(false);
+    setTimeout(fitView, 80);
+  };
+
+  const newMap = () => {
+    const doc: MindMapDoc = { id: uid(), name: `Mapa ${docs.length + 1}`, data: { nodes: [], edges: [] } };
+    setDocs(prev => [...prev, doc]);
+    history.current = { past: [], future: [] };
+    setActiveId(doc.id);
+    setSelected(null);
+    setScale(1); setPan({ x: 0, y: 0 });
+    toast({ title: 'Novo mapa criado', description: 'Os anteriores continuam salvos.' });
+  };
+
+  const duplicateMap = (doc: MindMapDoc) => {
+    const copy: MindMapDoc = { id: uid(), name: `${doc.name} (cópia)`, data: JSON.parse(JSON.stringify(doc.data)) };
+    setDocs(prev => [...prev, copy]);
+    setActiveId(copy.id);
+    toast({ title: 'Mapa duplicado' });
+  };
+
+  const renameMap = (id: string, name: string) =>
+    setDocs(prev => prev.map(d => (d.id === id ? { ...d, name } : d)));
+
+  const deleteMap = (id: string) => {
+    setDocs(prev => {
+      const rest = prev.filter(d => d.id !== id);
+      if (!rest.length) {
+        const fresh: MindMapDoc = { id: uid(), name: 'Mapa 1', data: { nodes: [], edges: [] } };
+        setActiveId(fresh.id);
+        return [fresh];
+      }
+      if (id === activeId) setActiveId(rest[0].id);
+      return rest;
+    });
+    history.current = { past: [], future: [] };
+  };
+
   /* ────────────────────────────── UI ────────────────────────────── */
 
   const iconBtn = 'h-10 w-10 md:h-9 md:w-9';
 
+  const mapsBar = (
+    <div className="flex items-center gap-2 overflow-x-auto pb-1 -mb-1 scrollbar-none">
+      {docs.map(d => (
+        <button key={d.id} onClick={() => switchMap(d.id)}
+          className={`shrink-0 px-3 h-9 rounded-full border text-sm font-semibold transition ${
+            d.id === activeDoc?.id
+              ? 'bg-primary/15 border-primary text-primary'
+              : 'border-border/60 text-muted-foreground hover:text-foreground'
+          }`}>
+          {d.name}
+          <span className="ml-1.5 text-[10px] opacity-70">{d.data.nodes.length}</span>
+        </button>
+      ))}
+      <Button variant="outline" size="sm" className="shrink-0 h-9 gap-1.5" onClick={newMap}>
+        <Plus className="w-4 h-4" />Novo mapa
+      </Button>
+      <Button variant="ghost" size="sm" className="shrink-0 h-9 gap-1.5" onClick={() => setMapsOpen(true)}>
+        <Layers className="w-4 h-4" />Gerenciar
+      </Button>
+    </div>
+  );
+
   const toolbar = (
+
     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mb-1 scrollbar-none">
       <Button onClick={addNodeCenter} className="gap-2 shrink-0 h-10 md:h-9"><Plus className="w-4 h-4" />Bloco</Button>
       <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Desfazer"
