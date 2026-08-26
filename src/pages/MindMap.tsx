@@ -680,7 +680,7 @@ const MindMap = () => {
         setEditing(addNodeAt(w.x, w.y));
       }}
       className={`relative w-full overflow-hidden glass-card glow-border touch-none select-none ${
-        fullscreen ? 'flex-1 rounded-xl' : 'h-[62dvh] md:h-[74dvh] rounded-xl'
+        fullscreen ? 'flex-1 rounded-xl' : 'h-[68dvh] md:h-[74dvh] rounded-xl'
       }`}
       style={{
         backgroundImage:
