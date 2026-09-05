@@ -11,6 +11,7 @@ import {
   Flame, Brain, Zap, Crown, BookOpen, Scroll
 } from 'lucide-react';
 import { PLAYER_SYSTEM_PRESETS, type PlayerPreset } from '@/data/rpgSystemPresets';
+import { getFlavor, rollAttribute, rollVitals } from '@/data/systemFlavor';
 
 // --- TYPES ---
 
@@ -53,6 +54,10 @@ interface NPC {
   memory: string;
   systemId: string;
   systemName: string;
+  originLabel?: string;
+  classLabel?: string;
+  extraLabel?: string;
+  extra?: string;
   attributes: GeneratedAttribute[];
   skills: GeneratedSkill[];
 }
@@ -84,6 +89,10 @@ interface Villain {
   memory: string;
   systemId: string;
   systemName: string;
+  originLabel?: string;
+  classLabel?: string;
+  extraLabel?: string;
+  extra?: string;
   attributes: GeneratedAttribute[];
   skills: GeneratedSkill[];
 }
@@ -452,9 +461,9 @@ function getCurrentRegion(): RegionType {
 }
 
 function generateAttrsFromPreset(preset: PlayerPreset): GeneratedAttribute[] {
+  const flavor = getFlavor(preset.system);
   return preset.attributes.map(a => {
-    const value = rollDice(3, 6);
-    const modifier = Math.floor((value - 10) / 2);
+    const { value, modifier } = rollAttribute(flavor.scale);
     return { name: a.name, value, modifier };
   });
 }
@@ -462,7 +471,9 @@ function generateAttrsFromPreset(preset: PlayerPreset): GeneratedAttribute[] {
 function generateSkillsFromPreset(preset: PlayerPreset, attrs: GeneratedAttribute[]): GeneratedSkill[] {
   return preset.skills.map(s => {
     const attr = attrs.find(a => a.name === s.attribute);
-    const profBonus = Math.random() < 0.3 ? rollDice(1, 4, 1) : 0;
+    const flavor = getFlavor(preset.system);
+    const trained = Math.random() < 0.3;
+    const profBonus = trained ? (flavor.scale === 'percentile' ? rollDice(1, 4, 1) * 5 : rollDice(1, 4, 1)) : 0;
     const bonus = (attr?.modifier ?? 0) + profBonus;
     return { name: s.name, attribute: s.attribute, bonus };
   });
@@ -476,19 +487,26 @@ function generateNPC(region: RegionType, preset: PlayerPreset): NPC {
   const dexAttr = attributes.find(a => a.name === 'Destreza' || a.name === 'Dexterity' || a.name === 'Agilidade' || a.name === 'Reflexos');
   const dexMod = dexAttr?.modifier ?? 0;
 
+  const flavor = getFlavor(preset.system);
+  const vitals = rollVitals(flavor.scale, false);
+
   return {
     id: crypto.randomUUID(),
     name: pick(NAMES_BY_REGION[region]),
-    race: pick(RACES_BY_REGION[region]),
-    npcClass: pick(CLASSES_BY_REGION[region]),
+    race: pick(flavor.origins),
+    npcClass: pick(flavor.classes),
+    originLabel: flavor.originLabel,
+    classLabel: flavor.classLabel,
+    extraLabel: flavor.extraLabel,
+    extra: flavor.extras ? pick(flavor.extras) : undefined,
     personality: pick(PERSONALITIES),
     quirk: pick(QUIRKS),
-    occupation: pick(OCCUPATIONS_BY_REGION[region]),
+    occupation: flavor.fantasy ? pick(OCCUPATIONS_BY_REGION[region]) : pick(flavor.classes),
     secret: pick(SECRETS_BY_REGION[region]),
     objective: pick(OBJECTIVES_BY_REGION[region]),
     backstory: pick(BACKSTORIES_BY_REGION[region]),
-    hp: Math.max(1, rollDice(2, 10, conMod * 2)),
-    ac: 10 + dexMod + rollDice(1, 4),
+    hp: Math.max(1, vitals.hp + conMod),
+    ac: vitals.ac + (flavor.scale === 'd20' ? dexMod : 0),
     region,
     isVillain: false,
     fear: pick(FEARS),
@@ -510,25 +528,42 @@ function generateVillain(region: RegionType, preset: PlayerPreset): Villain {
   const attributes = generateAttrsFromPreset(preset);
   const skills = generateSkillsFromPreset(preset, attributes);
   // Villains get boosted stats
-  const boosted = attributes.map(a => ({ ...a, value: a.value + 4, modifier: Math.floor((a.value + 4 - 10) / 2) }));
+  const scale = getFlavor(preset.system).scale;
+  const boosted = attributes.map(a => {
+    if (scale === 'd20') { const v = Math.min(20, a.value + 4); return { ...a, value: v, modifier: Math.floor((v - 10) / 2) }; }
+    if (scale === 'percentile') { const v = Math.min(95, a.value + 20); return { ...a, value: v, modifier: Math.floor(v / 5) }; }
+    if (scale === 'gurps') { const v = a.value + 2; return { ...a, value: v, modifier: v - 10 }; }
+    if (scale === 'die') { const v = Math.min(12, a.value + 2); return { ...a, value: v, modifier: Math.floor(v / 2) - 2 }; }
+    if (scale === 'mork') { const v = Math.min(6, a.value + 2); return { ...a, value: v, modifier: v }; }
+    const cap = scale === 'dots3' ? 4 : scale === 'fate' ? 6 : scale === 'cp' ? 10 : scale === 'pool6' ? 8 : 5;
+    const v = Math.min(cap, a.value + 1);
+    return { ...a, value: v, modifier: v };
+  });
   const conAttr = boosted.find(a => a.name === 'Constituição' || a.name === 'Constitution' || a.name === 'Vigor' || a.name === 'Corpo');
   const conMod = conAttr?.modifier ?? 0;
   const dexAttr = boosted.find(a => a.name === 'Destreza' || a.name === 'Dexterity' || a.name === 'Agilidade' || a.name === 'Reflexos');
   const dexMod = dexAttr?.modifier ?? 0;
 
+  const flavor = getFlavor(preset.system);
+  const vitals = rollVitals(flavor.scale, true);
+
   return {
     id: crypto.randomUUID(),
     name: pick(NAMES_BY_REGION[region]),
-    race: pick(RACES_BY_REGION[region]),
-    npcClass: pick(CLASSES_BY_REGION[region]),
+    race: pick(flavor.origins),
+    npcClass: pick(flavor.classes),
+    originLabel: flavor.originLabel,
+    classLabel: flavor.classLabel,
+    extraLabel: flavor.extraLabel,
+    extra: flavor.extras ? pick(flavor.extras) : undefined,
     personality: pick(PERSONALITIES),
     quirk: pick(QUIRKS),
-    occupation: pick(OCCUPATIONS_BY_REGION[region]),
+    occupation: flavor.fantasy ? pick(OCCUPATIONS_BY_REGION[region]) : pick(flavor.classes),
     secret: pick(SECRETS_BY_REGION[region]),
     objective: pick(OBJECTIVES_BY_REGION[region]),
     backstory: pick(BACKSTORIES_BY_REGION[region]),
-    hp: Math.max(1, rollDice(4, 12, 20 + conMod * 4)),
-    ac: 14 + dexMod + rollDice(1, 4),
+    hp: Math.max(1, vitals.hp + conMod * 2),
+    ac: vitals.ac + (flavor.scale === 'd20' ? dexMod : 0),
     region,
     isVillain: true,
     motivation: pick(VILLAIN_MOTIVATIONS[region]),
@@ -678,8 +713,11 @@ const NPCGenerator = () => {
 
           {/* Basic info */}
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-            <div><span className="text-muted-foreground">Raça:</span> {char.race}</div>
-            <div><span className="text-muted-foreground">Classe:</span> {char.npcClass}</div>
+            <div><span className="text-muted-foreground">{char.originLabel || 'Raça'}:</span> {char.race}</div>
+            <div><span className="text-muted-foreground">{char.classLabel || 'Classe'}:</span> {char.npcClass}</div>
+            {char.extra && (
+              <div className="col-span-2"><span className="text-muted-foreground">{char.extraLabel}:</span> {char.extra}</div>
+            )}
             <div className="col-span-2"><span className="text-muted-foreground">Ocupação:</span> {char.occupation}</div>
           </div>
 
