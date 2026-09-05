@@ -11,6 +11,7 @@ import {
   Flame, Brain, Zap, Crown, BookOpen, Scroll
 } from 'lucide-react';
 import { PLAYER_SYSTEM_PRESETS, type PlayerPreset } from '@/data/rpgSystemPresets';
+import { getFlavor, rollAttribute, rollVitals } from '@/data/systemFlavor';
 
 // --- TYPES ---
 
@@ -53,6 +54,10 @@ interface NPC {
   memory: string;
   systemId: string;
   systemName: string;
+  originLabel?: string;
+  classLabel?: string;
+  extraLabel?: string;
+  extra?: string;
   attributes: GeneratedAttribute[];
   skills: GeneratedSkill[];
 }
@@ -84,6 +89,10 @@ interface Villain {
   memory: string;
   systemId: string;
   systemName: string;
+  originLabel?: string;
+  classLabel?: string;
+  extraLabel?: string;
+  extra?: string;
   attributes: GeneratedAttribute[];
   skills: GeneratedSkill[];
 }
@@ -452,9 +461,9 @@ function getCurrentRegion(): RegionType {
 }
 
 function generateAttrsFromPreset(preset: PlayerPreset): GeneratedAttribute[] {
+  const flavor = getFlavor(preset.system);
   return preset.attributes.map(a => {
-    const value = rollDice(3, 6);
-    const modifier = Math.floor((value - 10) / 2);
+    const { value, modifier } = rollAttribute(flavor.scale);
     return { name: a.name, value, modifier };
   });
 }
@@ -462,7 +471,9 @@ function generateAttrsFromPreset(preset: PlayerPreset): GeneratedAttribute[] {
 function generateSkillsFromPreset(preset: PlayerPreset, attrs: GeneratedAttribute[]): GeneratedSkill[] {
   return preset.skills.map(s => {
     const attr = attrs.find(a => a.name === s.attribute);
-    const profBonus = Math.random() < 0.3 ? rollDice(1, 4, 1) : 0;
+    const flavor = getFlavor(preset.system);
+    const trained = Math.random() < 0.3;
+    const profBonus = trained ? (flavor.scale === 'percentile' ? rollDice(1, 4, 1) * 5 : rollDice(1, 4, 1)) : 0;
     const bonus = (attr?.modifier ?? 0) + profBonus;
     return { name: s.name, attribute: s.attribute, bonus };
   });
