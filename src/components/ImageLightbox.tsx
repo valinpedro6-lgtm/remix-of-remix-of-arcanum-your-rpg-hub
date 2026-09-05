@@ -23,7 +23,6 @@ export const ImageLightbox = ({ src, alt, open, onOpenChange }: LightboxProps) =
   return (
     <Dialog open={open} onOpenChange={close}>
       <DialogContent
-        hideClose
         className="max-w-[100vw] w-[100vw] h-[100dvh] sm:max-w-[95vw] sm:w-[95vw] sm:h-[92dvh] p-0 overflow-hidden bg-background/95 backdrop-blur-xl border-border/40"
       >
         <div className="relative w-full h-full flex items-center justify-center overflow-auto">
