@@ -15,6 +15,8 @@ import { NumberInput } from '@/components/NumberInput';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PLAYER_SYSTEM_PRESETS } from '@/data/rpgSystemPresets';
 import { ImageUploader } from '@/components/ImageUploader';
+import { ZoomImage } from '@/components/ImageLightbox';
+import { AttachmentGallery, type Attachment } from '@/components/AttachmentGallery';
 import { StatusConditions } from '@/components/StatusConditions';
 import { HPBar } from '@/components/HPBar';
 
@@ -61,6 +63,7 @@ interface Player {
   level: number;
   experience: number;
   image: string;
+  attachments?: Attachment[];
   hp: number;
   maxHp: number;
   tempHp: number;
@@ -131,7 +134,7 @@ const emptyPlayer = (template?: SheetTemplate): Player => {
   const t = template || defaultTemplate();
   return {
     id: crypto.randomUUID(),
-    name: '', playerName: '', race: '', className: '', profession: '', level: 1, experience: 0, image: '',
+    name: '', playerName: '', race: '', className: '', profession: '', level: 1, experience: 0, image: '', attachments: [],
     hp: 10, maxHp: 10, tempHp: 0, mana: 0, maxMana: 0, energy: 10, maxEnergy: 10, ca: 10, movement: 9, proficiencyBonus: 2,
     conditions: [],
     attributes: makeAttrs(t.attributes),

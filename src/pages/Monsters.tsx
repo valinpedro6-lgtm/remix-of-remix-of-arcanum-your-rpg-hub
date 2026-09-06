@@ -15,6 +15,8 @@ import { NumberInput } from '@/components/NumberInput';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MONSTER_SYSTEM_PRESETS } from '@/data/rpgSystemPresets';
 import { ImageUploader } from '@/components/ImageUploader';
+import { ZoomImage } from '@/components/ImageLightbox';
+import { AttachmentGallery, type Attachment } from '@/components/AttachmentGallery';
 import { StatusConditions } from '@/components/StatusConditions';
 import { HPBar } from '@/components/HPBar';
 
@@ -59,6 +61,7 @@ interface Monster {
   alignment: string;
   challengeRating: string;
   image: string;
+  attachments?: Attachment[];
   hp: number;
   maxHp: number;
   tempHp: number;
@@ -117,7 +120,7 @@ const emptyMonster = (template?: MonsterTemplate): Monster => {
   const t = template || defaultTemplate();
   return {
     id: crypto.randomUUID(),
-    name: '', type: '', size: 'Médio', alignment: '', challengeRating: '', image: '',
+    name: '', type: '', size: 'Médio', alignment: '', challengeRating: '', image: '', attachments: [],
     hp: 10, maxHp: 10, tempHp: 0, ca: 10, movement: 9,
     conditions: [],
     attributes: makeAttrs(t.attributes),
