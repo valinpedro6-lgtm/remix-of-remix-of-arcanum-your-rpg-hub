@@ -619,7 +619,7 @@ const NPCGenerator = () => {
   };
   const remove = (id: string) => setSaved(prev => prev.filter(n => n.id !== id));
 
-  const patchChar = (id: string, patch: Partial<NPC & Villain>) => {
+  const patchChar = (id: string, patch: Partial<NPC> & Partial<Villain>) => {
     setCurrent(c => (c && c.id === id ? ({ ...c, ...patch } as Character) : c));
     setSaved(prev => prev.map(c => (c.id === id ? ({ ...c, ...patch } as Character) : c)));
   };
