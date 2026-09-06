@@ -534,6 +534,10 @@ const Monsters = () => {
                   <ImageUploader value={editing.image} onChange={v => setEditing({ ...editing, image: v })} fallbackIcon={<Skull className="w-8 h-8 text-muted-foreground/40" />} />
                 </div>
                 <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Arquivos e Imagens</label>
+                  <AttachmentGallery value={editing.attachments ?? []} onChange={next => setEditing({ ...editing, attachments: next })} />
+                </div>
+                <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Condições / Status</label>
                   <StatusConditions conditions={editing.conditions ?? []} onChange={next => setEditing({ ...editing, conditions: next })} />
                 </div>
