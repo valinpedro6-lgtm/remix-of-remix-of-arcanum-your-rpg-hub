@@ -437,9 +437,11 @@ const Players = () => {
                 <CardContent className="p-0 relative">
                   <div className="flex items-start gap-4 p-4">
                     {p.image ? (
-                      <div className="w-24 h-24 rounded-xl bg-secondary overflow-hidden shrink-0 ring-2 ring-primary/40 shadow-[0_4px_16px_hsl(var(--primary)/0.25)]">
-                        <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
-                      </div>
+                      <ZoomImage
+                        src={p.image}
+                        alt={p.name}
+                        className="w-24 h-24 rounded-xl bg-secondary shrink-0 ring-2 ring-primary/40 shadow-[0_4px_16px_hsl(var(--primary)/0.25)]"
+                      />
                     ) : (
                       <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-secondary via-secondary/60 to-secondary/30 flex items-center justify-center shrink-0 ring-2 ring-border">
                         <User className="w-10 h-10 text-muted-foreground/30" />
@@ -729,6 +731,10 @@ const Players = () => {
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Retrato do Personagem</label>
                   <ImageUploader value={editing.image} onChange={v => setEditing({ ...editing, image: v })} fallbackIcon={<User className="w-8 h-8 text-muted-foreground/40" />} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Arquivos e Imagens</label>
+                  <AttachmentGallery value={editing.attachments ?? []} onChange={next => setEditing({ ...editing, attachments: next })} />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Condições / Status</label>

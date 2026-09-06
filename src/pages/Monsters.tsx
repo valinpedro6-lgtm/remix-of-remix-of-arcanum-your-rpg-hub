@@ -313,9 +313,11 @@ const Monsters = () => {
                 <CardContent className="p-0 relative">
                   <div className="flex items-start gap-4 p-4">
                     {m.image ? (
-                      <div className="w-24 h-24 rounded-xl bg-secondary overflow-hidden shrink-0 ring-2 ring-primary/40 shadow-[0_4px_16px_hsl(var(--primary)/0.25)]">
-                        <img src={m.image} alt={m.name} className="w-full h-full object-cover" />
-                      </div>
+                      <ZoomImage
+                        src={m.image}
+                        alt={m.name}
+                        className="w-24 h-24 rounded-xl bg-secondary shrink-0 ring-2 ring-primary/40 shadow-[0_4px_16px_hsl(var(--primary)/0.25)]"
+                      />
                     ) : (
                       <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-secondary via-secondary/60 to-secondary/30 flex items-center justify-center shrink-0 ring-2 ring-border">
                         <Skull className="w-10 h-10 text-muted-foreground/30" />
