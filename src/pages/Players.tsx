@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, Edit, Shield, Heart, User, Zap, Swords, BookOpen, Backpack, Sparkles, X, ChevronDown, ChevronUp, RotateCcw, Copy, FileText, Save, FolderOpen, Gamepad2, Minus } from 'lucide-react';
+import { Plus, Trash2, Edit, Shield, Heart, User, Zap, Swords, BookOpen, Backpack, Sparkles, X, ChevronDown, ChevronUp, RotateCcw, Copy, FileText, Save, FolderOpen, Gamepad2, Minus , Paperclip} from 'lucide-react';
 import { NumberInput } from '@/components/NumberInput';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PLAYER_SYSTEM_PRESETS } from '@/data/rpgSystemPresets';
@@ -505,6 +505,12 @@ const Players = () => {
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                         <Separator />
                         <div className="p-4 space-y-4">
+                          {(p.attachments?.length ?? 0) > 0 && (
+                            <div>
+                              <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Paperclip className="w-3.5 h-3.5" />Arquivos</h4>
+                              <AttachmentGallery value={p.attachments ?? []} readOnly />
+                            </div>
+                          )}
                           {p.attributes.length > 0 && (
                             <div>
                               <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Swords className="w-3.5 h-3.5" />Atributos</h4>
