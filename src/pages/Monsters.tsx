@@ -10,11 +10,13 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, Edit, Skull, Shield, Heart, Zap, Swords, BookOpen, X, ChevronDown, ChevronUp, RotateCcw, Copy, FileText, Save, FolderOpen, Gamepad2, Minus } from 'lucide-react';
+import { Plus, Trash2, Edit, Skull, Shield, Heart, Zap, Swords, BookOpen, X, ChevronDown, ChevronUp, RotateCcw, Copy, FileText, Save, FolderOpen, Gamepad2, Minus , Paperclip} from 'lucide-react';
 import { NumberInput } from '@/components/NumberInput';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MONSTER_SYSTEM_PRESETS } from '@/data/rpgSystemPresets';
 import { ImageUploader } from '@/components/ImageUploader';
+import { ZoomImage } from '@/components/ImageLightbox';
+import { AttachmentGallery, type Attachment } from '@/components/AttachmentGallery';
 import { StatusConditions } from '@/components/StatusConditions';
 import { HPBar } from '@/components/HPBar';
 
@@ -59,6 +61,7 @@ interface Monster {
   alignment: string;
   challengeRating: string;
   image: string;
+  attachments?: Attachment[];
   hp: number;
   maxHp: number;
   tempHp: number;
@@ -117,7 +120,7 @@ const emptyMonster = (template?: MonsterTemplate): Monster => {
   const t = template || defaultTemplate();
   return {
     id: crypto.randomUUID(),
-    name: '', type: '', size: 'Médio', alignment: '', challengeRating: '', image: '',
+    name: '', type: '', size: 'Médio', alignment: '', challengeRating: '', image: '', attachments: [],
     hp: 10, maxHp: 10, tempHp: 0, ca: 10, movement: 9,
     conditions: [],
     attributes: makeAttrs(t.attributes),
@@ -310,9 +313,11 @@ const Monsters = () => {
                 <CardContent className="p-0 relative">
                   <div className="flex items-start gap-4 p-4">
                     {m.image ? (
-                      <div className="w-24 h-24 rounded-xl bg-secondary overflow-hidden shrink-0 ring-2 ring-primary/40 shadow-[0_4px_16px_hsl(var(--primary)/0.25)]">
-                        <img src={m.image} alt={m.name} className="w-full h-full object-cover" />
-                      </div>
+                      <ZoomImage
+                        src={m.image}
+                        alt={m.name}
+                        className="w-24 h-24 rounded-xl bg-secondary shrink-0 ring-2 ring-primary/40 shadow-[0_4px_16px_hsl(var(--primary)/0.25)]"
+                      />
                     ) : (
                       <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-secondary via-secondary/60 to-secondary/30 flex items-center justify-center shrink-0 ring-2 ring-border">
                         <Skull className="w-10 h-10 text-muted-foreground/30" />
@@ -360,6 +365,12 @@ const Monsters = () => {
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                         <Separator />
                         <div className="p-4 space-y-4">
+                          {(m.attachments?.length ?? 0) > 0 && (
+                            <div>
+                              <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Paperclip className="w-3.5 h-3.5" />Arquivos</h4>
+                              <AttachmentGallery value={m.attachments ?? []} readOnly />
+                            </div>
+                          )}
                           {m.attributes.length > 0 && (
                             <div>
                               <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Swords className="w-3.5 h-3.5" />Atributos</h4>
@@ -527,6 +538,10 @@ const Monsters = () => {
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Retrato / Ilustração</label>
                   <ImageUploader value={editing.image} onChange={v => setEditing({ ...editing, image: v })} fallbackIcon={<Skull className="w-8 h-8 text-muted-foreground/40" />} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Arquivos e Imagens</label>
+                  <AttachmentGallery value={editing.attachments ?? []} onChange={next => setEditing({ ...editing, attachments: next })} />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Condições / Status</label>

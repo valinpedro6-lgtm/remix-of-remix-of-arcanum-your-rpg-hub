@@ -12,6 +12,9 @@ import {
 } from 'lucide-react';
 import { PLAYER_SYSTEM_PRESETS, type PlayerPreset } from '@/data/rpgSystemPresets';
 import { getFlavor, rollAttribute, rollVitals } from '@/data/systemFlavor';
+import { ImageUploader } from '@/components/ImageUploader';
+import { ZoomImage } from '@/components/ImageLightbox';
+import { AttachmentGallery, type Attachment } from '@/components/AttachmentGallery';
 
 // --- TYPES ---
 
@@ -54,6 +57,8 @@ interface NPC {
   memory: string;
   systemId: string;
   systemName: string;
+  image?: string;
+  attachments?: Attachment[];
   originLabel?: string;
   classLabel?: string;
   extraLabel?: string;
@@ -89,6 +94,8 @@ interface Villain {
   memory: string;
   systemId: string;
   systemName: string;
+  image?: string;
+  attachments?: Attachment[];
   originLabel?: string;
   classLabel?: string;
   extraLabel?: string;
@@ -612,6 +619,11 @@ const NPCGenerator = () => {
   };
   const remove = (id: string) => setSaved(prev => prev.filter(n => n.id !== id));
 
+  const patchChar = (id: string, patch: Partial<NPC> & Partial<Villain>) => {
+    setCurrent(c => (c && c.id === id ? ({ ...c, ...patch } as Character) : c));
+    setSaved(prev => prev.map(c => (c.id === id ? ({ ...c, ...patch } as Character) : c)));
+  };
+
   const toggleSecret = (id: string) => {
     setRevealedSecrets(prev => {
       const next = new Set(prev);
@@ -648,6 +660,13 @@ const NPCGenerator = () => {
           {/* Header */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
+              {char.image && (
+                <ZoomImage
+                  src={char.image}
+                  alt={char.name}
+                  className="w-12 h-12 rounded-lg shrink-0 ring-2 ring-primary/40 bg-secondary"
+                />
+              )}
               {char.isVillain && <Skull className="w-5 h-5 text-destructive shrink-0" />}
               <h3 className="text-xl font-display font-bold truncate">{char.name}</h3>
               <Badge variant={char.isVillain ? 'destructive' : 'secondary'} className="shrink-0 text-xs">
@@ -749,6 +768,19 @@ const NPCGenerator = () => {
 
           {isExpanded && (
             <div className="space-y-2 pt-1 border-t border-border">
+              <div className="space-y-2">
+                <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Retrato</span>
+                <ImageUploader
+                  value={char.image ?? ''}
+                  onChange={v => patchChar(char.id, { image: v })}
+                  fallbackIcon={<UserPlus className="w-8 h-8 text-muted-foreground/40" />}
+                />
+                <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Arquivos</span>
+                <AttachmentGallery
+                  value={char.attachments ?? []}
+                  onChange={next => patchChar(char.id, { attachments: next })}
+                />
+              </div>
               <div className="text-sm">
                 <span className="text-muted-foreground flex items-center gap-1 mb-1">
                   <Target className="w-3 h-3" /> Objetivo:
