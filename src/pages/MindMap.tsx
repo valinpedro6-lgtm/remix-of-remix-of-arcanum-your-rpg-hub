@@ -721,7 +721,7 @@ const MindMap = () => {
         setEditing(addNodeAt(w.x, w.y));
       }}
       className={`relative w-full overflow-hidden glass-card glow-border touch-none select-none ${
-        fullscreen ? 'flex-1 rounded-xl' : 'h-[68dvh] md:h-[74dvh] rounded-xl'
+        fullscreen ? 'flex-1 rounded-xl' : 'h-[76dvh] md:h-[74dvh] rounded-xl'
       }`}
       style={{
         backgroundImage:
@@ -806,7 +806,9 @@ const MindMap = () => {
               <button
                 aria-label="Conectar"
                 onPointerDown={e => startLink(e, n)}
-                className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full border-2 bg-background flex items-center justify-center opacity-80 hover:opacity-100 active:scale-110 transition"
+                className={`absolute -right-4 top-1/2 -translate-y-1/2 rounded-full border-2 bg-background flex items-center justify-center opacity-90 hover:opacity-100 active:scale-110 transition ${
+                  linking?.from === n.id ? 'ring-2 ring-offset-2 ring-offset-background scale-110' : ''
+                } w-9 h-9 md:w-6 md:h-6`}
                 style={{ borderColor: c }}>
                 <Link2 className="w-3 h-3" style={{ color: c }} />
               </button>
@@ -866,7 +868,9 @@ const MindMap = () => {
 
       {/* dica de ligação */}
       {linking && (
-        <Badge className="absolute bottom-3 left-3 z-30 gap-1"><Link2 className="w-3 h-3" />Solte sobre outro bloco</Badge>
+        <Badge className="absolute bottom-3 left-3 right-3 sm:right-auto z-30 gap-1 justify-center py-1.5">
+          <Link2 className="w-3 h-3" />Toque no bloco de destino (ou toque na grade para cancelar)
+        </Badge>
       )}
 
       {/* minimapa */}
@@ -1002,7 +1006,8 @@ const MindMap = () => {
 
   if (fullscreen) {
     return (
-      <div className="fixed inset-0 z-[60] bg-background flex flex-col p-2 gap-2">
+      <div className="fixed inset-0 z-[60] bg-background flex flex-col p-2 gap-2"
+        style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
         {mapsBar}
         {toolbar}
         {canvas}
