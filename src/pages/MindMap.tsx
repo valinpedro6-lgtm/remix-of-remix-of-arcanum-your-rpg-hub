@@ -11,8 +11,12 @@ import {
 import {
   Plus, Trash2, Link2, ZoomIn, ZoomOut, Crosshair, Pencil, Network, Download, Upload,
   Maximize2, Minimize2, Image as ImageIcon, Undo2, Redo2, Search, Grid3x3, Copy,
-  Lightbulb, User, MapPin, Skull, ScrollText, KeyRound, X, Layers,
+  Lightbulb, User, MapPin, Skull, ScrollText, KeyRound, X, Layers, MoreHorizontal,
 } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from '@/hooks/use-toast';
 
 /* ────────────────────────────── modelo ────────────────────────────── */
@@ -171,7 +175,8 @@ const MindMap = () => {
   const [snap, setSnap] = useState(true);
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [linking, setLinking] = useState<{ from: string; x: number; y: number } | null>(null);
+  const [linking, setLinking] = useState<{ from: string; x: number; y: number; moved?: boolean } | null>(null);
+  const isMobile = useIsMobile();
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const pointers = useRef<Map<number, { x: number; y: number }>>(new Map());
@@ -312,7 +317,8 @@ const MindMap = () => {
       drag.current = null;
       return;
     }
-    if (drag.current || linking) return;
+    if (linking) { setLinking(null); return; }
+    if (drag.current) return;
     panRef.current = { x: pan.x, y: pan.y, px: e.clientX, py: e.clientY };
     setSelected(null);
   };
@@ -335,7 +341,7 @@ const MindMap = () => {
     // ligação em andamento
     if (linking) {
       const w = toWorld(e.clientX, e.clientY);
-      setLinking(l => (l ? { ...l, x: w.x, y: w.y } : l));
+      setLinking(l => (l ? { ...l, x: w.x, y: w.y, moved: true } : l));
       return;
     }
 
@@ -365,11 +371,13 @@ const MindMap = () => {
     if (drag.current?.moved) { history.current.future = []; setHistTick(t => t + 1); }
     drag.current = null;
     panRef.current = null;
-    if (linking) setLinking(null);
+    // modo "toque para ligar": se o dedo não arrastou, mantém a ligação ativa
+    if (linking?.moved) setLinking(null);
   };
 
   const onNodePointerDown = (e: React.PointerEvent, node: MapNode) => {
     if (pointers.current.size >= 1 && gesture.current) return;
+    if (linking) { e.stopPropagation(); return; } // aguardando toque de destino
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     e.stopPropagation();
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
@@ -381,7 +389,7 @@ const MindMap = () => {
   const startLink = (e: React.PointerEvent, node: MapNode) => {
     e.stopPropagation();
     const w = toWorld(e.clientX, e.clientY);
-    setLinking({ from: node.id, x: w.x, y: w.y });
+    setLinking({ from: node.id, x: w.x, y: w.y, moved: false });
   };
 
   const finishLinkOn = (id: string) => {
@@ -638,33 +646,66 @@ const MindMap = () => {
     </div>
   );
 
-  const toolbar = (
+  const importInput = (
+    <label className="shrink-0">
+      <input type="file" accept="application/json" className="hidden"
+        onChange={e => e.target.files?.[0] && importJson(e.target.files[0])} />
+      <Button variant="outline" size="icon" className={iconBtn} title="Importar JSON" asChild><span><Upload className="w-4 h-4" /></span></Button>
+    </label>
+  );
 
+  const toolbar = (
     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mb-1 scrollbar-none">
-      <Button onClick={addNodeCenter} className="gap-2 shrink-0 h-10 md:h-9"><Plus className="w-4 h-4" />Bloco</Button>
+      <Button onClick={addNodeCenter} className="gap-2 shrink-0 h-11 md:h-9 px-4"><Plus className="w-4 h-4" />Bloco</Button>
       <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Desfazer"
         disabled={!history.current.past.length} onClick={undo}><Undo2 className="w-4 h-4" /></Button>
       <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Refazer"
         disabled={!history.current.future.length} onClick={redo}><Redo2 className="w-4 h-4" /></Button>
-      <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Diminuir" onClick={() => zoomButton(1 / 1.2)}><ZoomOut className="w-4 h-4" /></Button>
-      <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Aumentar" onClick={() => zoomButton(1.2)}><ZoomIn className="w-4 h-4" /></Button>
       <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Enquadrar tudo" onClick={fitView}><Crosshair className="w-4 h-4" /></Button>
       <Button variant={searchOpen ? 'default' : 'outline'} size="icon" className={`${iconBtn} shrink-0`} title="Buscar"
         onClick={() => setSearchOpen(o => !o)}><Search className="w-4 h-4" /></Button>
-      <Button variant={snap ? 'default' : 'outline'} size="icon" className={`${iconBtn} shrink-0`} title="Encaixar na grade"
-        onClick={() => setSnap(s => !s)}><Grid3x3 className="w-4 h-4" /></Button>
-      <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Exportar imagem" onClick={exportPng}><ImageIcon className="w-4 h-4" /></Button>
-      <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Exportar JSON" onClick={exportJson}><Download className="w-4 h-4" /></Button>
-      <label className="shrink-0">
-        <input type="file" accept="application/json" className="hidden"
-          onChange={e => e.target.files?.[0] && importJson(e.target.files[0])} />
-        <Button variant="outline" size="icon" className={iconBtn} title="Importar JSON" asChild><span><Upload className="w-4 h-4" /></span></Button>
-      </label>
       <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
         onClick={() => setFullscreen(f => !f)}>
         {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
       </Button>
-      <Badge variant="outline" className="ml-auto shrink-0 tabular-nums hidden sm:flex">{Math.round(scale * 100)}%</Badge>
+
+      {isMobile ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Mais opções">
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuItem onClick={() => zoomButton(1.2)}><ZoomIn className="w-4 h-4 mr-2" />Aumentar zoom</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => zoomButton(1 / 1.2)}><ZoomOut className="w-4 h-4 mr-2" />Diminuir zoom</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSnap(s => !s)}>
+              <Grid3x3 className="w-4 h-4 mr-2" />{snap ? 'Desligar encaixe' : 'Encaixar na grade'}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={exportPng}><ImageIcon className="w-4 h-4 mr-2" />Exportar imagem</DropdownMenuItem>
+            <DropdownMenuItem onClick={exportJson}><Download className="w-4 h-4 mr-2" />Exportar arquivo</DropdownMenuItem>
+            <DropdownMenuItem onSelect={e => e.preventDefault()} asChild>
+              <label className="flex items-center cursor-pointer">
+                <Upload className="w-4 h-4 mr-2" />Importar arquivo
+                <input type="file" accept="application/json" className="hidden"
+                  onChange={e => e.target.files?.[0] && importJson(e.target.files[0])} />
+              </label>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setMapsOpen(true)}><Layers className="w-4 h-4 mr-2" />Meus mapas</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <>
+          <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Diminuir" onClick={() => zoomButton(1 / 1.2)}><ZoomOut className="w-4 h-4" /></Button>
+          <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Aumentar" onClick={() => zoomButton(1.2)}><ZoomIn className="w-4 h-4" /></Button>
+          <Button variant={snap ? 'default' : 'outline'} size="icon" className={`${iconBtn} shrink-0`} title="Encaixar na grade"
+            onClick={() => setSnap(s => !s)}><Grid3x3 className="w-4 h-4" /></Button>
+          <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Exportar imagem" onClick={exportPng}><ImageIcon className="w-4 h-4" /></Button>
+          <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Exportar JSON" onClick={exportJson}><Download className="w-4 h-4" /></Button>
+          {importInput}
+          <Badge variant="outline" className="ml-auto shrink-0 tabular-nums">{Math.round(scale * 100)}%</Badge>
+        </>
+      )}
     </div>
   );
 
@@ -680,7 +721,7 @@ const MindMap = () => {
         setEditing(addNodeAt(w.x, w.y));
       }}
       className={`relative w-full overflow-hidden glass-card glow-border touch-none select-none ${
-        fullscreen ? 'flex-1 rounded-xl' : 'h-[68dvh] md:h-[74dvh] rounded-xl'
+        fullscreen ? 'flex-1 rounded-xl' : 'h-[76dvh] md:h-[74dvh] rounded-xl'
       }`}
       style={{
         backgroundImage:
@@ -765,22 +806,24 @@ const MindMap = () => {
               <button
                 aria-label="Conectar"
                 onPointerDown={e => startLink(e, n)}
-                className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full border-2 bg-background flex items-center justify-center opacity-80 hover:opacity-100 active:scale-110 transition"
+                className={`absolute -right-4 top-1/2 -translate-y-1/2 rounded-full border-2 bg-background flex items-center justify-center opacity-90 hover:opacity-100 active:scale-110 transition ${
+                  linking?.from === n.id ? 'ring-2 ring-offset-2 ring-offset-background scale-110' : ''
+                } w-9 h-9 md:w-6 md:h-6`}
                 style={{ borderColor: c }}>
                 <Link2 className="w-3 h-3" style={{ color: c }} />
               </button>
 
-              {isSel && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex gap-1 rounded-full bg-popover border border-border px-1 py-0.5 shadow-lg">
-                  <Button size="icon" variant="ghost" className="h-7 w-7"
+              {isSel && !linking && (
+                <div className="absolute -top-6 md:-top-4 left-1/2 -translate-x-1/2 flex gap-1 rounded-full bg-popover border border-border px-1 py-0.5 shadow-lg">
+                  <Button size="icon" variant="ghost" className="h-9 w-9 md:h-7 md:w-7"
                     onPointerDown={e => e.stopPropagation()}
-                    onClick={e => { e.stopPropagation(); setEditing(n); }}><Pencil className="w-3.5 h-3.5" /></Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7"
+                    onClick={e => { e.stopPropagation(); setEditing(n); }}><Pencil className="w-4 h-4 md:w-3.5 md:h-3.5" /></Button>
+                  <Button size="icon" variant="ghost" className="h-9 w-9 md:h-7 md:w-7"
                     onPointerDown={e => e.stopPropagation()}
-                    onClick={e => { e.stopPropagation(); duplicateNode(n); }}><Copy className="w-3.5 h-3.5" /></Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive"
+                    onClick={e => { e.stopPropagation(); duplicateNode(n); }}><Copy className="w-4 h-4 md:w-3.5 md:h-3.5" /></Button>
+                  <Button size="icon" variant="ghost" className="h-9 w-9 md:h-7 md:w-7 text-destructive"
                     onPointerDown={e => e.stopPropagation()}
-                    onClick={e => { e.stopPropagation(); removeNode(n.id); }}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    onClick={e => { e.stopPropagation(); removeNode(n.id); }}><Trash2 className="w-4 h-4 md:w-3.5 md:h-3.5" /></Button>
                 </div>
               )}
             </div>
@@ -825,7 +868,9 @@ const MindMap = () => {
 
       {/* dica de ligação */}
       {linking && (
-        <Badge className="absolute bottom-3 left-3 z-30 gap-1"><Link2 className="w-3 h-3" />Solte sobre outro bloco</Badge>
+        <Badge className="absolute bottom-3 left-3 right-3 sm:right-auto z-30 gap-1 justify-center py-1.5">
+          <Link2 className="w-3 h-3" />Toque no bloco de destino (ou toque na grade para cancelar)
+        </Badge>
       )}
 
       {/* minimapa */}
@@ -961,7 +1006,8 @@ const MindMap = () => {
 
   if (fullscreen) {
     return (
-      <div className="fixed inset-0 z-[60] bg-background flex flex-col p-2 gap-2">
+      <div className="fixed inset-0 z-[60] bg-background flex flex-col p-2 gap-2"
+        style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
         {mapsBar}
         {toolbar}
         {canvas}
@@ -980,7 +1026,7 @@ const MindMap = () => {
       {toolbar}
       {canvas}
       <p className="text-xs text-muted-foreground">
-        Toque duplo cria bloco · arraste a alça para ligar · pinça ou roda para zoom · clique na linha para rotular · Del apaga
+        Toque duplo cria bloco · toque na bolinha ao lado do bloco e depois no destino para ligar · pinça para zoom · toque na linha para rotular
       </p>
       {dialogs}
     </div>
