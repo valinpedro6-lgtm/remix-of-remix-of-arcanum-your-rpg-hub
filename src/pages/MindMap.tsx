@@ -377,7 +377,7 @@ const MindMap = () => {
 
   const onNodePointerDown = (e: React.PointerEvent, node: MapNode) => {
     if (pointers.current.size >= 1 && gesture.current) return;
-    if (linking) return; // aguardando toque de destino
+    if (linking) { e.stopPropagation(); return; } // aguardando toque de destino
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     e.stopPropagation();
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
