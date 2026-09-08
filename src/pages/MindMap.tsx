@@ -1026,7 +1026,7 @@ const MindMap = () => {
       {toolbar}
       {canvas}
       <p className="text-xs text-muted-foreground">
-        Toque duplo cria bloco · arraste a alça para ligar · pinça ou roda para zoom · clique na linha para rotular · Del apaga
+        Toque duplo cria bloco · toque na bolinha ao lado do bloco e depois no destino para ligar · pinça para zoom · toque na linha para rotular
       </p>
       {dialogs}
     </div>
