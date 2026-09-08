@@ -11,8 +11,12 @@ import {
 import {
   Plus, Trash2, Link2, ZoomIn, ZoomOut, Crosshair, Pencil, Network, Download, Upload,
   Maximize2, Minimize2, Image as ImageIcon, Undo2, Redo2, Search, Grid3x3, Copy,
-  Lightbulb, User, MapPin, Skull, ScrollText, KeyRound, X, Layers,
+  Lightbulb, User, MapPin, Skull, ScrollText, KeyRound, X, Layers, MoreHorizontal,
 } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from '@/hooks/use-toast';
 
 /* ────────────────────────────── modelo ────────────────────────────── */
@@ -171,7 +175,8 @@ const MindMap = () => {
   const [snap, setSnap] = useState(true);
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [linking, setLinking] = useState<{ from: string; x: number; y: number } | null>(null);
+  const [linking, setLinking] = useState<{ from: string; x: number; y: number; moved?: boolean } | null>(null);
+  const isMobile = useIsMobile();
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const pointers = useRef<Map<number, { x: number; y: number }>>(new Map());
@@ -312,7 +317,8 @@ const MindMap = () => {
       drag.current = null;
       return;
     }
-    if (drag.current || linking) return;
+    if (linking) { setLinking(null); return; }
+    if (drag.current) return;
     panRef.current = { x: pan.x, y: pan.y, px: e.clientX, py: e.clientY };
     setSelected(null);
   };
@@ -335,7 +341,7 @@ const MindMap = () => {
     // ligação em andamento
     if (linking) {
       const w = toWorld(e.clientX, e.clientY);
-      setLinking(l => (l ? { ...l, x: w.x, y: w.y } : l));
+      setLinking(l => (l ? { ...l, x: w.x, y: w.y, moved: true } : l));
       return;
     }
 
@@ -365,11 +371,13 @@ const MindMap = () => {
     if (drag.current?.moved) { history.current.future = []; setHistTick(t => t + 1); }
     drag.current = null;
     panRef.current = null;
-    if (linking) setLinking(null);
+    // modo "toque para ligar": se o dedo não arrastou, mantém a ligação ativa
+    if (linking?.moved) setLinking(null);
   };
 
   const onNodePointerDown = (e: React.PointerEvent, node: MapNode) => {
     if (pointers.current.size >= 1 && gesture.current) return;
+    if (linking) return; // aguardando toque de destino
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     e.stopPropagation();
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
@@ -381,7 +389,7 @@ const MindMap = () => {
   const startLink = (e: React.PointerEvent, node: MapNode) => {
     e.stopPropagation();
     const w = toWorld(e.clientX, e.clientY);
-    setLinking({ from: node.id, x: w.x, y: w.y });
+    setLinking({ from: node.id, x: w.x, y: w.y, moved: false });
   };
 
   const finishLinkOn = (id: string) => {
