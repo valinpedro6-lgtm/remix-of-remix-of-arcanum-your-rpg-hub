@@ -646,33 +646,66 @@ const MindMap = () => {
     </div>
   );
 
-  const toolbar = (
+  const importInput = (
+    <label className="shrink-0">
+      <input type="file" accept="application/json" className="hidden"
+        onChange={e => e.target.files?.[0] && importJson(e.target.files[0])} />
+      <Button variant="outline" size="icon" className={iconBtn} title="Importar JSON" asChild><span><Upload className="w-4 h-4" /></span></Button>
+    </label>
+  );
 
+  const toolbar = (
     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mb-1 scrollbar-none">
-      <Button onClick={addNodeCenter} className="gap-2 shrink-0 h-10 md:h-9"><Plus className="w-4 h-4" />Bloco</Button>
+      <Button onClick={addNodeCenter} className="gap-2 shrink-0 h-11 md:h-9 px-4"><Plus className="w-4 h-4" />Bloco</Button>
       <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Desfazer"
         disabled={!history.current.past.length} onClick={undo}><Undo2 className="w-4 h-4" /></Button>
       <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Refazer"
         disabled={!history.current.future.length} onClick={redo}><Redo2 className="w-4 h-4" /></Button>
-      <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Diminuir" onClick={() => zoomButton(1 / 1.2)}><ZoomOut className="w-4 h-4" /></Button>
-      <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Aumentar" onClick={() => zoomButton(1.2)}><ZoomIn className="w-4 h-4" /></Button>
       <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Enquadrar tudo" onClick={fitView}><Crosshair className="w-4 h-4" /></Button>
       <Button variant={searchOpen ? 'default' : 'outline'} size="icon" className={`${iconBtn} shrink-0`} title="Buscar"
         onClick={() => setSearchOpen(o => !o)}><Search className="w-4 h-4" /></Button>
-      <Button variant={snap ? 'default' : 'outline'} size="icon" className={`${iconBtn} shrink-0`} title="Encaixar na grade"
-        onClick={() => setSnap(s => !s)}><Grid3x3 className="w-4 h-4" /></Button>
-      <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Exportar imagem" onClick={exportPng}><ImageIcon className="w-4 h-4" /></Button>
-      <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Exportar JSON" onClick={exportJson}><Download className="w-4 h-4" /></Button>
-      <label className="shrink-0">
-        <input type="file" accept="application/json" className="hidden"
-          onChange={e => e.target.files?.[0] && importJson(e.target.files[0])} />
-        <Button variant="outline" size="icon" className={iconBtn} title="Importar JSON" asChild><span><Upload className="w-4 h-4" /></span></Button>
-      </label>
       <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
         onClick={() => setFullscreen(f => !f)}>
         {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
       </Button>
-      <Badge variant="outline" className="ml-auto shrink-0 tabular-nums hidden sm:flex">{Math.round(scale * 100)}%</Badge>
+
+      {isMobile ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Mais opções">
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuItem onClick={() => zoomButton(1.2)}><ZoomIn className="w-4 h-4 mr-2" />Aumentar zoom</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => zoomButton(1 / 1.2)}><ZoomOut className="w-4 h-4 mr-2" />Diminuir zoom</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSnap(s => !s)}>
+              <Grid3x3 className="w-4 h-4 mr-2" />{snap ? 'Desligar encaixe' : 'Encaixar na grade'}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={exportPng}><ImageIcon className="w-4 h-4 mr-2" />Exportar imagem</DropdownMenuItem>
+            <DropdownMenuItem onClick={exportJson}><Download className="w-4 h-4 mr-2" />Exportar arquivo</DropdownMenuItem>
+            <DropdownMenuItem onSelect={e => e.preventDefault()} asChild>
+              <label className="flex items-center cursor-pointer">
+                <Upload className="w-4 h-4 mr-2" />Importar arquivo
+                <input type="file" accept="application/json" className="hidden"
+                  onChange={e => e.target.files?.[0] && importJson(e.target.files[0])} />
+              </label>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setMapsOpen(true)}><Layers className="w-4 h-4 mr-2" />Meus mapas</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <>
+          <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Diminuir" onClick={() => zoomButton(1 / 1.2)}><ZoomOut className="w-4 h-4" /></Button>
+          <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Aumentar" onClick={() => zoomButton(1.2)}><ZoomIn className="w-4 h-4" /></Button>
+          <Button variant={snap ? 'default' : 'outline'} size="icon" className={`${iconBtn} shrink-0`} title="Encaixar na grade"
+            onClick={() => setSnap(s => !s)}><Grid3x3 className="w-4 h-4" /></Button>
+          <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Exportar imagem" onClick={exportPng}><ImageIcon className="w-4 h-4" /></Button>
+          <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Exportar JSON" onClick={exportJson}><Download className="w-4 h-4" /></Button>
+          {importInput}
+          <Badge variant="outline" className="ml-auto shrink-0 tabular-nums">{Math.round(scale * 100)}%</Badge>
+        </>
+      )}
     </div>
   );
 
