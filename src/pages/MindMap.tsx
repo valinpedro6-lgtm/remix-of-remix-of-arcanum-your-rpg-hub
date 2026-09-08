@@ -813,17 +813,17 @@ const MindMap = () => {
                 <Link2 className="w-3 h-3" style={{ color: c }} />
               </button>
 
-              {isSel && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex gap-1 rounded-full bg-popover border border-border px-1 py-0.5 shadow-lg">
-                  <Button size="icon" variant="ghost" className="h-7 w-7"
+              {isSel && !linking && (
+                <div className="absolute -top-6 md:-top-4 left-1/2 -translate-x-1/2 flex gap-1 rounded-full bg-popover border border-border px-1 py-0.5 shadow-lg">
+                  <Button size="icon" variant="ghost" className="h-9 w-9 md:h-7 md:w-7"
                     onPointerDown={e => e.stopPropagation()}
-                    onClick={e => { e.stopPropagation(); setEditing(n); }}><Pencil className="w-3.5 h-3.5" /></Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7"
+                    onClick={e => { e.stopPropagation(); setEditing(n); }}><Pencil className="w-4 h-4 md:w-3.5 md:h-3.5" /></Button>
+                  <Button size="icon" variant="ghost" className="h-9 w-9 md:h-7 md:w-7"
                     onPointerDown={e => e.stopPropagation()}
-                    onClick={e => { e.stopPropagation(); duplicateNode(n); }}><Copy className="w-3.5 h-3.5" /></Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive"
+                    onClick={e => { e.stopPropagation(); duplicateNode(n); }}><Copy className="w-4 h-4 md:w-3.5 md:h-3.5" /></Button>
+                  <Button size="icon" variant="ghost" className="h-9 w-9 md:h-7 md:w-7 text-destructive"
                     onPointerDown={e => e.stopPropagation()}
-                    onClick={e => { e.stopPropagation(); removeNode(n.id); }}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    onClick={e => { e.stopPropagation(); removeNode(n.id); }}><Trash2 className="w-4 h-4 md:w-3.5 md:h-3.5" /></Button>
                 </div>
               )}
             </div>
