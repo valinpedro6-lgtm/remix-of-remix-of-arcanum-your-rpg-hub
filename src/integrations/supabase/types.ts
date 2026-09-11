@@ -59,6 +59,63 @@ export type Database = {
         }
         Relationships: []
       }
+      sheets: {
+        Row: {
+          abilities: Json
+          accent: string
+          attributes: Json
+          created_at: string
+          id: string
+          image_url: string
+          in_list: boolean
+          kind: string
+          name: string
+          notes: string
+          origin: string
+          resources: Json
+          share_id: string
+          skills: Json
+          subtitle: string
+          updated_at: string
+        }
+        Insert: {
+          abilities?: Json
+          accent?: string
+          attributes?: Json
+          created_at?: string
+          id?: string
+          image_url?: string
+          in_list?: boolean
+          kind?: string
+          name?: string
+          notes?: string
+          origin?: string
+          resources?: Json
+          share_id?: string
+          skills?: Json
+          subtitle?: string
+          updated_at?: string
+        }
+        Update: {
+          abilities?: Json
+          accent?: string
+          attributes?: Json
+          created_at?: string
+          id?: string
+          image_url?: string
+          in_list?: boolean
+          kind?: string
+          name?: string
+          notes?: string
+          origin?: string
+          resources?: Json
+          share_id?: string
+          skills?: Json
+          subtitle?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
