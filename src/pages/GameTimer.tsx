@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Play, Pause, RotateCcw, Sun, Moon, Sunrise, Sunset, FastForward, Plus, Trash2 } from 'lucide-react';
 import { NumberInput } from '@/components/NumberInput';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLocalStorage as useLS } from '@/hooks/useLocalStorage';
+import { WorldCalendar, DEFAULT_CALENDAR, formatWorldDate } from '@/lib/worldCalendar';
 
 interface TimerState {
   realMinutesPerGameHour: number;
@@ -36,6 +38,7 @@ interface TimerCardProps {
 }
 
 const TimerCard = ({ timer, setTimer, title, onRename, onRemove, isMain }: TimerCardProps) => {
+  const [calendar] = useLS<WorldCalendar>('arcanum-calendar', DEFAULT_CALENDAR());
   // Recover elapsed time while page was closed
   useEffect(() => {
     if (timer.isRunning && timer.lastTickTimestamp > 0) {
@@ -125,6 +128,10 @@ const TimerCard = ({ timer, setTimer, title, onRename, onRemove, isMain }: Timer
             {days > 0 && <span className="text-2xl text-muted-foreground">{days}d </span>}
             {String(hours).padStart(2, '0')}:{String(minutes).padStart(2, '0')}
           </div>
+
+          <p className="mt-2 text-xs text-muted-foreground">
+            {formatWorldDate(calendar, days)}
+          </p>
 
           <div className="mt-3 mx-auto max-w-xs">
             <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
