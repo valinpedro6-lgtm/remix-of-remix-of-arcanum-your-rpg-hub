@@ -13,6 +13,8 @@ import SheetsHub from "./pages/SheetsHub";
 import GeneratorsHub from "./pages/GeneratorsHub";
 import CompendiumHub from "./pages/CompendiumHub";
 import MindMap from "./pages/MindMap";
+import Cast from "./pages/Cast";
+import SharedSheet from "./pages/SharedSheet";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,11 +24,16 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <AccessGate>
       <HashRouter>
-        <Layout>
-          <Routes>
+        <Routes>
+          {/* Ficha pública do jogador (sem senha) */}
+          <Route path="/ficha/:shareId" element={<SharedSheet />} />
+          <Route path="*" element={
+            <AccessGate>
+              <Layout>
+                <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/elenco" element={<Cast />} />
             <Route path="/painel" element={<Dashboard />} />
             <Route path="/mesa" element={<TableHub />} />
             <Route path="/fichas" element={<SheetsHub />} />
@@ -50,10 +57,12 @@ const App = () => (
             <Route path="/pocoes" element={<Navigate to="/compendio?t=pocoes" replace />} />
 
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Layout>
+                </Routes>
+              </Layout>
+            </AccessGate>
+          } />
+        </Routes>
       </HashRouter>
-      </AccessGate>
     </TooltipProvider>
   </QueryClientProvider>
 );

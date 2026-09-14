@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
   Users, StickyNote, LayoutDashboard, Menu, Gauge, Dices, Wand2, BookOpen, Network
-} from 'lucide-react';
+, Drama } from 'lucide-react';
 import { GlobalTimerBar } from '@/components/GlobalTimerBar';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 
@@ -12,6 +12,7 @@ const navItems = [
   { path: '/', label: 'Início', icon: LayoutDashboard },
   { path: '/painel', label: 'Painel', icon: Gauge },
   { path: '/mesa', label: 'Mesa', icon: Dices },
+  { path: '/elenco', label: 'Elenco', icon: Drama },
   { path: '/fichas', label: 'Fichas', icon: Users },
   { path: '/geradores', label: 'Geradores', icon: Wand2 },
   { path: '/compendio', label: 'Compêndio', icon: BookOpen },
