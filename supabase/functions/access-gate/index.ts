@@ -79,6 +79,40 @@ async function registerFail(ip: string) {
   };
 }
 
+async function touchSession(device: string, label = "") {
+  if (!device) return;
+  const now = new Date().toISOString();
+  const { data } = await admin.from("access_sessions").select("device_id").eq("device_id", device).maybeSingle();
+  if (data) {
+    await admin.from("access_sessions").update({ last_seen: now }).eq("device_id", device);
+  } else {
+    await admin.from("access_sessions").insert({ device_id: device, label, first_seen: now, last_seen: now });
+  }
+}
+
+async function rotateCode() {
+  const next = generateCode();
+  await admin.from("access_gate")
+    .update({ current_code: next, code_updated_at: new Date().toISOString() })
+    .eq("id", 1);
+  return next;
+}
+
+async function stats() {
+  const since = new Date(Date.now() - 2 * 60_000).toISOString();
+  const { data } = await admin
+    .from("access_sessions")
+    .select("device_id, label, first_seen, last_seen")
+    .order("last_seen", { ascending: false })
+    .limit(100);
+  const rows = data ?? [];
+  return {
+    total: rows.length,
+    active: rows.filter((r) => r.last_seen > since).length,
+    sessions: rows.slice(0, 20),
+  };
+}
+
 async function clearAttempts(ip: string) {
   await admin.from("access_attempts")
     .upsert({ ip, fails: 0, strikes: 0, locked_until: null, updated_at: new Date().toISOString() });
@@ -110,12 +144,17 @@ Deno.serve(async (req) => {
         const r = await registerFail(ip);
         return json({ ok: false, ...r });
       }
+      const device = String(body.device ?? "").slice(0, 64);
       if (code === row.master_password) {
         await clearAttempts(ip);
+        await touchSession(device, "Mestre");
         return json({ ok: true, master: true });
       }
       if (code === row.current_code) {
         await clearAttempts(ip);
+        await touchSession(device);
+        // cada entrada consome o código: um novo é gerado na hora
+        await rotateCode();
         return json({ ok: true, master: false });
       }
       const r = await registerFail(ip);
@@ -129,7 +168,26 @@ Deno.serve(async (req) => {
         return json({ ok: false, ...r });
       }
       await clearAttempts(ip);
-      return json({ ok: true, currentCode: row.current_code, updatedAt: row.code_updated_at });
+      return json({ ok: true, currentCode: row.current_code, updatedAt: row.code_updated_at, ...(await stats()) });
+    }
+
+    if (action === "heartbeat") {
+      const device = String(body.device ?? "").slice(0, 64);
+      await touchSession(device);
+      return json({ ok: true });
+    }
+
+    if (action === "stats") {
+      const master = String(body.master ?? "").trim();
+      if (master !== row.master_password) return json({ ok: false }, 200);
+      return json({ ok: true, currentCode: row.current_code, ...(await stats()) });
+    }
+
+    if (action === "reset-sessions") {
+      const master = String(body.master ?? "").trim();
+      if (master !== row.master_password) return json({ ok: false }, 200);
+      await admin.from("access_sessions").delete().neq("device_id", "");
+      return json({ ok: true, ...(await stats()) });
     }
 
     if (action === "set-code") {

@@ -383,3 +383,7 @@
   }
 }
 
+
+/* barra de rolagem discreta para abas em telas pequenas */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

@@ -22,7 +22,7 @@ export const HubTabs = ({ title, subtitle, tabs }: HubTabsProps) => {
   const current = tabs.some(t => t.value === params.get('t')) ? params.get('t')! : tabs[0].value;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 min-w-0">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="page-title">{title}</h1>
         {subtitle && <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>}
@@ -31,8 +31,10 @@ export const HubTabs = ({ title, subtitle, tabs }: HubTabsProps) => {
       <Tabs
         value={current}
         onValueChange={v => setParams(v === tabs[0].value ? {} : { t: v }, { replace: true })}
+        className="w-full min-w-0"
       >
-        <TabsList className="w-full flex overflow-x-auto justify-start h-auto p-1 bg-card/60 backdrop-blur-md border border-border/50">
+        <div className="w-full max-w-full overflow-x-auto no-scrollbar">
+        <TabsList className="w-max min-w-full flex justify-start h-auto p-1 bg-card/60 backdrop-blur-md border border-border/50">
           {tabs.map(t => (
             <TabsTrigger
               key={t.value}
@@ -44,9 +46,10 @@ export const HubTabs = ({ title, subtitle, tabs }: HubTabsProps) => {
             </TabsTrigger>
           ))}
         </TabsList>
+        </div>
 
         {tabs.map(t => (
-          <TabsContent key={t.value} value={t.value} className="mt-4 embedded-page">
+          <TabsContent key={t.value} value={t.value} className="mt-4 embedded-page min-w-0">
             {t.element}
           </TabsContent>
         ))}

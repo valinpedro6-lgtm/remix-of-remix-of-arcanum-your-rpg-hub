@@ -95,7 +95,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
       </div>
 
       {/* Main content */}
-      <main className="flex-1 md:ml-60 p-4 md:p-6 pt-16 md:pt-6 min-h-screen subtle-pattern">
+      <main className="flex-1 min-w-0 overflow-x-hidden md:ml-60 p-4 md:p-6 pt-16 md:pt-6 min-h-screen subtle-pattern">
         <div className="animate-fade-in">
           {children}
         </div>
