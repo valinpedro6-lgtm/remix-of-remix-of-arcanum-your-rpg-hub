@@ -10,6 +10,29 @@ import { motion } from 'framer-motion';
 const GRANT_KEY = 'arcanum-access-granted';
 const MASTER_KEY = 'arcanum-master-key';
 const LOCK_KEY = 'arcanum-access-lock';
+const DEVICE_KEY = 'arcanum-device-id';
+
+const deviceId = () => {
+  let id = localStorage.getItem(DEVICE_KEY);
+  if (!id) {
+    id = (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)) as string;
+    localStorage.setItem(DEVICE_KEY, id);
+  }
+  return id;
+};
+
+/** avisa o servidor, de tempos em tempos, que este aparelho continua na mesa */
+const Heartbeat = () => {
+  useEffect(() => {
+    const ping = () => {
+      supabase.functions.invoke('access-gate', { body: { action: 'heartbeat', device: deviceId() } }).catch(() => {});
+    };
+    ping();
+    const id = setInterval(ping, 60000);
+    return () => clearInterval(id);
+  }, []);
+  return null;
+};
 
 const fmt = (s: number) => {
   const m = Math.floor(s / 60);
@@ -69,7 +92,7 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
     if (!value) return;
     setLoading(true);
     try {
-      const res = await call({ action: 'verify', code: value });
+      const res = await call({ action: 'verify', code: value, device: deviceId() });
       if (res?.ok) {
         localStorage.removeItem(LOCK_KEY);
         setLockUntil(null);
@@ -104,7 +127,7 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  if (granted) return <>{children}</>;
+  if (granted) return <><Heartbeat />{children}</>;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 subtle-pattern">
@@ -175,6 +198,7 @@ const MasterPanel = ({ locked, onLock }: { locked: boolean; onLock: (ms: number)
   const [master, setMaster] = useState(() => localStorage.getItem(MASTER_KEY) ?? '');
   const [unlocked, setUnlocked] = useState(false);
   const [current, setCurrent] = useState('');
+  const [info, setInfo] = useState<{ total: number; active: number } | null>(null);
   const [custom, setCustom] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -191,6 +215,7 @@ const MasterPanel = ({ locked, onLock }: { locked: boolean; onLock: (ms: number)
       if (res?.ok) {
         localStorage.setItem(MASTER_KEY, master.trim());
         setCurrent(res.currentCode);
+        setInfo({ total: res.total ?? 0, active: res.active ?? 0 });
         setUnlocked(true);
       } else if (res?.locked && res.retryAfter) {
         onLock(res.retryAfter * 1000);
@@ -225,6 +250,20 @@ const MasterPanel = ({ locked, onLock }: { locked: boolean; onLock: (ms: number)
       setLoading(false);
     }
   };
+
+  const refresh = async () => {
+    try {
+      const res = await call({ action: 'stats', master: master.trim() });
+      if (res?.ok) { setCurrent(res.currentCode); setInfo({ total: res.total ?? 0, active: res.active ?? 0 }); }
+    } catch {}
+  };
+
+  useEffect(() => {
+    if (!unlocked) return;
+    const id = setInterval(refresh, 20000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unlocked, master]);
 
   return (
     <div className="pt-4 border-t border-border/40 space-y-3">
@@ -263,8 +302,21 @@ const MasterPanel = ({ locked, onLock }: { locked: boolean; onLock: (ms: number)
               Definir
             </Button>
           </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-lg bg-secondary/40 p-2 text-center">
+              <p className="text-xl font-display font-bold text-primary">{info?.active ?? 0}</p>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Na mesa agora</p>
+            </div>
+            <div className="rounded-lg bg-secondary/40 p-2 text-center">
+              <p className="text-xl font-display font-bold text-primary">{info?.total ?? 0}</p>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Já entraram</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => rotate('')}>
+            Atualizar dados
+          </Button>
           <p className="text-[11px] text-muted-foreground text-center">
-            Cada novo código invalida o anterior. Quem já entrou continua com acesso neste aparelho.
+            O código se renova sozinho assim que alguém entra. Cada novo código invalida o anterior. Quem já entrou continua com acesso neste aparelho.
           </p>
         </>
       )}
