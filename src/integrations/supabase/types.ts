@@ -59,6 +59,30 @@ export type Database = {
         }
         Relationships: []
       }
+      access_sessions: {
+        Row: {
+          device_id: string
+          first_seen: string
+          id: string
+          label: string
+          last_seen: string
+        }
+        Insert: {
+          device_id: string
+          first_seen?: string
+          id?: string
+          label?: string
+          last_seen?: string
+        }
+        Update: {
+          device_id?: string
+          first_seen?: string
+          id?: string
+          label?: string
+          last_seen?: string
+        }
+        Relationships: []
+      }
       sheets: {
         Row: {
           abilities: Json
