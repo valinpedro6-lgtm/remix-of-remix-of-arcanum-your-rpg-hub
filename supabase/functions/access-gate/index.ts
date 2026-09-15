@@ -84,7 +84,9 @@ async function touchSession(device: string, label = "") {
   const now = new Date().toISOString();
   const { data } = await admin.from("access_sessions").select("device_id").eq("device_id", device).maybeSingle();
   if (data) {
-    await admin.from("access_sessions").update({ last_seen: now }).eq("device_id", device);
+    await admin.from("access_sessions")
+      .update(label ? { last_seen: now, label } : { last_seen: now })
+      .eq("device_id", device);
   } else {
     await admin.from("access_sessions").insert({ device_id: device, label, first_seen: now, last_seen: now });
   }
@@ -169,6 +171,16 @@ Deno.serve(async (req) => {
       }
       await clearAttempts(ip);
       return json({ ok: true, currentCode: row.current_code, updatedAt: row.code_updated_at, ...(await stats()) });
+    }
+
+    if (action === "register") {
+      const device = String(body.device ?? "").slice(0, 64);
+      const email = String(body.email ?? "").trim().slice(0, 120);
+      if (!device || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        return json({ ok: false, error: "E-mail inválido" });
+      }
+      await touchSession(device, email);
+      return json({ ok: true });
     }
 
     if (action === "heartbeat") {

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { KeyRound, Shield, Loader2, Copy, RefreshCw, Lock, AlertTriangle } from 'lucide-react';
+import { KeyRound, Shield, Loader2, Copy, RefreshCw, Lock, AlertTriangle, Mail } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
@@ -11,6 +11,7 @@ const GRANT_KEY = 'arcanum-access-granted';
 const MASTER_KEY = 'arcanum-master-key';
 const LOCK_KEY = 'arcanum-access-lock';
 const DEVICE_KEY = 'arcanum-device-id';
+const EMAIL_KEY = 'arcanum-access-email';
 
 const deviceId = () => {
   let id = localStorage.getItem(DEVICE_KEY);
@@ -62,6 +63,8 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [masterMode, setMasterMode] = useState(false);
+  const [needEmail, setNeedEmail] = useState(false);
+  const [email, setEmail] = useState(() => localStorage.getItem(EMAIL_KEY) ?? '');
   const [remaining, setRemaining] = useState<number | null>(null);
   const [lockUntil, setLockUntil] = useState<number | null>(() => {
     const v = Number(localStorage.getItem(LOCK_KEY) ?? 0);
@@ -97,9 +100,13 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem(LOCK_KEY);
         setLockUntil(null);
         setRemaining(null);
-        localStorage.setItem(GRANT_KEY, 'true');
-        if (res.master) localStorage.setItem(MASTER_KEY, value);
-        setGranted(true);
+        if (res.master) {
+          localStorage.setItem(MASTER_KEY, value);
+          localStorage.setItem(GRANT_KEY, 'true');
+          setGranted(true);
+          return;
+        }
+        setNeedEmail(true);
         return;
       }
       if (res?.locked && res.retryAfter) {
@@ -127,7 +134,66 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const sendEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = email.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)) {
+      toast({ title: 'E-mail inválido', description: 'Digite um e-mail válido para continuar.', variant: 'destructive' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await call({ action: 'register', device: deviceId(), email: value });
+      if (!res?.ok) {
+        toast({ title: 'Não deu para registrar', description: 'Confira o e-mail e tente de novo.', variant: 'destructive' });
+        return;
+      }
+      localStorage.setItem(EMAIL_KEY, value);
+      localStorage.setItem(GRANT_KEY, 'true');
+      setGranted(true);
+    } catch {
+      toast({ title: 'Erro de conexão', description: 'Tente novamente.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (granted) return <><Heartbeat />{children}</>;
+
+  if (needEmail) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 subtle-pattern">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
+          <Card className="border-border/40 bg-card/60 backdrop-blur-xl glow-border">
+            <CardContent className="p-6 space-y-5">
+              <div className="text-center space-y-1">
+                <div className="mx-auto w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-2">
+                  <Mail className="w-6 h-6" />
+                </div>
+                <h1 className="text-3xl font-display font-bold gradient-text">Quase lá</h1>
+                <p className="text-sm text-muted-foreground">Informe seu e-mail para o mestre saber quem entrou</p>
+              </div>
+              <form onSubmit={sendEmail} className="space-y-3">
+                <Input
+                  type="email"
+                  autoFocus
+                  inputMode="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  maxLength={120}
+                  className="text-center"
+                />
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Entrar na mesa'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 subtle-pattern">
@@ -199,6 +265,7 @@ const MasterPanel = ({ locked, onLock }: { locked: boolean; onLock: (ms: number)
   const [unlocked, setUnlocked] = useState(false);
   const [current, setCurrent] = useState('');
   const [info, setInfo] = useState<{ total: number; active: number } | null>(null);
+  const [sessions, setSessions] = useState<{ device_id: string; label: string; first_seen: string; last_seen: string }[]>([]);
   const [custom, setCustom] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -216,6 +283,7 @@ const MasterPanel = ({ locked, onLock }: { locked: boolean; onLock: (ms: number)
         localStorage.setItem(MASTER_KEY, master.trim());
         setCurrent(res.currentCode);
         setInfo({ total: res.total ?? 0, active: res.active ?? 0 });
+        setSessions(res.sessions ?? []);
         setUnlocked(true);
       } else if (res?.locked && res.retryAfter) {
         onLock(res.retryAfter * 1000);
@@ -254,7 +322,7 @@ const MasterPanel = ({ locked, onLock }: { locked: boolean; onLock: (ms: number)
   const refresh = async () => {
     try {
       const res = await call({ action: 'stats', master: master.trim() });
-      if (res?.ok) { setCurrent(res.currentCode); setInfo({ total: res.total ?? 0, active: res.active ?? 0 }); }
+      if (res?.ok) { setCurrent(res.currentCode); setInfo({ total: res.total ?? 0, active: res.active ?? 0 }); setSessions(res.sessions ?? []); }
     } catch {}
   };
 
@@ -311,6 +379,22 @@ const MasterPanel = ({ locked, onLock }: { locked: boolean; onLock: (ms: number)
               <p className="text-xl font-display font-bold text-primary">{info?.total ?? 0}</p>
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Já entraram</p>
             </div>
+          </div>
+          <div className="rounded-lg border border-border/40 bg-secondary/20 max-h-52 overflow-y-auto divide-y divide-border/30">
+            {sessions.length === 0 ? (
+              <p className="p-3 text-center text-xs text-muted-foreground">Ninguém entrou ainda.</p>
+            ) : sessions.map(sn => {
+              const online = Date.now() - new Date(sn.last_seen).getTime() < 2 * 60_000;
+              return (
+                <div key={sn.device_id} className="flex items-center gap-2 px-3 py-2">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${online ? 'bg-primary animate-pulse' : 'bg-muted-foreground/40'}`} />
+                  <span className="text-xs truncate flex-1">{sn.label || 'sem e-mail'}</span>
+                  <span className="text-[10px] text-muted-foreground shrink-0">
+                    {new Date(sn.last_seen).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              );
+            })}
           </div>
           <Button variant="ghost" size="sm" className="w-full text-xs" onClick={refresh}>
             Atualizar dados
