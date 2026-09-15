@@ -312,7 +312,7 @@ const MasterPanel = ({ locked, onLock }: { locked: boolean; onLock: (ms: number)
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Já entraram</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => rotate('')}>
+          <Button variant="ghost" size="sm" className="w-full text-xs" onClick={refresh}>
             Atualizar dados
           </Button>
           <p className="text-[11px] text-muted-foreground text-center">
