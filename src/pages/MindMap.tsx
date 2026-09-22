@@ -371,8 +371,9 @@ const MindMap = () => {
     if (drag.current?.moved) { history.current.future = []; setHistTick(t => t + 1); }
     drag.current = null;
     panRef.current = null;
-    // modo "toque para ligar": se o dedo não arrastou, mantém a ligação ativa
-    if (linking?.moved) setLinking(null);
+    // modo "toque para ligar": se o dedo não arrastou, mantém a ligação ativa;
+    // se arrastou, limpa DEPOIS do click para o toque final ainda conectar
+    if (linking?.moved) requestAnimationFrame(() => setLinking(null));
   };
 
   const onNodePointerDown = (e: React.PointerEvent, node: MapNode) => {
@@ -784,8 +785,7 @@ const MindMap = () => {
             <div
               key={n.id}
               onPointerDown={e => onNodePointerDown(e, n)}
-              onPointerUp={() => finishLinkOn(n.id)}
-              onClick={e => e.stopPropagation()}
+              onClick={e => { e.stopPropagation(); finishLinkOn(n.id); }}
               onDoubleClick={e => { e.stopPropagation(); setEditing(n); }}
               className={`absolute rounded-xl border bg-card/95 backdrop-blur-sm px-3 py-2.5 cursor-grab active:cursor-grabbing transition-[box-shadow,transform] ${
                 isSel ? 'z-20 scale-[1.02]' : 'z-10'
@@ -806,6 +806,7 @@ const MindMap = () => {
               <button
                 aria-label="Conectar"
                 onPointerDown={e => startLink(e, n)}
+                onClick={e => e.stopPropagation()}
                 className={`absolute -right-4 top-1/2 -translate-y-1/2 rounded-full border-2 bg-background flex items-center justify-center opacity-90 hover:opacity-100 active:scale-110 transition ${
                   linking?.from === n.id ? 'ring-2 ring-offset-2 ring-offset-background scale-110' : ''
                 } w-9 h-9 md:w-6 md:h-6`}

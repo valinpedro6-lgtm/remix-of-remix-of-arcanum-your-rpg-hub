@@ -8,4 +8,5 @@
 
 ## Pendente
 - [ ] Gerador de nomes por nacionalidade/gênero (NPC e Monstros)
+- [x] Mapa mental: conexão por toque no celular corrigida e testada
 - [ ] Anexos de arquivos nas fichas de Players/Monstros
