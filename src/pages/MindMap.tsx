@@ -31,6 +31,7 @@ interface MapNode {
   text?: string;
   color: string;
   kind?: NodeKind;
+  image?: string;
 }
 interface MapEdge {
   id: string;
@@ -91,7 +92,26 @@ const MAX_ZOOM = 2.5;
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
-const nodeH = (n: MapNode) => (n.text?.trim() ? 92 : 56);
+const nodeH = (n: MapNode) => (n.text?.trim() ? 92 : 56) + (n.image ? 116 : 0);
+
+const shrinkImage = (file: File, max = 640): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onerror = reject;
+    r.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const s = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.85));
+      };
+      img.src = r.result as string;
+    };
+    r.readAsDataURL(file);
+  });
 
 const resolveColor = (css: string) => {
   const probe = document.createElement('span');
@@ -800,6 +820,10 @@ const MindMap = () => {
                 <Icon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: c }} />
                 <p className="font-display text-sm font-semibold leading-tight break-words" style={{ color: c }}>{n.title}</p>
               </div>
+              {n.image && (
+                <img src={n.image} alt={n.title} draggable={false}
+                  className="mt-2 w-full h-[104px] object-cover rounded-md pointer-events-none select-none" />
+              )}
               {n.text && <p className="text-xs text-muted-foreground mt-1 line-clamp-3 whitespace-pre-wrap break-words">{n.text}</p>}
 
               {/* alça de conexão */}
@@ -908,6 +932,25 @@ const MindMap = () => {
                 onChange={e => setEditing({ ...editing, title: e.target.value })} />
               <Textarea rows={4} value={editing.text ?? ''} placeholder="Detalhes, pistas, ligações..."
                 onChange={e => setEditing({ ...editing, text: e.target.value })} />
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">Imagem</p>
+                {editing.image && <img src={editing.image} alt="" className="w-full max-h-40 object-cover rounded-md" />}
+                <div className="flex gap-2">
+                  <label className="flex-1">
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={async e => {
+                        const f = e.target.files?.[0];
+                        if (f) setEditing({ ...editing, image: await shrinkImage(f) });
+                      }} />
+                    <span className="flex items-center justify-center h-9 rounded-md border border-border text-sm cursor-pointer hover:border-primary">
+                      {editing.image ? 'Trocar imagem' : 'Adicionar imagem'}
+                    </span>
+                  </label>
+                  {editing.image && (
+                    <Button type="button" variant="outline" size="sm" onClick={() => setEditing({ ...editing, image: undefined })}>Remover</Button>
+                  )}
+                </div>
+              </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-2">Tipo</p>
                 <div className="grid grid-cols-3 gap-2">
