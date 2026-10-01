@@ -30,9 +30,28 @@ export interface SheetAbility {
   description: string;
 }
 
+export type SheetKind = 'player' | 'story' | 'monster';
+
+export interface SheetStyle {
+  color?: string;       // HSL triplo, ex "0 78% 55%"
+  font?: 'display' | 'serif' | 'sans' | 'mono';
+  layout?: 'right' | 'left' | 'full';
+  overlay?: number;     // 0-100 escurecimento
+  uppercase?: boolean;
+}
+
+export const STYLE_COLORS: { label: string; hsl: string }[] = [
+  { label: 'Sangue', hsl: '0 78% 55%' }, { label: 'Ouro', hsl: '43 90% 55%' },
+  { label: 'Brasa', hsl: '24 92% 55%' }, { label: 'Esmeralda', hsl: '150 65% 45%' },
+  { label: 'Gelo', hsl: '190 90% 55%' }, { label: 'Arcano', hsl: '217 90% 60%' },
+  { label: 'Sombra', hsl: '280 70% 62%' }, { label: 'Feitiço', hsl: '330 80% 62%' },
+  { label: 'Osso', hsl: '40 25% 90%' },
+];
+
 export interface Sheet {
   id: string;
-  kind: 'player' | 'monster';
+  kind: SheetKind;
+  style: SheetStyle;
   name: string;
   subtitle: string;
   origin: string;
@@ -78,8 +97,9 @@ export const OP_SKILLS = [
 export const DEFAULT_SKILLS = (): SheetSkill[] =>
   OP_SKILLS.map(name => ({ id: uid(), name, value: 0, trained: false }));
 
-export const emptySheet = (kind: 'player' | 'monster'): Omit<Sheet, 'id' | 'share_id' | 'created_at' | 'updated_at'> => ({
+export const emptySheet = (kind: SheetKind): Omit<Sheet, 'id' | 'share_id' | 'created_at' | 'updated_at'> => ({
   kind,
+  style: {},
   name: kind === 'monster' ? 'Nova Criatura' : 'Novo Personagem',
   subtitle: '',
   origin: '',
@@ -99,6 +119,7 @@ const parse = (row: any): Sheet => ({
   skills: (row.skills ?? []) as SheetSkill[],
   resources: (row.resources ?? []) as SheetResource[],
   abilities: (row.abilities ?? []) as SheetAbility[],
+  style: (row.style ?? {}) as SheetStyle,
 });
 
 export async function listSheets(): Promise<Sheet[]> {
@@ -113,7 +134,7 @@ export async function getSheetByShareId(shareId: string): Promise<Sheet | null> 
   return data ? parse(data) : null;
 }
 
-export async function createSheet(kind: 'player' | 'monster'): Promise<Sheet> {
+export async function createSheet(kind: SheetKind): Promise<Sheet> {
   const { data, error } = await supabase.from('sheets').insert(emptySheet(kind) as any).select().single();
   if (error) throw error;
   return parse(data);
