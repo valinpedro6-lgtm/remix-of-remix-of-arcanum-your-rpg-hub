@@ -1,0 +1,274 @@
+import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+import {
+  Plus, Trash2, Map as MapIcon, ImagePlus, UserPlus, Maximize2, Minimize2,
+  Grid3x3, Loader2, ZoomIn, ZoomOut, Users,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { listSheets, Sheet } from '@/lib/sheets';
+
+interface Token {
+  id: string;
+  name: string;
+  image: string;
+  x: number; // % do mapa
+  y: number;
+  size: number; // % da largura do mapa
+}
+interface Board {
+  id: string;
+  name: string;
+  map_url: string;
+  tokens: Token[];
+  grid: boolean;
+}
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+const shrink = (file: File | string, max: number, keepPng: boolean): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const load = (src: string) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onerror = reject;
+      img.onload = () => {
+        const s = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
+        try { resolve(c.toDataURL(keepPng ? 'image/png' : 'image/jpeg', 0.85)); } catch { resolve(src); }
+      };
+      img.src = src;
+    };
+    if (typeof file === 'string') return load(file);
+    const r = new FileReader();
+    r.onerror = reject;
+    r.onload = () => load(r.result as string);
+    r.readAsDataURL(file);
+  });
+
+const db = supabase as any;
+
+const Tabletop = () => {
+  const [boards, setBoards] = useState<Board[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [selToken, setSelToken] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [full, setFull] = useState(false);
+  const [sheets, setSheets] = useState<Sheet[]>([]);
+  const [showCast, setShowCast] = useState(false);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ id: string; dx: number; dy: number } | null>(null);
+  const saveT = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    db.from('tabletops').select('*').order('created_at').then(({ data, error }: any) => {
+      if (error) toast.error('Não consegui carregar os mapas.');
+      const list = (data ?? []) as Board[];
+      setBoards(list);
+      setActiveId(list[0]?.id ?? null);
+      setLoading(false);
+    });
+    listSheets().then(setSheets).catch(() => {});
+    const h = () => setFull(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', h);
+    return () => document.removeEventListener('fullscreenchange', h);
+  }, []);
+
+  const board = boards.find(b => b.id === activeId) ?? null;
+
+  const patch = (p: Partial<Board>, now = false) => {
+    if (!board) return;
+    const id = board.id;
+    setBoards(prev => prev.map(b => (b.id === id ? { ...b, ...p } : b)));
+    clearTimeout(saveT.current);
+    const run = () => db.from('tabletops').update(p).eq('id', id).then(({ error }: any) => error && toast.error('Não consegui salvar.'));
+    if (now) run(); else saveT.current = setTimeout(run, 500);
+  };
+
+  const create = async () => {
+    const { data, error } = await db.from('tabletops').insert({ name: `Mapa ${boards.length + 1}` }).select().single();
+    if (error) return toast.error('Não consegui criar o mapa.');
+    setBoards(prev => [...prev, data]);
+    setActiveId(data.id);
+  };
+
+  const remove = async () => {
+    if (!board || !confirm(`Apagar "${board.name}"?`)) return;
+    await db.from('tabletops').delete().eq('id', board.id);
+    const rest = boards.filter(b => b.id !== board.id);
+    setBoards(rest);
+    setActiveId(rest[0]?.id ?? null);
+  };
+
+  const uploadMap = async (f?: File) => {
+    if (!f) return;
+    patch({ map_url: await shrink(f, 2000, false) }, true);
+    toast.success('Mapa carregado!');
+  };
+
+  const addTokenImg = (name: string, image: string) => {
+    if (!board) return;
+    patch({ tokens: [...board.tokens, { id: uid(), name, image, x: 45, y: 45, size: 8 }] }, true);
+  };
+
+  const uploadTokens = async (files: FileList | null) => {
+    if (!files || !board) return;
+    const added: Token[] = [];
+    for (const f of Array.from(files)) {
+      if (f.type !== 'image/png') toast.info('Prefira PNG com fundo transparente para os personagens.');
+      added.push({ id: uid(), name: f.name.replace(/\.[^.]+$/, ''), image: await shrink(f, 300, true), x: 40 + added.length * 5, y: 45, size: 8 });
+    }
+    patch({ tokens: [...board.tokens, ...added] }, true);
+  };
+
+  const updateToken = (id: string, p: Partial<Token>, now = false) =>
+    board && patch({ tokens: board.tokens.map(t => (t.id === id ? { ...t, ...p } : t)) }, now);
+
+  const onTokenDown = (e: React.PointerEvent, t: Token) => {
+    e.stopPropagation();
+    const r = mapRef.current!.getBoundingClientRect();
+    drag.current = { id: t.id, dx: ((e.clientX - r.left) / r.width) * 100 - t.x, dy: ((e.clientY - r.top) / r.height) * 100 - t.y };
+    setSelToken(t.id);
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+  const onMove = (e: React.PointerEvent) => {
+    if (!drag.current || !mapRef.current) return;
+    const r = mapRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100 - drag.current.dx));
+    const y = Math.max(0, Math.min(100, ((e.clientY - r.top) / r.height) * 100 - drag.current.dy));
+    updateToken(drag.current.id, { x, y });
+  };
+  const onUp = () => { drag.current = null; };
+
+  const toggleFull = async () => {
+    if (!document.fullscreenElement) await stageRef.current?.requestFullscreen?.().catch(() => {});
+    else await document.exitFullscreen().catch(() => {});
+  };
+
+  const sel = board?.tokens.find(t => t.id === selToken);
+
+  return (
+    <div className="space-y-5 min-w-0">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+        <h1 className="page-title">Tabletop</h1>
+        <p className="text-sm text-muted-foreground mt-1">Carregue um mapa, coloque os personagens e mova na mesa</p>
+      </motion.div>
+
+      {/* Mapas salvos */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+        {boards.map(b => (
+          <Button key={b.id} size="sm" variant={b.id === activeId ? 'default' : 'outline'} className="gap-1.5 shrink-0"
+            onClick={() => { setActiveId(b.id); setSelToken(null); }}>
+            <MapIcon className="w-3.5 h-3.5" />{b.name}
+          </Button>
+        ))}
+        <Button size="sm" variant="outline" className="gap-1 shrink-0" onClick={create}><Plus className="w-3.5 h-3.5" />Novo mapa</Button>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center gap-2 text-muted-foreground text-sm py-8"><Loader2 className="w-4 h-4 animate-spin" />Carregando...</div>
+      ) : !board ? (
+        <Card><CardContent className="p-8 text-center space-y-3">
+          <MapIcon className="w-10 h-10 mx-auto text-primary/60" />
+          <p className="text-sm text-muted-foreground">Nenhum mapa ainda.</p>
+          <Button onClick={create} className="gap-1"><Plus className="w-4 h-4" />Criar primeiro mapa</Button>
+        </CardContent></Card>
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <Input className="h-9 w-48" value={board.name} onChange={e => patch({ name: e.target.value })} />
+            <label>
+              <input type="file" accept="image/*" className="hidden" onChange={e => uploadMap(e.target.files?.[0])} />
+              <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border text-sm cursor-pointer hover:border-primary">
+                <ImagePlus className="w-4 h-4" />{board.map_url ? 'Trocar mapa' : 'Carregar mapa'}
+              </span>
+            </label>
+            <label>
+              <input type="file" accept="image/png,image/*" multiple className="hidden" onChange={e => { uploadTokens(e.target.files); e.target.value = ''; }} />
+              <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border text-sm cursor-pointer hover:border-primary">
+                <UserPlus className="w-4 h-4" />Personagem (PNG)
+              </span>
+            </label>
+            <Button size="sm" variant="outline" className="gap-1 h-9" onClick={() => setShowCast(v => !v)}><Users className="w-4 h-4" />Do elenco</Button>
+            <Button size="sm" variant={board.grid ? 'default' : 'outline'} className="h-9" onClick={() => patch({ grid: !board.grid }, true)} title="Grade"><Grid3x3 className="w-4 h-4" /></Button>
+            <Button size="sm" variant="outline" className="h-9" onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}><ZoomOut className="w-4 h-4" /></Button>
+            <Button size="sm" variant="outline" className="h-9" onClick={() => setZoom(z => Math.min(3, z + 0.25))}><ZoomIn className="w-4 h-4" /></Button>
+            <Button size="sm" variant="outline" className="h-9" onClick={toggleFull}>{full ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</Button>
+            <Button size="sm" variant="outline" className="h-9 text-destructive" onClick={remove}><Trash2 className="w-4 h-4" /></Button>
+          </div>
+
+          {showCast && (
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+              {sheets.filter(s => s.image_url).length === 0 && <p className="text-xs text-muted-foreground">Nenhuma ficha com imagem no Elenco.</p>}
+              {sheets.filter(s => s.image_url).map(s => (
+                <button key={s.id} className="shrink-0 w-16 text-center" onClick={async () => addTokenImg(s.name, await shrink(s.image_url, 300, true))}>
+                  <img src={s.image_url} alt={s.name} className="w-14 h-14 mx-auto rounded-full object-cover object-top ring-2 ring-primary/40" />
+                  <span className="text-[10px] line-clamp-1">{s.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {sel && (
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/60 bg-card/60 p-2">
+              <img src={sel.image} alt="" className="w-8 h-8 object-contain" />
+              <Input className="h-8 w-40" value={sel.name} onChange={e => updateToken(sel.id, { name: e.target.value })} />
+              <span className="text-xs text-muted-foreground">Tamanho</span>
+              <input type="range" min={3} max={30} value={sel.size} className="w-32 accent-primary"
+                onChange={e => updateToken(sel.id, { size: Number(e.target.value) })} />
+              <Button size="sm" variant="ghost" className="text-destructive h-8"
+                onClick={() => { patch({ tokens: board.tokens.filter(t => t.id !== sel.id) }, true); setSelToken(null); }}>
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+
+          <div ref={stageRef} className={`overflow-auto rounded-xl border border-border/50 bg-background ${full ? 'flex items-center' : 'max-h-[75dvh]'}`}>
+            <div
+              ref={mapRef}
+              className="relative mx-auto select-none touch-none"
+              style={{ width: `${zoom * 100}%`, minWidth: zoom * 320 }}
+              onPointerMove={onMove}
+              onPointerUp={onUp}
+              onPointerCancel={onUp}
+              onPointerDown={() => setSelToken(null)}
+            >
+              {board.map_url ? (
+                <img src={board.map_url} alt={board.name} draggable={false} className="w-full block pointer-events-none" />
+              ) : (
+                <div className="aspect-video flex flex-col items-center justify-center gap-2 text-muted-foreground subtle-pattern">
+                  <MapIcon className="w-10 h-10" /><p className="text-sm">Carregue a imagem do mapa</p>
+                </div>
+              )}
+              {board.grid && (
+                <div className="absolute inset-0 pointer-events-none opacity-40"
+                  style={{ backgroundImage: 'linear-gradient(hsl(var(--foreground)/0.4) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)/0.4) 1px, transparent 1px)', backgroundSize: '5% 5%' }} />
+              )}
+              {board.tokens.map(t => (
+                <div key={t.id}
+                  onPointerDown={e => onTokenDown(e, t)}
+                  onPointerUp={() => drag.current && updateToken(t.id, {}, true)}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing"
+                  style={{ left: `${t.x}%`, top: `${t.y}%`, width: `${t.size}%` }}>
+                  <img src={t.image} alt={t.name} draggable={false}
+                    className={`w-full object-contain pointer-events-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] ${selToken === t.id ? 'ring-2 ring-primary rounded-full' : ''}`} />
+                  <p className="text-center text-[10px] sm:text-xs font-bold text-foreground bg-background/70 rounded px-1 mt-0.5 truncate">{t.name}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">Arraste os personagens com o dedo ou mouse. Tudo é salvo sozinho.</p>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default Tabletop;

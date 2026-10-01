@@ -15,6 +15,13 @@
       "when": 1789442183232,
       "tag": "0001_create_access_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790849401911,
+      "tag": "0002_sheet_style_and_tabletops",
+      "breakpoints": true
     }
   ]
 }

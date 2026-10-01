@@ -6,7 +6,12 @@
 - [x] Área do Mestre: código se renova a cada entrada + contagem de pessoas ativas e totais
 - [x] Correção de largura/rolagem das abas no celular
 
+- [x] Elenco: abas Jogadores da mesa / Personagens da história + personalização visual da ficha
+- [x] Imagens no mapa mental
+- [x] Aba Tabletop (mapas salvos, tokens PNG arrastáveis)
+
 ## Pendente
+- [ ] Geradores fiéis aos livros de cada sistema (raças/classes/atributos por sistema)
 - [ ] Gerador de nomes por nacionalidade/gênero (NPC e Monstros)
 - [x] Mapa mental: conexão por toque no celular corrigida e testada
 - [ ] Anexos de arquivos nas fichas de Players/Monstros

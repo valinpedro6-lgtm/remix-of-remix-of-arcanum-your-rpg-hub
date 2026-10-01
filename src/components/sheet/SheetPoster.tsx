@@ -35,22 +35,28 @@ export const SheetPoster = ({ sheet, editable, onPatch, compact }: Props) => {
   };
 
   const trained = sheet.skills.filter(s => s.trained || s.value > 0);
+  const st = sheet.style ?? {};
+  const fontClass = { display: 'font-display', serif: 'font-serif', sans: 'font-sans', mono: 'font-mono' }[st.font ?? 'display'];
+  const layout = st.layout ?? 'right';
+  const imgPos = layout === 'full' ? 'inset-0 w-full' : layout === 'left' ? 'left-0 top-0 w-full sm:w-[58%]' : 'right-0 top-0 w-full sm:w-[58%]';
+  const overlay = (st.overlay ?? 50) / 100;
+  const vars = st.color ? ({ '--primary': st.color } as React.CSSProperties) : undefined;
 
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl border border-primary/25 bg-black shadow-[0_0_40px_hsl(var(--primary)/0.15)]">
+    <div style={vars} className="relative w-full overflow-hidden rounded-2xl border border-primary/25 bg-black shadow-[0_0_40px_hsl(var(--primary)/0.15)]">
       {/* Arte de fundo */}
       {sheet.image_url ? (
         <img
           src={sheet.image_url}
           alt={sheet.name}
-          className="absolute right-0 top-0 h-full w-full sm:w-[58%] object-cover object-top opacity-70 sm:opacity-95 pointer-events-none"
+          className={`absolute h-full ${imgPos} object-cover object-top opacity-70 sm:opacity-95 pointer-events-none`}
         />
       ) : (
         <div className="absolute right-0 top-0 h-full w-full sm:w-[45%] flex items-center justify-center opacity-20">
           <UserRound className="w-24 h-24 text-primary" />
         </div>
       )}
-      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/90 sm:via-black/75 to-black/40" />
+      <div className={`absolute inset-0 ${layout === 'left' ? 'bg-gradient-to-l' : 'bg-gradient-to-r'} from-black via-black/90 sm:via-black/75 to-black/40`} style={{ opacity: 0.4 + overlay * 0.6 }} />
       <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/60" />
       <div
         className="absolute inset-0 opacity-40 pointer-events-none"
@@ -59,9 +65,9 @@ export const SheetPoster = ({ sheet, editable, onPatch, compact }: Props) => {
 
       <div className={`relative ${compact ? 'p-4' : 'p-5 md:p-8'}`}>
         {/* Cabeçalho */}
-        <div className="max-w-[60%] sm:max-w-[55%]">
+        <div className={layout === 'left' ? 'max-w-[60%] sm:max-w-[55%] ml-auto text-right' : 'max-w-[60%] sm:max-w-[55%]'}>
           <h2
-            className={`font-display font-black uppercase tracking-tight text-primary leading-none ${
+            className={`${fontClass} font-black ${st.uppercase === false ? '' : 'uppercase'} tracking-tight text-primary leading-none ${
               compact ? 'text-2xl' : 'text-4xl md:text-6xl'
             }`}
             style={{ textShadow: '0 0 18px hsl(var(--primary)/0.75), 0 0 42px hsl(var(--primary)/0.4)' }}
