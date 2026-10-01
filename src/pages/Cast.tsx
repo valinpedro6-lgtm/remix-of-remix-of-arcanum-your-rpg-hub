@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Users, Skull, Plus, Trash2, Link2, Copy, Maximize2, Minimize2,
-  PanelsTopLeft, Save, ArrowLeft, Send, Loader2, ImagePlus,
+  PanelsTopLeft, Save, ArrowLeft, Send, Loader2, ImagePlus, BookOpen, Palette,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,7 @@ import { SheetPoster } from '@/components/sheet/SheetPoster';
 import {
   Sheet, SheetAbility, SheetAttribute, SheetResource, SheetSkill,
   createSheet, deleteSheet, listSheets, updateSheet, uid, shareUrl,
-  DEFAULT_SKILLS, OP_SKILLS,
+  DEFAULT_SKILLS, OP_SKILLS, SheetKind, STYLE_COLORS,
 } from '@/lib/sheets';
 
 const TONES: SheetResource['tone'][] = ['life', 'sanity', 'effort', 'neutral'];
@@ -52,6 +52,7 @@ const Cast = () => {
 
   const selected = sheets.find(s => s.id === selectedId) ?? null;
   const players = useMemo(() => sheets.filter(s => s.kind === 'player'), [sheets]);
+  const story = useMemo(() => sheets.filter(s => s.kind === 'story'), [sheets]);
   const monsters = useMemo(() => sheets.filter(s => s.kind === 'monster'), [sheets]);
   const onTable = useMemo(() => sheets.filter(s => s.in_list), [sheets]);
 
@@ -64,12 +65,12 @@ const Cast = () => {
     }, 500);
   };
 
-  const add = async (kind: 'player' | 'monster') => {
+  const add = async (kind: SheetKind) => {
     try {
       const s = await createSheet(kind);
       setSheets(prev => [...prev, s]);
       setSelectedId(s.id);
-      toast.success(kind === 'player' ? 'Personagem criado!' : 'Criatura criada!');
+      toast.success(kind === 'monster' ? 'Criatura criada!' : 'Personagem criado!');
     } catch {
       toast.error('Não consegui criar a ficha.');
     }
@@ -110,11 +111,11 @@ const Cast = () => {
   };
 
   /* ---------- Lista ---------- */
-  const grid = (items: Sheet[], kind: 'player' | 'monster') => (
+  const grid = (items: Sheet[], kind: SheetKind) => (
     <div className="space-y-4">
       <Button onClick={() => add(kind)} className="gap-2">
         <Plus className="w-4 h-4" />
-        {kind === 'player' ? 'Novo personagem' : 'Nova criatura'}
+        {kind === 'monster' ? 'Nova criatura' : kind === 'story' ? 'Novo personagem da história' : 'Novo jogador'}
       </Button>
 
       {loading ? (
@@ -133,7 +134,7 @@ const Cast = () => {
                     <img src={s.image_url} alt={s.name} className="absolute inset-0 w-full h-full object-cover object-top opacity-80 group-hover:scale-105 transition-transform duration-500" />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                      {kind === 'player' ? <Users className="w-12 h-12 text-primary" /> : <Skull className="w-12 h-12 text-primary" />}
+                      {kind !== 'monster' ? <Users className="w-12 h-12 text-primary" /> : <Skull className="w-12 h-12 text-primary" />}
                     </div>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
@@ -219,6 +220,60 @@ const Cast = () => {
                   <Label>Frase de efeito</Label>
                   <Input value={s.subtitle} onChange={e => patch(s.id, { subtitle: e.target.value })} placeholder="O sangue podia até pagar bem, mas..." />
                 </div>
+              </div>
+
+              {/* Tipo */}
+              <div className="space-y-1.5">
+                <Label>Onde fica essa ficha</Label>
+                <div className="flex flex-wrap gap-2">
+                  {([['player', 'Jogador da mesa'], ['story', 'Personagem da história'], ['monster', 'Monstro']] as [SheetKind, string][]).map(([k, l]) => (
+                    <Button key={k} size="sm" variant={s.kind === k ? 'default' : 'outline'} onClick={() => patch(s.id, { kind: k })}>{l}</Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Personalizar */}
+              <div className="space-y-3 rounded-lg border border-border/60 p-3">
+                <Label className="flex items-center gap-2"><Palette className="w-4 h-4" /> Personalizar visual da ficha</Label>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">Cor principal</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => patch(s.id, { style: { ...s.style, color: undefined } })}
+                      className={`h-8 px-2 rounded-md border text-xs ${!s.style.color ? 'border-foreground' : 'border-border'}`}>Tema</button>
+                    {STYLE_COLORS.map(c => (
+                      <button key={c.hsl} type="button" title={c.label} aria-label={c.label}
+                        onClick={() => patch(s.id, { style: { ...s.style, color: c.hsl } })}
+                        className={`w-8 h-8 rounded-full border-2 ${s.style.color === c.hsl ? 'border-foreground scale-110' : 'border-transparent'}`}
+                        style={{ background: `hsl(${c.hsl})` }} />
+                    ))}
+                  </div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Fonte do nome</p>
+                    <select className="h-9 w-full rounded-md bg-background border border-border text-sm px-2" value={s.style.font ?? 'display'}
+                      onChange={e => patch(s.id, { style: { ...s.style, font: e.target.value as any } })}>
+                      <option value="display">Medieval</option><option value="serif">Clássica</option>
+                      <option value="sans">Moderna</option><option value="mono">Máquina</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Posição da imagem</p>
+                    <select className="h-9 w-full rounded-md bg-background border border-border text-sm px-2" value={s.style.layout ?? 'right'}
+                      onChange={e => patch(s.id, { style: { ...s.style, layout: e.target.value as any } })}>
+                      <option value="right">Direita</option><option value="left">Esquerda</option><option value="full">Fundo inteiro</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Escurecer fundo ({s.style.overlay ?? 50}%)</p>
+                    <input type="range" min={0} max={100} className="w-full accent-primary" value={s.style.overlay ?? 50}
+                      onChange={e => patch(s.id, { style: { ...s.style, overlay: Number(e.target.value) } })} />
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 text-sm">
+                  <Switch checked={s.style.uppercase !== false} onCheckedChange={c => patch(s.id, { style: { ...s.style, uppercase: c } })} />
+                  Nome em letras maiúsculas
+                </label>
               </div>
 
               {/* Imagem */}
@@ -376,19 +431,23 @@ const Cast = () => {
       </motion.div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="w-full flex overflow-x-auto justify-start h-auto p-1 bg-card/60 backdrop-blur-md border border-border/50">
+        <div className="w-full overflow-x-auto no-scrollbar"><TabsList className="w-max min-w-full flex justify-start h-auto p-1 bg-card/60 backdrop-blur-md border border-border/50">
           <TabsTrigger value="player" className="flex-1 gap-2 py-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
-            <Users className="w-4 h-4" /> Personagens
+            <Users className="w-4 h-4" /> Jogadores da mesa
+          </TabsTrigger>
+          <TabsTrigger value="story" className="flex-1 gap-2 py-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
+            <BookOpen className="w-4 h-4" /> Personagens da história
           </TabsTrigger>
           <TabsTrigger value="monster" className="flex-1 gap-2 py-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
             <Skull className="w-4 h-4" /> Monstros
           </TabsTrigger>
           <TabsTrigger value="table" className="flex-1 gap-2 py-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
-            <PanelsTopLeft className="w-4 h-4" /> Na mesa
+            <PanelsTopLeft className="w-4 h-4" /> Projetar
           </TabsTrigger>
-        </TabsList>
+        </TabsList></div>
 
         <TabsContent value="player" className="mt-4">{grid(players, 'player')}</TabsContent>
+        <TabsContent value="story" className="mt-4">{grid(story, 'story')}</TabsContent>
         <TabsContent value="monster" className="mt-4">{grid(monsters, 'monster')}</TabsContent>
         <TabsContent value="table" className="mt-4">
           {onTable.length === 0 ? (
