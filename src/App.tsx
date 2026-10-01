@@ -14,6 +14,7 @@ import GeneratorsHub from "./pages/GeneratorsHub";
 import CompendiumHub from "./pages/CompendiumHub";
 import MindMap from "./pages/MindMap";
 import Cast from "./pages/Cast";
+import Tabletop from "./pages/Tabletop";
 import SharedSheet from "./pages/SharedSheet";
 import NotFound from "./pages/NotFound";
 
@@ -34,6 +35,7 @@ const App = () => (
                 <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/elenco" element={<Cast />} />
+            <Route path="/tabletop" element={<Tabletop />} />
             <Route path="/painel" element={<Dashboard />} />
             <Route path="/mesa" element={<TableHub />} />
             <Route path="/fichas" element={<SheetsHub />} />
