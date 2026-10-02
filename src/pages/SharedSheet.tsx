@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { SheetPoster } from '@/components/sheet/SheetPoster';
 import { Sheet, getSheetByShareId } from '@/lib/sheets';
-import { supabase } from '@/integrations/supabase/client';
 
 /** Página pública: o jogador vê só a ficha dele, sem poder editar. */
 const SharedSheet = () => {
@@ -22,16 +21,8 @@ const SharedSheet = () => {
 
     load();
 
-    const channel = supabase
-      .channel(`sheet-${shareId}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sheets' }, payload => {
-        const row: any = payload.new;
-        if (row?.share_id === shareId) setSheet(prev => (prev ? { ...prev, ...row } : prev));
-      })
-      .subscribe();
-
-    const poll = setInterval(load, 15000);
-    return () => { alive = false; clearInterval(poll); supabase.removeChannel(channel); };
+    const poll = setInterval(load, 5000);
+    return () => { alive = false; clearInterval(poll); };
   }, [shareId]);
 
   return (

@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { listRows, createRow, updateRow, deleteRow } from '@/lib/userData';
 
 export interface SheetAttribute {
   id: string;
@@ -123,31 +124,25 @@ const parse = (row: any): Sheet => ({
 });
 
 export async function listSheets(): Promise<Sheet[]> {
-  const { data, error } = await supabase.from('sheets').select('*').order('created_at', { ascending: true });
-  if (error) throw error;
-  return (data ?? []).map(parse);
+  return (await listRows<any>('sheets')).map(parse);
 }
 
 export async function getSheetByShareId(shareId: string): Promise<Sheet | null> {
-  const { data, error } = await supabase.from('sheets').select('*').eq('share_id', shareId).maybeSingle();
+  const { data, error } = await supabase.functions.invoke('user-data', { body: { action: 'shared', shareId } });
   if (error) throw error;
-  return data ? parse(data) : null;
+  return (data as any)?.sheet ? parse((data as any).sheet) : null;
 }
 
 export async function createSheet(kind: SheetKind): Promise<Sheet> {
-  const { data, error } = await supabase.from('sheets').insert(emptySheet(kind) as any).select().single();
-  if (error) throw error;
-  return parse(data);
+  return parse(await createRow<any>('sheets', emptySheet(kind) as any));
 }
 
 export async function updateSheet(id: string, patch: Partial<Sheet>): Promise<void> {
-  const { error } = await supabase.from('sheets').update(patch as any).eq('id', id);
-  if (error) throw error;
+  await updateRow('sheets', id, patch as any);
 }
 
 export async function deleteSheet(id: string): Promise<void> {
-  const { error } = await supabase.from('sheets').delete().eq('id', id);
-  if (error) throw error;
+  await deleteRow('sheets', id);
 }
 
 export const shareUrl = (shareId: string) =>
