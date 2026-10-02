@@ -96,6 +96,7 @@ export type Database = {
           name: string
           notes: string
           origin: string
+          owner: string | null
           resources: Json
           share_id: string
           skills: Json
@@ -115,6 +116,7 @@ export type Database = {
           name?: string
           notes?: string
           origin?: string
+          owner?: string | null
           resources?: Json
           share_id?: string
           skills?: Json
@@ -134,6 +136,7 @@ export type Database = {
           name?: string
           notes?: string
           origin?: string
+          owner?: string | null
           resources?: Json
           share_id?: string
           skills?: Json
@@ -150,6 +153,7 @@ export type Database = {
           id: string
           map_url: string
           name: string
+          owner: string | null
           tokens: Json
           updated_at: string
         }
@@ -159,6 +163,7 @@ export type Database = {
           id?: string
           map_url?: string
           name?: string
+          owner?: string | null
           tokens?: Json
           updated_at?: string
         }
@@ -168,6 +173,7 @@ export type Database = {
           id?: string
           map_url?: string
           name?: string
+          owner?: string | null
           tokens?: Json
           updated_at?: string
         }
