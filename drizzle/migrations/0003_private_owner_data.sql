@@ -1,0 +1,15 @@
+ALTER TABLE public.sheets ADD COLUMN IF NOT EXISTS owner text;
+ALTER TABLE public.tabletops ADD COLUMN IF NOT EXISTS owner text;
+CREATE INDEX IF NOT EXISTS sheets_owner_idx ON public.sheets(owner);
+CREATE INDEX IF NOT EXISTS tabletops_owner_idx ON public.tabletops(owner);
+DROP POLICY IF EXISTS sheets_delete_all ON public.sheets;
+DROP POLICY IF EXISTS sheets_insert_all ON public.sheets;
+DROP POLICY IF EXISTS sheets_select_all ON public.sheets;
+DROP POLICY IF EXISTS sheets_update_all ON public.sheets;
+DROP POLICY IF EXISTS tabletops_all ON public.tabletops;
+ALTER TABLE public.sheets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tabletops ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.sheets FROM anon, authenticated;
+REVOKE ALL ON public.tabletops FROM anon, authenticated;
+GRANT ALL ON public.sheets TO service_role;
+GRANT ALL ON public.tabletops TO service_role;

@@ -16,6 +16,7 @@ import MindMap from "./pages/MindMap";
 import Cast from "./pages/Cast";
 import Tabletop from "./pages/Tabletop";
 import SharedSheet from "./pages/SharedSheet";
+import Master from "./pages/Master";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/compendio" element={<CompendiumHub />} />
             <Route path="/notas" element={<Notes />} />
             <Route path="/mapa" element={<MindMap />} />
+            <Route path="/mestre" element={<Master />} />
 
             {/* Rotas antigas → novos hubs */}
             <Route path="/dados" element={<Navigate to="/mesa?t=dados" replace />} />

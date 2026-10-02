@@ -3,24 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { KeyRound, Shield, Loader2, Copy, RefreshCw, Lock, AlertTriangle, Mail } from 'lucide-react';
+import { KeyRound, Shield, Loader2, Lock, AlertTriangle, Mail } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
-const GRANT_KEY = 'arcanum-access-granted';
-const MASTER_KEY = 'arcanum-master-key';
-const LOCK_KEY = 'arcanum-access-lock';
-const DEVICE_KEY = 'arcanum-device-id';
-const EMAIL_KEY = 'arcanum-access-email';
-
-const deviceId = () => {
-  let id = localStorage.getItem(DEVICE_KEY);
-  if (!id) {
-    id = (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)) as string;
-    localStorage.setItem(DEVICE_KEY, id);
-  }
-  return id;
-};
+import { GRANT_KEY, LOCK_KEY, EMAIL_KEY, deviceId, callGate, becomeMaster } from '@/lib/access';
 
 /** avisa o servidor, de tempos em tempos, que este aparelho continua na mesa */
 const Heartbeat = () => {
@@ -82,10 +69,12 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
     setRemaining(null);
   };
 
-  const call = async (payload: Record<string, unknown>) => {
-    const { data, error } = await supabase.functions.invoke('access-gate', { body: payload });
-    if (error) throw error;
-    return data as any;
+  const call = callGate;
+
+  const enterAsMaster = async (password: string) => {
+    await becomeMaster(password);
+    window.location.hash = '#/mestre';
+    setGranted(true);
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -101,9 +90,7 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
         setLockUntil(null);
         setRemaining(null);
         if (res.master) {
-          localStorage.setItem(MASTER_KEY, value);
-          localStorage.setItem(GRANT_KEY, 'true');
-          setGranted(true);
+          await enterAsMaster(value);
           return;
         }
         setNeedEmail(true);
@@ -251,7 +238,7 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
               <Shield className="w-3.5 h-3.5" /> Área do Mestre
             </button>
 
-            {masterMode && <MasterPanel locked={locked} onLock={applyLock} />}
+            {masterMode && <MasterLogin locked={locked} onLock={applyLock} onEnter={enterAsMaster} />}
           </CardContent>
         </Card>
       </motion.div>
@@ -260,32 +247,21 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
 };
 
 
-const MasterPanel = ({ locked, onLock }: { locked: boolean; onLock: (ms: number) => void }) => {
-  const [master, setMaster] = useState(() => localStorage.getItem(MASTER_KEY) ?? '');
-  const [unlocked, setUnlocked] = useState(false);
-  const [current, setCurrent] = useState('');
-  const [info, setInfo] = useState<{ total: number; active: number } | null>(null);
-  const [sessions, setSessions] = useState<{ device_id: string; label: string; first_seen: string; last_seen: string }[]>([]);
-  const [custom, setCustom] = useState('');
+const MasterLogin = ({ locked, onLock, onEnter }: {
+  locked: boolean; onLock: (ms: number) => void; onEnter: (password: string) => Promise<void>;
+}) => {
+  const [master, setMaster] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const call = async (payload: Record<string, unknown>) => {
-    const { data, error } = await supabase.functions.invoke('access-gate', { body: payload });
-    if (error) throw error;
-    return data as any;
-  };
-
-  const unlock = async () => {
+  const unlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = master.trim();
+    if (!value) return;
     setLoading(true);
     try {
-      const res = await call({ action: 'master-status', master: master.trim() });
-      if (res?.ok) {
-        localStorage.setItem(MASTER_KEY, master.trim());
-        setCurrent(res.currentCode);
-        setInfo({ total: res.total ?? 0, active: res.active ?? 0 });
-        setSessions(res.sessions ?? []);
-        setUnlocked(true);
-      } else if (res?.locked && res.retryAfter) {
+      const res = await callGate({ action: 'master-status', master: value });
+      if (res?.ok) { await onEnter(value); return; }
+      if (res?.locked && res.retryAfter) {
         onLock(res.retryAfter * 1000);
         toast({ title: 'Bloqueado por tentativas demais', variant: 'destructive' });
       } else {
@@ -295,7 +271,6 @@ const MasterPanel = ({ locked, onLock }: { locked: boolean; onLock: (ms: number)
           variant: 'destructive',
         });
       }
-
     } catch {
       toast({ title: 'Erro de conexão', variant: 'destructive' });
     } finally {
@@ -303,107 +278,13 @@ const MasterPanel = ({ locked, onLock }: { locked: boolean; onLock: (ms: number)
     }
   };
 
-  const rotate = async (value?: string) => {
-    setLoading(true);
-    try {
-      const res = await call({ action: 'set-code', master: master.trim(), code: value ?? '' });
-      if (res?.ok) {
-        setCurrent(res.currentCode);
-        setCustom('');
-        toast({ title: 'Novo código gerado', description: 'O código anterior não vale mais.' });
-      }
-    } catch {
-      toast({ title: 'Erro ao gerar código', variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const refresh = async () => {
-    try {
-      const res = await call({ action: 'stats', master: master.trim() });
-      if (res?.ok) { setCurrent(res.currentCode); setInfo({ total: res.total ?? 0, active: res.active ?? 0 }); setSessions(res.sessions ?? []); }
-    } catch {}
-  };
-
-  useEffect(() => {
-    if (!unlocked) return;
-    const id = setInterval(refresh, 20000);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unlocked, master]);
-
   return (
-    <div className="pt-4 border-t border-border/40 space-y-3">
-      {!unlocked ? (
-        <>
-          <Input
-            type="password"
-            value={master}
-            disabled={locked}
-            onChange={e => setMaster(e.target.value)}
-            placeholder="Senha de mestre"
-            maxLength={64}
-          />
-          <Button variant="secondary" className="w-full" onClick={unlock} disabled={loading || locked || !master.trim()}>
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Acessar painel'}
-          </Button>
-
-        </>
-      ) : (
-        <>
-          <div className="rounded-lg bg-secondary/50 p-3 text-center">
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Código atual</p>
-            <p className="text-2xl font-display font-bold tracking-[0.25em] text-primary">{current}</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={() => { navigator.clipboard?.writeText(current); toast({ title: 'Código copiado' }); }}>
-              <Copy className="w-4 h-4 mr-1" /> Copiar
-            </Button>
-            <Button className="flex-1" onClick={() => rotate()} disabled={loading}>
-              <RefreshCw className="w-4 h-4 mr-1" /> Gerar novo
-            </Button>
-          </div>
-          <div className="flex gap-2">
-            <Input value={custom} onChange={e => setCustom(e.target.value)} placeholder="Código personalizado" maxLength={32} />
-            <Button variant="secondary" onClick={() => custom.trim() && rotate(custom.trim())} disabled={loading || !custom.trim()}>
-              Definir
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-lg bg-secondary/40 p-2 text-center">
-              <p className="text-xl font-display font-bold text-primary">{info?.active ?? 0}</p>
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Na mesa agora</p>
-            </div>
-            <div className="rounded-lg bg-secondary/40 p-2 text-center">
-              <p className="text-xl font-display font-bold text-primary">{info?.total ?? 0}</p>
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Já entraram</p>
-            </div>
-          </div>
-          <div className="rounded-lg border border-border/40 bg-secondary/20 max-h-52 overflow-y-auto divide-y divide-border/30">
-            {sessions.length === 0 ? (
-              <p className="p-3 text-center text-xs text-muted-foreground">Ninguém entrou ainda.</p>
-            ) : sessions.map(sn => {
-              const online = Date.now() - new Date(sn.last_seen).getTime() < 2 * 60_000;
-              return (
-                <div key={sn.device_id} className="flex items-center gap-2 px-3 py-2">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${online ? 'bg-primary animate-pulse' : 'bg-muted-foreground/40'}`} />
-                  <span className="text-xs truncate flex-1">{sn.label || 'sem e-mail'}</span>
-                  <span className="text-[10px] text-muted-foreground shrink-0">
-                    {new Date(sn.last_seen).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          <Button variant="ghost" size="sm" className="w-full text-xs" onClick={refresh}>
-            Atualizar dados
-          </Button>
-          <p className="text-[11px] text-muted-foreground text-center">
-            O código se renova sozinho assim que alguém entra. Cada novo código invalida o anterior. Quem já entrou continua com acesso neste aparelho.
-          </p>
-        </>
-      )}
-    </div>
+    <form onSubmit={unlock} className="pt-4 border-t border-border/40 space-y-3">
+      <Input type="password" value={master} disabled={locked} onChange={e => setMaster(e.target.value)} placeholder="Senha de mestre" maxLength={64} />
+      <Button type="submit" variant="secondary" className="w-full" disabled={loading || locked || !master.trim()}>
+        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Entrar como mestre'}
+      </Button>
+      <p className="text-[11px] text-muted-foreground text-center">O site abre normalmente, com uma aba extra "Mestre" para gerar códigos e ver quem entrou.</p>
+    </form>
   );
 };

@@ -22,6 +22,13 @@
       "when": 1790849401911,
       "tag": "0002_sheet_style_and_tabletops",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790899876231,
+      "tag": "0003_private_owner_data",
+      "breakpoints": true
     }
   ]
 }

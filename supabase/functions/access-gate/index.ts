@@ -111,7 +111,7 @@ async function stats() {
   return {
     total: rows.length,
     active: rows.filter((r) => r.last_seen > since).length,
-    sessions: rows.slice(0, 20),
+    sessions: rows,
   };
 }
 

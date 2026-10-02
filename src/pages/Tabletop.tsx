@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { listRows, createRow, updateRow, deleteRow } from '@/lib/userData';
 import { listSheets, Sheet } from '@/lib/sheets';
 
 interface Token {
@@ -51,8 +51,6 @@ const shrink = (file: File | string, max: number, keepPng: boolean): Promise<str
     r.readAsDataURL(file);
   });
 
-const db = supabase as any;
-
 const Tabletop = () => {
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,13 +66,10 @@ const Tabletop = () => {
   const saveT = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    db.from('tabletops').select('*').order('created_at').then(({ data, error }: any) => {
-      if (error) toast.error('Não consegui carregar os mapas.');
-      const list = (data ?? []) as Board[];
-      setBoards(list);
-      setActiveId(list[0]?.id ?? null);
-      setLoading(false);
-    });
+    listRows<Board>('tabletops')
+      .then(list => { setBoards(list); setActiveId(list[0]?.id ?? null); })
+      .catch(() => toast.error('Não consegui carregar os mapas.'))
+      .finally(() => setLoading(false));
     listSheets().then(setSheets).catch(() => {});
     const h = () => setFull(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', h);
@@ -88,20 +83,21 @@ const Tabletop = () => {
     const id = board.id;
     setBoards(prev => prev.map(b => (b.id === id ? { ...b, ...p } : b)));
     clearTimeout(saveT.current);
-    const run = () => db.from('tabletops').update(p).eq('id', id).then(({ error }: any) => error && toast.error('Não consegui salvar.'));
+    const run = () => updateRow('tabletops', id, p as any).catch(() => toast.error('Não consegui salvar.'));
     if (now) run(); else saveT.current = setTimeout(run, 500);
   };
 
   const create = async () => {
-    const { data, error } = await db.from('tabletops').insert({ name: `Mapa ${boards.length + 1}` }).select().single();
-    if (error) return toast.error('Não consegui criar o mapa.');
+    let data: Board;
+    try { data = await createRow<Board>('tabletops', { name: `Mapa ${boards.length + 1}` }); }
+    catch { return toast.error('Não consegui criar o mapa.'); }
     setBoards(prev => [...prev, data]);
     setActiveId(data.id);
   };
 
   const remove = async () => {
     if (!board || !confirm(`Apagar "${board.name}"?`)) return;
-    await db.from('tabletops').delete().eq('id', board.id);
+    await deleteRow('tabletops', board.id).catch(() => {});
     const rest = boards.filter(b => b.id !== board.id);
     setBoards(rest);
     setActiveId(rest[0]?.id ?? null);

@@ -1,10 +1,11 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
+import { isMaster } from '@/lib/access';
 import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
   Users, StickyNote, LayoutDashboard, Menu, Gauge, Dices, Wand2, BookOpen, Network
-, Drama, Map as MapIcon } from 'lucide-react';
+, Drama, Map as MapIcon, Shield } from 'lucide-react';
 import { GlobalTimerBar } from '@/components/GlobalTimerBar';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 
@@ -25,10 +26,18 @@ const navItems = [
 export const Layout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [master, setMaster] = useState(isMaster);
+  useEffect(() => {
+    const h = () => setMaster(isMaster());
+    window.addEventListener('arcanum-master-change', h);
+    window.addEventListener('storage', h);
+    return () => { window.removeEventListener('arcanum-master-change', h); window.removeEventListener('storage', h); };
+  }, []);
+  const items = master ? [...navItems, { path: '/mestre', label: 'Mestre', icon: Shield }] : navItems;
 
   const NavLinks = () => (
     <>
-      {navItems.map(item => {
+      {items.map(item => {
         const isActive = location.pathname === item.path;
         return (
           <Link
