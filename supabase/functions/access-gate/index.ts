@@ -68,7 +68,7 @@ function clientKey(req: Request) {
 async function getRow() {
   const { data, error } = await admin
     .from("access_gate")
-    .select("master_password, current_code, code_updated_at, code_max_uses, code_uses_left")
+    .select("master_password, current_code, code_updated_at, code_max_uses, code_uses_left, test_code, test_code_expires_at")
     .eq("id", 1)
     .maybeSingle();
   if (error) throw error;
@@ -189,6 +189,12 @@ Deno.serve(async (req) => {
         await adoptRows(String(body.oldToken ?? ""), token);
         return json({ ok: true, master: true, token });
       }
+      if (row.test_code && code === row.test_code && row.test_code_expires_at && new Date(row.test_code_expires_at).getTime() > Date.now()) {
+        await clearAttempts(ip);
+        await touchSession(device, "Teste (5 min)");
+        const token = await ownerTokenFor("test:" + device);
+        return json({ ok: true, master: false, test: true, token, accessUntil: Date.now() + 5 * 60_000 });
+      }
       if (code === row.current_code) {
         await clearAttempts(ip);
         await touchSession(device);
@@ -235,7 +241,18 @@ Deno.serve(async (req) => {
     if (action === "stats") {
       const master = String(body.master ?? "").trim();
       if (master !== row.master_password) return json({ ok: false }, 200);
-      return json({ ok: true, currentCode: row.current_code, maxUses: row.code_max_uses, usesLeft: row.code_uses_left, ...(await stats()) });
+      return json({ ok: true, currentCode: row.current_code, maxUses: row.code_max_uses, usesLeft: row.code_uses_left, testCode: row.test_code, testExpiresAt: row.test_code_expires_at, ...(await stats()) });
+    }
+
+    if (action === "set-test-code") {
+      const master = String(body.master ?? "").trim();
+      if (master !== row.master_password) return json({ ok: false }, 200);
+      let next = generateCode();
+      while (next === row.current_code) next = generateCode();
+      const expires = new Date(Date.now() + 5 * 60_000).toISOString();
+      const { error } = await admin.from("access_gate").update({ test_code: next, test_code_expires_at: expires }).eq("id", 1);
+      if (error) throw error;
+      return json({ ok: true, testCode: next, testExpiresAt: expires });
     }
 
     if (action === "reset-sessions") {
