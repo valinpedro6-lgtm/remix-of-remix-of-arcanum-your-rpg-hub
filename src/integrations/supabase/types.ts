@@ -46,6 +46,8 @@ export type Database = {
           current_code: string
           id: number
           master_password: string
+          test_code: string | null
+          test_code_expires_at: string | null
         }
         Insert: {
           code_max_uses?: number
@@ -54,6 +56,8 @@ export type Database = {
           current_code: string
           id?: number
           master_password: string
+          test_code?: string | null
+          test_code_expires_at?: string | null
         }
         Update: {
           code_max_uses?: number
@@ -62,6 +66,8 @@ export type Database = {
           current_code?: string
           id?: number
           master_password?: string
+          test_code?: string | null
+          test_code_expires_at?: string | null
         }
         Relationships: []
       }

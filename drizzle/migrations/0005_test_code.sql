@@ -1,0 +1,1 @@
+ALTER TABLE public.access_gate ADD COLUMN IF NOT EXISTS test_code text, ADD COLUMN IF NOT EXISTS test_code_expires_at timestamptz;
