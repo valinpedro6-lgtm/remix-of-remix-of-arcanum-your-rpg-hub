@@ -29,6 +29,13 @@
       "when": 1790899876231,
       "tag": "0003_private_owner_data",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790989059049,
+      "tag": "0004_code_max_uses",
+      "breakpoints": true
     }
   ]
 }

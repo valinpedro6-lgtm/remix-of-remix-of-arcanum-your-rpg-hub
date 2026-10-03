@@ -14,6 +14,10 @@ export const ownerToken = () => {
   return t;
 };
 
+export const setOwnerToken = (t: string) => { if (t) localStorage.setItem(OWNER_KEY, t); };
+export const currentOwnerToken = () => localStorage.getItem(OWNER_KEY) ?? '';
+export const clearOwnerToken = () => localStorage.removeItem(OWNER_KEY);
+
 export async function userData<T = any>(payload: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke('user-data', {
     body: { ...payload, token: ownerToken() },

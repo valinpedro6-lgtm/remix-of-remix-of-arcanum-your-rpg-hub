@@ -8,6 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
 import { GRANT_KEY, LOCK_KEY, EMAIL_KEY, deviceId, callGate, becomeMaster } from '@/lib/access';
+import { currentOwnerToken, setOwnerToken } from '@/lib/userData';
 
 /** avisa o servidor, de tempos em tempos, que este aparelho continua na mesa */
 const Heartbeat = () => {
@@ -51,6 +52,7 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(false);
   const [masterMode, setMasterMode] = useState(false);
   const [needEmail, setNeedEmail] = useState(false);
+  const [ticket, setTicket] = useState('');
   const [email, setEmail] = useState(() => localStorage.getItem(EMAIL_KEY) ?? '');
   const [remaining, setRemaining] = useState<number | null>(null);
   const [lockUntil, setLockUntil] = useState<number | null>(() => {
@@ -71,8 +73,8 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
 
   const call = callGate;
 
-  const enterAsMaster = async (password: string) => {
-    await becomeMaster(password);
+  const enterAsMaster = async (password: string, token?: string) => {
+    await becomeMaster(password, token);
     window.location.hash = '#/mestre';
     setGranted(true);
   };
@@ -84,15 +86,16 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
     if (!value) return;
     setLoading(true);
     try {
-      const res = await call({ action: 'verify', code: value, device: deviceId() });
+      const res = await call({ action: 'verify', code: value, device: deviceId(), oldToken: currentOwnerToken() });
       if (res?.ok) {
         localStorage.removeItem(LOCK_KEY);
         setLockUntil(null);
         setRemaining(null);
         if (res.master) {
-          await enterAsMaster(value);
+          await enterAsMaster(value, res.token);
           return;
         }
+        setTicket(res.ticket ?? '');
         setNeedEmail(true);
         return;
       }
@@ -130,11 +133,13 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
     }
     setLoading(true);
     try {
-      const res = await call({ action: 'register', device: deviceId(), email: value });
+      const res = await call({ action: 'register', device: deviceId(), email: value, ticket, oldToken: currentOwnerToken() });
       if (!res?.ok) {
-        toast({ title: 'Não deu para registrar', description: 'Confira o e-mail e tente de novo.', variant: 'destructive' });
+        toast({ title: 'Não deu para registrar', description: res?.error ?? 'Confira o e-mail e tente de novo.', variant: 'destructive' });
+        if (res?.error?.includes('código')) { setNeedEmail(false); setCode(''); }
         return;
       }
+      setOwnerToken(res.token);
       localStorage.setItem(EMAIL_KEY, value);
       localStorage.setItem(GRANT_KEY, 'true');
       setGranted(true);
@@ -158,7 +163,7 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
                   <Mail className="w-6 h-6" />
                 </div>
                 <h1 className="text-3xl font-display font-bold gradient-text">Quase lá</h1>
-                <p className="text-sm text-muted-foreground">Informe seu e-mail para o mestre saber quem entrou</p>
+                <p className="text-sm text-muted-foreground">Use sempre o mesmo e-mail: suas fichas e mapas aparecem em qualquer aparelho</p>
               </div>
               <form onSubmit={sendEmail} className="space-y-3">
                 <Input
@@ -248,7 +253,7 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
 
 
 const MasterLogin = ({ locked, onLock, onEnter }: {
-  locked: boolean; onLock: (ms: number) => void; onEnter: (password: string) => Promise<void>;
+  locked: boolean; onLock: (ms: number) => void; onEnter: (password: string, token?: string) => Promise<void>;
 }) => {
   const [master, setMaster] = useState('');
   const [loading, setLoading] = useState(false);
@@ -259,8 +264,8 @@ const MasterLogin = ({ locked, onLock, onEnter }: {
     if (!value) return;
     setLoading(true);
     try {
-      const res = await callGate({ action: 'master-status', master: value });
-      if (res?.ok) { await onEnter(value); return; }
+      const res = await callGate({ action: 'master-status', master: value, oldToken: currentOwnerToken() });
+      if (res?.ok) { await onEnter(value, res.token); return; }
       if (res?.locked && res.retryAfter) {
         onLock(res.retryAfter * 1000);
         toast({ title: 'Bloqueado por tentativas demais', variant: 'destructive' });

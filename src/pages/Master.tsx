@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { MASTER_KEY, callGate, becomeMaster, leaveMaster } from '@/lib/access';
+import { currentOwnerToken } from '@/lib/userData';
 
 interface Session { device_id: string; label: string; first_seen: string; last_seen: string }
 
@@ -31,6 +32,9 @@ const Master = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [info, setInfo] = useState({ total: 0, active: 0 });
   const [custom, setCustom] = useState('');
+  const [uses, setUses] = useState(1);
+  const [usesLeft, setUsesLeft] = useState(1);
+  const [usesTouched, setUsesTouched] = useState(false);
   const [newMaster, setNewMaster] = useState('');
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
@@ -39,10 +43,12 @@ const Master = () => {
     const res = await callGate({ action: 'stats', master: key });
     if (!res?.ok) return false;
     setCurrent(res.currentCode);
+    setUsesLeft(res.usesLeft ?? 1);
+    if (!usesTouched) setUses(res.maxUses ?? 1);
     setSessions(res.sessions ?? []);
     setInfo({ total: res.total ?? 0, active: res.active ?? 0 });
     return true;
-  }, []);
+  }, [usesTouched]);
 
   useEffect(() => {
     if (!master) return;
@@ -63,8 +69,8 @@ const Master = () => {
     if (!pwd.trim()) return;
     setBusy(true);
     try {
-      const res = await callGate({ action: 'master-status', master: pwd.trim() });
-      if (res?.ok) { await becomeMaster(pwd.trim()); setMaster(pwd.trim()); setPwd(''); }
+      const res = await callGate({ action: 'master-status', master: pwd.trim(), oldToken: currentOwnerToken() });
+      if (res?.ok) { await becomeMaster(pwd.trim(), res.token); setMaster(pwd.trim()); setPwd(''); }
       else if (res?.locked) toast({ title: 'Bloqueado por tentativas demais', variant: 'destructive' });
       else toast({ title: 'Senha de mestre incorreta', variant: 'destructive' });
     } catch { toast({ title: 'Erro de conexão', variant: 'destructive' }); }
@@ -74,8 +80,8 @@ const Master = () => {
   const rotate = async (value?: string) => {
     setBusy(true);
     try {
-      const res = await callGate({ action: 'set-code', master, code: value ?? '' });
-      if (res?.ok) { setCurrent(res.currentCode); setCustom(''); toast({ title: 'Novo código gerado', description: 'O anterior não vale mais.' }); }
+      const res = await callGate({ action: 'set-code', master, code: value ?? '', uses });
+      if (res?.ok) { setCurrent(res.currentCode); setUsesLeft(res.usesLeft ?? uses); setCustom(''); toast({ title: 'Novo código gerado', description: 'O anterior não vale mais.' }); }
     } catch { toast({ title: 'Erro ao gerar código', variant: 'destructive' }); }
     finally { setBusy(false); }
   };
@@ -153,11 +159,20 @@ const Master = () => {
               </Button>
               <Button className="flex-1" onClick={() => rotate()} disabled={busy}><RefreshCw className="w-4 h-4 mr-1" /> Gerar</Button>
             </div>
+            <p className="text-center text-sm">
+              <span className="font-bold text-primary">{usesLeft}</span>
+              <span className="text-muted-foreground"> de {uses} entrada(s) restante(s)</span>
+            </p>
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground shrink-0">Pessoas por código</span>
+              <Input type="number" min={1} max={1000} value={uses} className="w-24"
+                onChange={e => { setUsesTouched(true); setUses(Math.max(1, Math.min(1000, Number(e.target.value) || 1))); }} />
+            </label>
             <div className="flex gap-2">
               <Input value={custom} onChange={e => setCustom(e.target.value)} placeholder="Código personalizado" maxLength={32} />
               <Button variant="secondary" onClick={() => custom.trim() && rotate(custom.trim())} disabled={busy || !custom.trim()}>Definir</Button>
             </div>
-            <p className="text-[11px] text-muted-foreground">O código se renova sozinho quando alguém entra. Cada novo código invalida o anterior.</p>
+            <p className="text-[11px] text-muted-foreground">Escolha quantas pessoas podem entrar e clique em Gerar (ou Definir). Quando o limite acaba, um novo código é criado sozinho.</p>
           </CardContent>
         </Card>
 

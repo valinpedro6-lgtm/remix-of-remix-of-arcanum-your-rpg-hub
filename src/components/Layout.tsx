@@ -1,11 +1,11 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { isMaster } from '@/lib/access';
+import { isMaster, logout } from '@/lib/access';
 import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
   Users, StickyNote, LayoutDashboard, Menu, Gauge, Dices, Wand2, BookOpen, Network
-, Drama, Map as MapIcon, Shield } from 'lucide-react';
+, Drama, Map as MapIcon, Shield, LogOut } from 'lucide-react';
 import { GlobalTimerBar } from '@/components/GlobalTimerBar';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 
@@ -72,6 +72,9 @@ export const Layout = ({ children }: { children: ReactNode }) => {
         </nav>
         <div className="p-3 border-t border-border/50 space-y-2">
           <ThemeSwitcher />
+          <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={() => confirm('Sair da conta neste aparelho?') && logout()}>
+            <LogOut className="w-4 h-4 mr-2" /> Sair da conta
+          </Button>
           <GlobalTimerBar />
           <div className="text-[10px] text-muted-foreground/50 text-center">⚔️ Arcanum v2.0</div>
         </div>
@@ -93,8 +96,11 @@ export const Layout = ({ children }: { children: ReactNode }) => {
             <nav className="flex flex-col gap-0.5 p-3 flex-1 overflow-y-auto">
               <NavLinks />
             </nav>
-            <div className="p-3 border-t border-border/50">
+            <div className="p-3 border-t border-border/50 space-y-2">
               <ThemeSwitcher />
+              <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={() => confirm('Sair da conta neste aparelho?') && logout()}>
+                <LogOut className="w-4 h-4 mr-2" /> Sair da conta
+              </Button>
             </div>
           </SheetContent>
         </Sheet>

@@ -22,6 +22,37 @@ const MAX_FAILS = 5;              // tentativas antes do bloqueio
 const BASE_LOCK_MIN = 5;          // duração do 1º bloqueio (minutos)
 const MAX_LOCK_MIN = 120;         // teto do bloqueio
 
+const SECRET = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+async function hmac(msg: string) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+async function sha(msg: string) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+/** chave de dados: a mesma para o mesmo e-mail em qualquer aparelho */
+const ownerTokenFor = (id: string) => hmac("owner:" + id);
+/** ingresso curto entre o código e o e-mail (10 min) */
+async function makeTicket(device: string) {
+  const exp = Date.now() + 10 * 60_000;
+  return `${exp}.${await hmac("ticket:" + device + ":" + exp)}`;
+}
+async function checkTicket(device: string, ticket: string) {
+  const [exp, sig] = ticket.split(".");
+  if (!exp || !sig || Number(exp) < Date.now()) return false;
+  return sig === await hmac("ticket:" + device + ":" + exp);
+}
+/** passa fichas/mapas do token antigo deste aparelho para a conta */
+async function adoptRows(oldToken: string, newToken: string) {
+  if (!oldToken || oldToken.length < 20 || oldToken === newToken) return;
+  const from = await sha(oldToken);
+  const to = await sha(newToken);
+  await admin.from("sheets").update({ owner: to }).eq("owner", from);
+  await admin.from("tabletops").update({ owner: to }).eq("owner", from);
+}
+
 function generateCode() {
   const bytes = new Uint32Array(1);
   crypto.getRandomValues(bytes);
@@ -37,7 +68,7 @@ function clientKey(req: Request) {
 async function getRow() {
   const { data, error } = await admin
     .from("access_gate")
-    .select("master_password, current_code, code_updated_at")
+    .select("master_password, current_code, code_updated_at, code_max_uses, code_uses_left")
     .eq("id", 1)
     .maybeSingle();
   if (error) throw error;
@@ -92,12 +123,16 @@ async function touchSession(device: string, label = "") {
   }
 }
 
-async function rotateCode() {
-  const next = generateCode();
+/** consome um uso; quando acabar, gera outro código com o mesmo limite */
+async function consumeUse(row: { code_uses_left: number; code_max_uses: number }) {
+  const left = (row.code_uses_left ?? 1) - 1;
+  if (left > 0) {
+    await admin.from("access_gate").update({ code_uses_left: left }).eq("id", 1);
+    return;
+  }
   await admin.from("access_gate")
-    .update({ current_code: next, code_updated_at: new Date().toISOString() })
+    .update({ current_code: generateCode(), code_updated_at: new Date().toISOString(), code_uses_left: row.code_max_uses ?? 1 })
     .eq("id", 1);
-  return next;
 }
 
 async function stats() {
@@ -150,14 +185,15 @@ Deno.serve(async (req) => {
       if (code === row.master_password) {
         await clearAttempts(ip);
         await touchSession(device, "Mestre");
-        return json({ ok: true, master: true });
+        const token = await ownerTokenFor("master");
+        await adoptRows(String(body.oldToken ?? ""), token);
+        return json({ ok: true, master: true, token });
       }
       if (code === row.current_code) {
         await clearAttempts(ip);
         await touchSession(device);
-        // cada entrada consome o código: um novo é gerado na hora
-        await rotateCode();
-        return json({ ok: true, master: false });
+        await consumeUse(row);
+        return json({ ok: true, master: false, ticket: await makeTicket(device) });
       }
       const r = await registerFail(ip);
       return json({ ok: false, ...r });
@@ -170,7 +206,9 @@ Deno.serve(async (req) => {
         return json({ ok: false, ...r });
       }
       await clearAttempts(ip);
-      return json({ ok: true, currentCode: row.current_code, updatedAt: row.code_updated_at, ...(await stats()) });
+      const token = await ownerTokenFor("master");
+      await adoptRows(String(body.oldToken ?? ""), token);
+      return json({ ok: true, token, currentCode: row.current_code, maxUses: row.code_max_uses, usesLeft: row.code_uses_left, updatedAt: row.code_updated_at, ...(await stats()) });
     }
 
     if (action === "register") {
@@ -179,8 +217,13 @@ Deno.serve(async (req) => {
       if (!device || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
         return json({ ok: false, error: "E-mail inválido" });
       }
+      if (!(await checkTicket(device, String(body.ticket ?? "")))) {
+        return json({ ok: false, error: "Digite o código de acesso de novo." });
+      }
       await touchSession(device, email);
-      return json({ ok: true });
+      const token = await ownerTokenFor("email:" + email.toLowerCase());
+      await adoptRows(String(body.oldToken ?? ""), token);
+      return json({ ok: true, token });
     }
 
     if (action === "heartbeat") {
@@ -192,7 +235,7 @@ Deno.serve(async (req) => {
     if (action === "stats") {
       const master = String(body.master ?? "").trim();
       if (master !== row.master_password) return json({ ok: false }, 200);
-      return json({ ok: true, currentCode: row.current_code, ...(await stats()) });
+      return json({ ok: true, currentCode: row.current_code, maxUses: row.code_max_uses, usesLeft: row.code_uses_left, ...(await stats()) });
     }
 
     if (action === "reset-sessions") {
@@ -207,12 +250,13 @@ Deno.serve(async (req) => {
       if (master !== row.master_password) return json({ ok: false }, 200);
       const raw = String(body.code ?? "").trim();
       const next = raw ? raw.slice(0, 32) : generateCode();
+      const uses = Math.max(1, Math.min(1000, Math.floor(Number(body.uses ?? row.code_max_uses ?? 1)) || 1));
       const { error } = await admin
         .from("access_gate")
-        .update({ current_code: next, code_updated_at: new Date().toISOString() })
+        .update({ current_code: next, code_updated_at: new Date().toISOString(), code_max_uses: uses, code_uses_left: uses })
         .eq("id", 1);
       if (error) throw error;
-      return json({ ok: true, currentCode: next });
+      return json({ ok: true, currentCode: next, maxUses: uses, usesLeft: uses });
     }
 
     if (action === "set-master") {
