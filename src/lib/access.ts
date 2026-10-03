@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { userData } from '@/lib/userData';
+import { userData, setOwnerToken, clearOwnerToken } from '@/lib/userData';
 
 export const GRANT_KEY = 'arcanum-access-granted';
 export const MASTER_KEY = 'arcanum-master-key';
@@ -25,7 +25,8 @@ export const callGate = async (payload: Record<string, unknown>) => {
 export const isMaster = () => !!localStorage.getItem(MASTER_KEY);
 
 /** Guarda a senha de mestre neste aparelho e assume as fichas/mapas antigos sem dono. */
-export const becomeMaster = async (password: string) => {
+export const becomeMaster = async (password: string, token?: string) => {
+  if (token) setOwnerToken(token);
   localStorage.setItem(MASTER_KEY, password);
   localStorage.setItem(GRANT_KEY, 'true');
   window.dispatchEvent(new Event('arcanum-master-change'));
@@ -35,4 +36,12 @@ export const becomeMaster = async (password: string) => {
 export const leaveMaster = () => {
   localStorage.removeItem(MASTER_KEY);
   window.dispatchEvent(new Event('arcanum-master-change'));
+};
+
+/** Sai da conta neste aparelho: volta para a tela do código. */
+export const logout = () => {
+  [GRANT_KEY, MASTER_KEY, EMAIL_KEY].forEach(k => localStorage.removeItem(k));
+  clearOwnerToken();
+  window.location.hash = '#/';
+  window.location.reload();
 };
