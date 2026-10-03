@@ -11,6 +11,10 @@
 - [x] Aba Tabletop (mapas salvos, tokens PNG arrastáveis)
 
 ## Pendente
+- [ ] Fichas/tabletop privados por pessoa + aba Mestre (e-mails clicáveis)
+- [ ] Mesmo e-mail em outro aparelho traz os mesmos dados
+- [ ] Botão sair da conta
+- [ ] Código com limite de usos (regenera após N entradas)
 - [ ] Geradores fiéis aos livros de cada sistema (raças/classes/atributos por sistema)
 - [ ] Gerador de nomes por nacionalidade/gênero (NPC e Monstros)
 - [x] Mapa mental: conexão por toque no celular corrigida e testada
