@@ -40,19 +40,25 @@ export type Database = {
       }
       access_gate: {
         Row: {
+          code_max_uses: number
           code_updated_at: string
+          code_uses_left: number
           current_code: string
           id: number
           master_password: string
         }
         Insert: {
+          code_max_uses?: number
           code_updated_at?: string
+          code_uses_left?: number
           current_code: string
           id?: number
           master_password: string
         }
         Update: {
+          code_max_uses?: number
           code_updated_at?: string
+          code_uses_left?: number
           current_code?: string
           id?: number
           master_password?: string
