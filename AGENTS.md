@@ -1,0 +1,2 @@
+- Cloud data (sheets, tabletops) is read/written only through the `user-data` edge function, scoped by a hashed owner token; tables have no client access. Why: each person must see only their own data.
+- Owner tokens are issued by `access-gate` as HMAC of the e-mail (or "master") after a valid code ticket. Why: same e-mail on any device sees the same data.
