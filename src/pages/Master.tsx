@@ -194,6 +194,27 @@ const Master = () => {
               <Button variant="secondary" onClick={() => custom.trim() && rotate(custom.trim())} disabled={busy || !custom.trim()}>Definir</Button>
             </div>
             <p className="text-[11px] text-muted-foreground">Escolha quantas pessoas podem entrar e clique em Gerar (ou Definir). Quando o limite acaba, um novo código é criado sozinho.</p>
+
+            <div className="border-t border-border/40 pt-3 space-y-2">
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Código teste (5 minutos)</p>
+              {testCode && testLeft > 0 ? (
+                <div className="flex items-center gap-2">
+                  <p className="flex-1 text-2xl font-display font-bold tracking-[0.2em] text-amber-400 text-center break-all">{testCode}</p>
+                  <Button variant="outline" size="sm" onClick={() => { navigator.clipboard?.writeText(testCode); toast({ title: 'Código teste copiado' }); }}>
+                    <Copy className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center">Nenhum código teste ativo.</p>
+              )}
+              {testCode && testLeft > 0 && (
+                <p className="text-center text-xs text-amber-400 tabular-nums">Expira em {fmtClock(testLeft)}</p>
+              )}
+              <Button variant="secondary" className="w-full" onClick={genTestCode} disabled={busy}>
+                <RefreshCw className="w-4 h-4 mr-1" /> {testCode && testLeft > 0 ? 'Gerar outro' : 'Gerar código teste'}
+              </Button>
+              <p className="text-[11px] text-muted-foreground">Quem entra com ele usa o site por 5 minutos e depois volta pra tela do código. Não pede e-mail.</p>
+            </div>
           </CardContent>
         </Card>
 
