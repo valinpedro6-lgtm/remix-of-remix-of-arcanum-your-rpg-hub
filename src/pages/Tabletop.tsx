@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Plus, Trash2, Map as MapIcon, ImagePlus, UserPlus, Maximize2, Minimize2,
-  Grid3x3, Loader2, ZoomIn, ZoomOut, Users,
+  Grid3x3, Loader2, ZoomIn, ZoomOut, Users, Hand, MousePointer2, Square, Share2, Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,13 +19,18 @@ interface Token {
   y: number;
   size: number; // % da largura do mapa
 }
+interface FogRect { id: string; x: number; y: number; w: number; h: number }
 interface Board {
   id: string;
   name: string;
   map_url: string;
   tokens: Token[];
   grid: boolean;
+  fog: FogRect[];
+  share_id?: string;
 }
+
+type Tool = 'move' | 'pan' | 'fog';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -60,14 +65,18 @@ const Tabletop = () => {
   const [full, setFull] = useState(false);
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [showCast, setShowCast] = useState(false);
+  const [tool, setTool] = useState<Tool>('move');
+  const [draftFog, setDraftFog] = useState<FogRect | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ id: string; dx: number; dy: number } | null>(null);
+  const pan = useRef<{ sx: number; sy: number; sl: number; st: number } | null>(null);
+  const fogStart = useRef<{ x: number; y: number } | null>(null);
   const saveT = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     listRows<Board>('tabletops')
-      .then(list => { setBoards(list); setActiveId(list[0]?.id ?? null); })
+      .then(list => { setBoards(list.map(b => ({ ...b, fog: b.fog ?? [] }))); setActiveId(list[0]?.id ?? null); })
       .catch(() => toast.error('Não consegui carregar os mapas.'))
       .finally(() => setLoading(false));
     listSheets().then(setSheets).catch(() => {});
@@ -91,7 +100,7 @@ const Tabletop = () => {
     let data: Board;
     try { data = await createRow<Board>('tabletops', { name: `Mapa ${boards.length + 1}` }); }
     catch { return toast.error('Não consegui criar o mapa.'); }
-    setBoards(prev => [...prev, data]);
+    setBoards(prev => [...prev, { ...data, fog: data.fog ?? [] }]);
     setActiveId(data.id);
   };
 
@@ -127,34 +136,110 @@ const Tabletop = () => {
   const updateToken = (id: string, p: Partial<Token>, now = false) =>
     board && patch({ tokens: board.tokens.map(t => (t.id === id ? { ...t, ...p } : t)) }, now);
 
-  const onTokenDown = (e: React.PointerEvent, t: Token) => {
-    e.stopPropagation();
+  const pct = (e: React.PointerEvent) => {
     const r = mapRef.current!.getBoundingClientRect();
-    drag.current = { id: t.id, dx: ((e.clientX - r.left) / r.width) * 100 - t.x, dy: ((e.clientY - r.top) / r.height) * 100 - t.y };
+    return { x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 };
+  };
+
+  // --- Tokens ---
+  const onTokenDown = (e: React.PointerEvent, t: Token) => {
+    if (tool !== 'move') return;
+    e.stopPropagation();
+    const p = pct(e);
+    drag.current = { id: t.id, dx: p.x - t.x, dy: p.y - t.y };
     setSelToken(t.id);
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
-  const onMove = (e: React.PointerEvent) => {
-    if (!drag.current || !mapRef.current) return;
-    const r = mapRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100 - drag.current.dx));
-    const y = Math.max(0, Math.min(100, ((e.clientY - r.top) / r.height) * 100 - drag.current.dy));
-    updateToken(drag.current.id, { x, y });
+
+  // --- Palco: pan / névoa / desselecionar ---
+  const onStageDown = (e: React.PointerEvent) => {
+    if (tool === 'pan') {
+      const st = stageRef.current!;
+      pan.current = { sx: e.clientX, sy: e.clientY, sl: st.scrollLeft, st: st.scrollTop };
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      return;
+    }
+    if (tool === 'fog') {
+      const p = pct(e);
+      fogStart.current = p;
+      setDraftFog({ id: 'draft', x: p.x, y: p.y, w: 0, h: 0 });
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      return;
+    }
+    setSelToken(null);
   };
-  const onUp = () => { drag.current = null; };
+
+  const onMove = (e: React.PointerEvent) => {
+    if (pan.current && stageRef.current) {
+      stageRef.current.scrollLeft = pan.current.sl - (e.clientX - pan.current.sx);
+      stageRef.current.scrollTop = pan.current.st - (e.clientY - pan.current.sy);
+      return;
+    }
+    if (fogStart.current) {
+      const p = pct(e);
+      const s = fogStart.current;
+      setDraftFog({
+        id: 'draft',
+        x: Math.min(s.x, p.x), y: Math.min(s.y, p.y),
+        w: Math.abs(p.x - s.x), h: Math.abs(p.y - s.y),
+      });
+      return;
+    }
+    if (!drag.current || !mapRef.current) return;
+    const p = pct(e);
+    updateToken(drag.current.id, {
+      x: Math.max(0, Math.min(100, p.x - drag.current.dx)),
+      y: Math.max(0, Math.min(100, p.y - drag.current.dy)),
+    });
+  };
+
+  const onUp = () => {
+    if (pan.current) { pan.current = null; return; }
+    if (fogStart.current && board) {
+      fogStart.current = null;
+      if (draftFog && draftFog.w > 1 && draftFog.h > 1) {
+        patch({ fog: [...(board.fog ?? []), { ...draftFog, id: uid() }] }, true);
+      }
+      setDraftFog(null);
+      return;
+    }
+    if (drag.current) {
+      updateToken(drag.current.id, {}, true);
+      drag.current = null;
+    }
+  };
+
+  const revealFog = (id: string) => {
+    if (!board) return;
+    patch({ fog: (board.fog ?? []).filter(f => f.id !== id) }, true);
+  };
 
   const toggleFull = async () => {
     if (!document.fullscreenElement) await stageRef.current?.requestFullscreen?.().catch(() => {});
     else await document.exitFullscreen().catch(() => {});
   };
 
+  const share = () => {
+    if (!board?.share_id) return toast.error('Este mapa ainda não tem link. Salve uma alteração e tente de novo.');
+    const url = `${window.location.origin}${window.location.pathname}#/mapa-ao-vivo/${board.share_id}`;
+    navigator.clipboard?.writeText(url);
+    toast.success('Link copiado! Os jogadores veem o mapa em tempo real.');
+  };
+
   const sel = board?.tokens.find(t => t.id === selToken);
+  const fogCount = board?.fog?.length ?? 0;
+
+  const toolBtn = (t: Tool, icon: React.ReactNode, label: string) => (
+    <Button size="sm" variant={tool === t ? 'default' : 'outline'} className="h-9 gap-1" onClick={() => setTool(t)} title={label}>
+      {icon}<span className="hidden sm:inline">{label}</span>
+    </Button>
+  );
 
   return (
     <div className="space-y-5 min-w-0">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="page-title">Tabletop</h1>
-        <p className="text-sm text-muted-foreground mt-1">Carregue um mapa, coloque os personagens e mova na mesa</p>
+        <p className="text-sm text-muted-foreground mt-1">Carregue um mapa, cubra com névoa, revele na hora e compartilhe ao vivo</p>
       </motion.div>
 
       {/* Mapas salvos */}
@@ -178,8 +263,14 @@ const Tabletop = () => {
         </CardContent></Card>
       ) : (
         <>
+          {/* Ferramentas */}
           <div className="flex flex-wrap items-center gap-2">
-            <Input className="h-9 w-48" value={board.name} onChange={e => patch({ name: e.target.value })} />
+            <div className="flex gap-1 rounded-lg border border-border/60 p-1">
+              {toolBtn('move', <MousePointer2 className="w-4 h-4" />, 'Mover')}
+              {toolBtn('pan', <Hand className="w-4 h-4" />, 'Mãozinha')}
+              {toolBtn('fog', <Square className="w-4 h-4" />, 'Névoa')}
+            </div>
+            <Input className="h-9 w-36 sm:w-48" value={board.name} onChange={e => patch({ name: e.target.value })} />
             <label>
               <input type="file" accept="image/*" className="hidden" onChange={e => uploadMap(e.target.files?.[0])} />
               <span className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border text-sm cursor-pointer hover:border-primary">
@@ -197,8 +288,18 @@ const Tabletop = () => {
             <Button size="sm" variant="outline" className="h-9" onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}><ZoomOut className="w-4 h-4" /></Button>
             <Button size="sm" variant="outline" className="h-9" onClick={() => setZoom(z => Math.min(3, z + 0.25))}><ZoomIn className="w-4 h-4" /></Button>
             <Button size="sm" variant="outline" className="h-9" onClick={toggleFull}>{full ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</Button>
+            <Button size="sm" variant="secondary" className="h-9 gap-1" onClick={share} title="Copiar link ao vivo para os jogadores"><Share2 className="w-4 h-4" /><span className="hidden sm:inline">Compartilhar</span></Button>
             <Button size="sm" variant="outline" className="h-9 text-destructive" onClick={remove}><Trash2 className="w-4 h-4" /></Button>
           </div>
+
+          {tool === 'fog' && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Square className="w-3.5 h-3.5" /> Arraste para cobrir uma área com névoa preta. Clique num quadrado preto para revelar.
+              {fogCount > 0 && (
+                <button className="text-destructive underline" onClick={() => patch({ fog: [] }, true)}>Revelar tudo ({fogCount})</button>
+              )}
+            </p>
+          )}
 
           {showCast && (
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -226,15 +327,18 @@ const Tabletop = () => {
             </div>
           )}
 
-          <div ref={stageRef} className={`overflow-auto rounded-xl border border-border/50 bg-background ${full ? 'flex items-center' : 'max-h-[75dvh]'}`}>
+          <div
+            ref={stageRef}
+            className={`overflow-auto rounded-xl border border-border/50 bg-background ${full ? 'flex items-center' : 'max-h-[75dvh]'} ${tool === 'pan' ? 'cursor-grab active:cursor-grabbing' : ''} ${tool === 'fog' ? 'cursor-crosshair' : ''}`}
+          >
             <div
               ref={mapRef}
               className="relative mx-auto select-none touch-none"
               style={{ width: `${zoom * 100}%`, minWidth: zoom * 320 }}
+              onPointerDown={onStageDown}
               onPointerMove={onMove}
               onPointerUp={onUp}
               onPointerCancel={onUp}
-              onPointerDown={() => setSelToken(null)}
             >
               {board.map_url ? (
                 <img src={board.map_url} alt={board.name} draggable={false} className="w-full block pointer-events-none" />
@@ -247,11 +351,25 @@ const Tabletop = () => {
                 <div className="absolute inset-0 pointer-events-none opacity-40"
                   style={{ backgroundImage: 'linear-gradient(hsl(var(--foreground)/0.4) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)/0.4) 1px, transparent 1px)', backgroundSize: '5% 5%' }} />
               )}
+              {(board.fog ?? []).map(f => (
+                <button
+                  key={f.id}
+                  onClick={e => { e.stopPropagation(); revealFog(f.id); }}
+                  title="Clique para revelar"
+                  className="absolute bg-black/95 hover:bg-black/80 transition-colors group"
+                  style={{ left: `${f.x}%`, top: `${f.y}%`, width: `${f.w}%`, height: `${f.h}%` }}
+                >
+                  <Eye className="w-5 h-5 text-white/0 group-hover:text-white/60 absolute inset-0 m-auto" />
+                </button>
+              ))}
+              {draftFog && (
+                <div className="absolute bg-black/70 border border-dashed border-white/60 pointer-events-none"
+                  style={{ left: `${draftFog.x}%`, top: `${draftFog.y}%`, width: `${draftFog.w}%`, height: `${draftFog.h}%` }} />
+              )}
               {board.tokens.map(t => (
                 <div key={t.id}
                   onPointerDown={e => onTokenDown(e, t)}
-                  onPointerUp={() => drag.current && updateToken(t.id, {}, true)}
-                  className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing"
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 ${tool === 'move' ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'}`}
                   style={{ left: `${t.x}%`, top: `${t.y}%`, width: `${t.size}%` }}>
                   <img src={t.image} alt={t.name} draggable={false}
                     className={`w-full object-contain pointer-events-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] ${selToken === t.id ? 'ring-2 ring-primary rounded-full' : ''}`} />
@@ -260,7 +378,9 @@ const Tabletop = () => {
               ))}
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">Arraste os personagens com o dedo ou mouse. Tudo é salvo sozinho.</p>
+          <p className="text-xs text-muted-foreground">
+            Mover: arraste os personagens · Mãozinha: arraste o mapa · Névoa: cubra áreas e clique para revelar · Compartilhar: link ao vivo pros jogadores.
+          </p>
         </>
       )}
     </div>
