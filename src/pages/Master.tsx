@@ -35,6 +35,9 @@ const Master = () => {
   const [uses, setUses] = useState(1);
   const [usesLeft, setUsesLeft] = useState(1);
   const [usesTouched, setUsesTouched] = useState(false);
+  const [testCode, setTestCode] = useState('');
+  const [testExpiresAt, setTestExpiresAt] = useState<string | null>(null);
+  const [testLeft, setTestLeft] = useState(0);
   const [newMaster, setNewMaster] = useState('');
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
@@ -43,6 +46,8 @@ const Master = () => {
     const res = await callGate({ action: 'stats', master: key });
     if (!res?.ok) return false;
     setCurrent(res.currentCode);
+    setTestCode(res.testCode ?? '');
+    setTestExpiresAt(res.testExpiresAt ?? null);
     setUsesLeft(res.usesLeft ?? 1);
     if (!usesTouched) setUses(res.maxUses ?? 1);
     setSessions(res.sessions ?? []);
@@ -63,6 +68,22 @@ const Master = () => {
     const id = setInterval(() => load(master).catch(() => {}), 15000);
     return () => clearInterval(id);
   }, [ready, master, load]);
+
+  useEffect(() => {
+    const tick = () => setTestLeft(testExpiresAt ? Math.max(0, Math.ceil((new Date(testExpiresAt).getTime() - Date.now()) / 1000)) : 0);
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [testExpiresAt]);
+
+  const genTestCode = async () => {
+    setBusy(true);
+    try {
+      const res = await callGate({ action: 'set-test-code', master });
+      if (res?.ok) { setTestCode(res.testCode); setTestExpiresAt(res.testExpiresAt); toast({ title: 'Código teste criado', description: 'Vale por 5 minutos.' }); }
+    } catch { toast({ title: 'Erro ao gerar código teste', variant: 'destructive' }); }
+    finally { setBusy(false); }
+  };
 
   const login = async (e: React.FormEvent) => {
     e.preventDefault();
