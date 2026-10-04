@@ -19,3 +19,7 @@
 - [ ] Gerador de nomes por nacionalidade/gênero (NPC e Monstros)
 - [x] Mapa mental: conexão por toque no celular corrigida e testada
 - [ ] Anexos de arquivos nas fichas de Players/Monstros
+
+## Novo (04/out)
+- [ ] Tabletop 100%: mãozinha (pan do mapa), névoa preta selecionável que revela ao clicar, compartilhar mapa com players em tempo real, mobile
+- [ ] Código teste 5 min na aba Mestre (em andamento)
