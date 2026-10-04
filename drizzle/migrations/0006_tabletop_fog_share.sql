@@ -1,0 +1,1 @@
+ALTER TABLE public.tabletops ADD COLUMN IF NOT EXISTS fog jsonb NOT NULL DEFAULT '[]'::jsonb, ADD COLUMN IF NOT EXISTS share_id text NOT NULL DEFAULT encode(extensions.gen_random_bytes(9), 'hex');
