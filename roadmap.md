@@ -23,3 +23,4 @@
 ## Novo (04/out)
 - [ ] Tabletop 100%: mãozinha (pan do mapa), névoa preta selecionável que revela ao clicar, compartilhar mapa com players em tempo real, mobile
 - [ ] Código teste 5 min na aba Mestre (em andamento)
+- [ ] Ficha compartilhada: opção do jogador editar a própria ficha (PIN definido pelo mestre)

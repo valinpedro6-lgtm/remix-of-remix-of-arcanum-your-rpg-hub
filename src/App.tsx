@@ -16,6 +16,7 @@ import MindMap from "./pages/MindMap";
 import Cast from "./pages/Cast";
 import Tabletop from "./pages/Tabletop";
 import SharedSheet from "./pages/SharedSheet";
+import SharedTabletop from "./pages/SharedTabletop";
 import Master from "./pages/Master";
 import NotFound from "./pages/NotFound";
 
@@ -30,6 +31,8 @@ const App = () => (
         <Routes>
           {/* Ficha pública do jogador (sem senha) */}
           <Route path="/ficha/:shareId" element={<SharedSheet />} />
+          {/* Mapa ao vivo para os jogadores (sem senha) */}
+          <Route path="/mapa-ao-vivo/:shareId" element={<SharedTabletop />} />
           <Route path="*" element={
             <AccessGate>
               <Layout>
