@@ -133,6 +133,12 @@ export async function getSheetByShareId(shareId: string): Promise<Sheet | null> 
   return (data as any)?.sheet ? parse((data as any).sheet) : null;
 }
 
+/** Jogador salva a própria ficha pelo link compartilhado. */
+export async function updateSharedSheet(shareId: string, patch: Partial<Sheet>): Promise<void> {
+  const { error } = await supabase.functions.invoke('user-data', { body: { action: 'shared-update', shareId, values: patch } });
+  if (error) throw error;
+}
+
 export async function createSheet(kind: SheetKind): Promise<Sheet> {
   return parse(await createRow<any>('sheets', emptySheet(kind) as any));
 }
