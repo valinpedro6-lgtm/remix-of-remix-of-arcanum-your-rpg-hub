@@ -7,7 +7,7 @@ import { KeyRound, Shield, Loader2, Lock, AlertTriangle, Mail } from 'lucide-rea
 import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
-import { GRANT_KEY, LOCK_KEY, EMAIL_KEY, deviceId, callGate, becomeMaster } from '@/lib/access';
+import { GRANT_KEY, LOCK_KEY, EMAIL_KEY, deviceId, callGate, becomeMaster, grantTestAccess, testAccessLeft, expireTestAccess } from '@/lib/access';
 import { currentOwnerToken, setOwnerToken } from '@/lib/userData';
 
 /** avisa o servidor, de tempos em tempos, que este aparelho continua na mesa */
@@ -93,6 +93,11 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
         setRemaining(null);
         if (res.master) {
           await enterAsMaster(value, res.token);
+          return;
+        }
+        if (res.test) {
+          grantTestAccess(Number(res.accessUntil), res.token);
+          setGranted(true);
           return;
         }
         setTicket(res.ticket ?? '');
