@@ -16,6 +16,7 @@ interface Session { device_id: string; label: string; first_seen: string; last_s
 const isEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const fmtClock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
 const mailto = (to: string | string[], subject = 'Arcanum — mensagem do mestre') => {
   const list = Array.isArray(to) ? to.join(',') : to;
