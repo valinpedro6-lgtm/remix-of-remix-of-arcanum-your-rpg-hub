@@ -101,6 +101,7 @@ export type Database = {
           accent: string
           attributes: Json
           created_at: string
+          edit_pin: string | null
           id: string
           image_url: string
           in_list: boolean
@@ -121,6 +122,7 @@ export type Database = {
           accent?: string
           attributes?: Json
           created_at?: string
+          edit_pin?: string | null
           id?: string
           image_url?: string
           in_list?: boolean
@@ -141,6 +143,7 @@ export type Database = {
           accent?: string
           attributes?: Json
           created_at?: string
+          edit_pin?: string | null
           id?: string
           image_url?: string
           in_list?: boolean
