@@ -32,9 +32,12 @@ const pick = (obj: Record<string, unknown>, fields: string[]) => {
 
 const strip = (row: Record<string, unknown> | null) => {
   if (!row) return row;
-  const { owner: _o, ...rest } = row;
+  const { owner: _o, edit_pin: _p, ...rest } = row;
   return rest;
 };
+
+/** campos que o jogador pode editar pelo link da ficha */
+const SHARED_EDIT_FIELDS = ["name", "subtitle", "origin", "image_url", "attributes", "skills", "resources", "abilities", "notes"];
 
 async function hashToken(token: string) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
@@ -54,6 +57,17 @@ Deno.serve(async (req) => {
       if (!/^[a-zA-Z0-9_-]{4,64}$/.test(shareId)) return json({ sheet: null });
       const { data } = await admin.from("sheets").select("*").eq("share_id", shareId).maybeSingle();
       return json({ sheet: strip(data) });
+    }
+
+    // Jogador edita a própria ficha pelo link compartilhado
+    if (action === "shared-update") {
+      const shareId = String(body.shareId ?? "").slice(0, 64);
+      if (!/^[a-zA-Z0-9_-]{4,64}$/.test(shareId)) return json({ ok: false }, 400);
+      const values = pick(body.values ?? {}, SHARED_EDIT_FIELDS);
+      if (Object.keys(values).length === 0) return json({ ok: true });
+      const { error } = await admin.from("sheets").update(values).eq("share_id", shareId);
+      if (error) throw error;
+      return json({ ok: true });
     }
 
     const token = String(body.token ?? "");
