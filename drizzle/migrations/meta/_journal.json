@@ -43,6 +43,20 @@
       "when": 1790990888110,
       "tag": "0005_test_code",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791079174547,
+      "tag": "0006_tabletop_fog_share",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791079312074,
+      "tag": "0007_sheet_edit_pin",
+      "breakpoints": true
     }
   ]
 }

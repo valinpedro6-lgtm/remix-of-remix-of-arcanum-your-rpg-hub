@@ -6,6 +6,22 @@ export const MASTER_KEY = 'arcanum-master-key';
 export const LOCK_KEY = 'arcanum-access-lock';
 export const DEVICE_KEY = 'arcanum-device-id';
 export const EMAIL_KEY = 'arcanum-access-email';
+export const TEST_UNTIL_KEY = 'arcanum-test-until';
+
+/** Acesso temporário (código teste): expira sozinho e volta pra tela do código. */
+export const grantTestAccess = (until: number, token: string) => {
+  setOwnerToken(token);
+  localStorage.setItem(TEST_UNTIL_KEY, String(until));
+  localStorage.setItem(GRANT_KEY, 'true');
+};
+export const testAccessLeft = () => {
+  const v = Number(localStorage.getItem(TEST_UNTIL_KEY) ?? 0);
+  return v > Date.now() ? Math.ceil((v - Date.now()) / 1000) : 0;
+};
+export const expireTestAccess = () => {
+  localStorage.removeItem(TEST_UNTIL_KEY);
+  logout();
+};
 
 export const deviceId = () => {
   let id = localStorage.getItem(DEVICE_KEY);

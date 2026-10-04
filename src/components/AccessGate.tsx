@@ -7,10 +7,30 @@ import { KeyRound, Shield, Loader2, Lock, AlertTriangle, Mail } from 'lucide-rea
 import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
-import { GRANT_KEY, LOCK_KEY, EMAIL_KEY, deviceId, callGate, becomeMaster } from '@/lib/access';
+import { GRANT_KEY, LOCK_KEY, EMAIL_KEY, deviceId, callGate, becomeMaster, grantTestAccess, testAccessLeft, expireTestAccess } from '@/lib/access';
 import { currentOwnerToken, setOwnerToken } from '@/lib/userData';
 
 /** avisa o servidor, de tempos em tempos, que este aparelho continua na mesa */
+/** vigia o acesso de teste: acabou o tempo, volta pra tela do código */
+const TestExpiry = () => {
+  const [left, setLeft] = useState(testAccessLeft());
+  useEffect(() => {
+    if (!left) return;
+    const id = setInterval(() => {
+      const s = testAccessLeft();
+      setLeft(s);
+      if (s <= 0) expireTestAccess();
+    }, 1000);
+    return () => clearInterval(id);
+  }, [left]);
+  if (!left) return null;
+  return (
+    <div className="fixed top-2 left-1/2 -translate-x-1/2 z-50 rounded-full border border-amber-500/50 bg-amber-500/15 backdrop-blur px-3 py-1 text-xs font-bold text-amber-400 tabular-nums">
+      Acesso de teste · {fmt(left)}
+    </div>
+  );
+};
+
 const Heartbeat = () => {
   useEffect(() => {
     const ping = () => {
@@ -95,6 +115,11 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
           await enterAsMaster(value, res.token);
           return;
         }
+        if (res.test) {
+          grantTestAccess(Number(res.accessUntil), res.token);
+          setGranted(true);
+          return;
+        }
         setTicket(res.ticket ?? '');
         setNeedEmail(true);
         return;
@@ -150,7 +175,7 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  if (granted) return <><Heartbeat />{children}</>;
+  if (granted) return <><Heartbeat /><TestExpiry />{children}</>;
 
   if (needEmail) {
     return (

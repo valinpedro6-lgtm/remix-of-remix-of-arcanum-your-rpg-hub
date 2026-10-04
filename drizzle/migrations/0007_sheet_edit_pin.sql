@@ -1,0 +1,1 @@
+ALTER TABLE public.sheets ADD COLUMN IF NOT EXISTS edit_pin text;

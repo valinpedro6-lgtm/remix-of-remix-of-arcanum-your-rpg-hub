@@ -101,6 +101,7 @@ export type Database = {
           accent: string
           attributes: Json
           created_at: string
+          edit_pin: string | null
           id: string
           image_url: string
           in_list: boolean
@@ -121,6 +122,7 @@ export type Database = {
           accent?: string
           attributes?: Json
           created_at?: string
+          edit_pin?: string | null
           id?: string
           image_url?: string
           in_list?: boolean
@@ -141,6 +143,7 @@ export type Database = {
           accent?: string
           attributes?: Json
           created_at?: string
+          edit_pin?: string | null
           id?: string
           image_url?: string
           in_list?: boolean
@@ -161,31 +164,37 @@ export type Database = {
       tabletops: {
         Row: {
           created_at: string
+          fog: Json
           grid: boolean
           id: string
           map_url: string
           name: string
           owner: string | null
+          share_id: string
           tokens: Json
           updated_at: string
         }
         Insert: {
           created_at?: string
+          fog?: Json
           grid?: boolean
           id?: string
           map_url?: string
           name?: string
           owner?: string | null
+          share_id?: string
           tokens?: Json
           updated_at?: string
         }
         Update: {
           created_at?: string
+          fog?: Json
           grid?: boolean
           id?: string
           map_url?: string
           name?: string
           owner?: string | null
+          share_id?: string
           tokens?: Json
           updated_at?: string
         }

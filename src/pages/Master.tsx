@@ -16,6 +16,7 @@ interface Session { device_id: string; label: string; first_seen: string; last_s
 const isEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const fmtClock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
 const mailto = (to: string | string[], subject = 'Arcanum — mensagem do mestre') => {
   const list = Array.isArray(to) ? to.join(',') : to;
@@ -35,6 +36,9 @@ const Master = () => {
   const [uses, setUses] = useState(1);
   const [usesLeft, setUsesLeft] = useState(1);
   const [usesTouched, setUsesTouched] = useState(false);
+  const [testCode, setTestCode] = useState('');
+  const [testExpiresAt, setTestExpiresAt] = useState<string | null>(null);
+  const [testLeft, setTestLeft] = useState(0);
   const [newMaster, setNewMaster] = useState('');
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
@@ -43,6 +47,8 @@ const Master = () => {
     const res = await callGate({ action: 'stats', master: key });
     if (!res?.ok) return false;
     setCurrent(res.currentCode);
+    setTestCode(res.testCode ?? '');
+    setTestExpiresAt(res.testExpiresAt ?? null);
     setUsesLeft(res.usesLeft ?? 1);
     if (!usesTouched) setUses(res.maxUses ?? 1);
     setSessions(res.sessions ?? []);
@@ -63,6 +69,22 @@ const Master = () => {
     const id = setInterval(() => load(master).catch(() => {}), 15000);
     return () => clearInterval(id);
   }, [ready, master, load]);
+
+  useEffect(() => {
+    const tick = () => setTestLeft(testExpiresAt ? Math.max(0, Math.ceil((new Date(testExpiresAt).getTime() - Date.now()) / 1000)) : 0);
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [testExpiresAt]);
+
+  const genTestCode = async () => {
+    setBusy(true);
+    try {
+      const res = await callGate({ action: 'set-test-code', master });
+      if (res?.ok) { setTestCode(res.testCode); setTestExpiresAt(res.testExpiresAt); toast({ title: 'Código teste criado', description: 'Vale por 5 minutos.' }); }
+    } catch { toast({ title: 'Erro ao gerar código teste', variant: 'destructive' }); }
+    finally { setBusy(false); }
+  };
 
   const login = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,6 +195,27 @@ const Master = () => {
               <Button variant="secondary" onClick={() => custom.trim() && rotate(custom.trim())} disabled={busy || !custom.trim()}>Definir</Button>
             </div>
             <p className="text-[11px] text-muted-foreground">Escolha quantas pessoas podem entrar e clique em Gerar (ou Definir). Quando o limite acaba, um novo código é criado sozinho.</p>
+
+            <div className="border-t border-border/40 pt-3 space-y-2">
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Código teste (5 minutos)</p>
+              {testCode && testLeft > 0 ? (
+                <div className="flex items-center gap-2">
+                  <p className="flex-1 text-2xl font-display font-bold tracking-[0.2em] text-amber-400 text-center break-all">{testCode}</p>
+                  <Button variant="outline" size="sm" onClick={() => { navigator.clipboard?.writeText(testCode); toast({ title: 'Código teste copiado' }); }}>
+                    <Copy className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center">Nenhum código teste ativo.</p>
+              )}
+              {testCode && testLeft > 0 && (
+                <p className="text-center text-xs text-amber-400 tabular-nums">Expira em {fmtClock(testLeft)}</p>
+              )}
+              <Button variant="secondary" className="w-full" onClick={genTestCode} disabled={busy}>
+                <RefreshCw className="w-4 h-4 mr-1" /> {testCode && testLeft > 0 ? 'Gerar outro' : 'Gerar código teste'}
+              </Button>
+              <p className="text-[11px] text-muted-foreground">Quem entra com ele usa o site por 5 minutos e depois volta pra tela do código. Não pede e-mail.</p>
+            </div>
           </CardContent>
         </Card>
 
