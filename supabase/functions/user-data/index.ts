@@ -21,7 +21,7 @@ const SHEET_FIELDS = [
   "kind", "style", "name", "subtitle", "origin", "image_url", "accent",
   "attributes", "skills", "resources", "abilities", "notes", "in_list",
 ];
-const BOARD_FIELDS = ["name", "map_url", "tokens", "grid"];
+const BOARD_FIELDS = ["name", "map_url", "tokens", "grid", "fog"];
 const TABLES: Record<string, string[]> = { sheets: SHEET_FIELDS, tabletops: BOARD_FIELDS };
 
 const pick = (obj: Record<string, unknown>, fields: string[]) => {
