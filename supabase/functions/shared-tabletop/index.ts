@@ -23,9 +23,23 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const shareId = String(body.shareId ?? "").slice(0, 64);
     if (!/^[a-zA-Z0-9_-]{4,64}$/.test(shareId)) return json({ board: null });
+
+    // Jogador move o próprio boneco (não apaga névoa, não mexe no resto)
+    if (body.action === "move-token") {
+      const tokenId = String(body.tokenId ?? "").slice(0, 32);
+      const x = Math.max(0, Math.min(100, Number(body.x)));
+      const y = Math.max(0, Math.min(100, Number(body.y)));
+      if (!tokenId || !Number.isFinite(x) || !Number.isFinite(y)) return json({ ok: false }, 400);
+      const { data: row } = await admin.from("tabletops").select("tokens").eq("share_id", shareId).maybeSingle();
+      if (!row) return json({ ok: false }, 404);
+      const tokens = (row.tokens ?? []).map((t: any) => (t.id === tokenId ? { ...t, x, y } : t));
+      await admin.from("tabletops").update({ tokens }).eq("share_id", shareId);
+      return json({ ok: true });
+    }
+
     const { data } = await admin
       .from("tabletops")
-      .select("id, name, map_url, tokens, grid, fog, share_id, updated_at")
+      .select("id, name, map_url, tokens, grid, fog, view, share_id, updated_at")
       .eq("share_id", shareId)
       .maybeSingle();
     return json({ board: data ?? null });
