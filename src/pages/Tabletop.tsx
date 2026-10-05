@@ -425,8 +425,37 @@ const Tabletop = () => {
               ))}
             </div>
           </div>
+          <DiceBar />
+
+          {/* Resumo das fichas da mesa — só o mestre vê */}
+          {sheets.filter(s => s.in_list).length > 0 && (
+            <Card><CardContent className="p-3">
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Fichas na mesa</p>
+              <div className="flex gap-3 overflow-x-auto no-scrollbar">
+                {sheets.filter(s => s.in_list).map(s => (
+                  <div key={s.id} className="shrink-0 w-40 rounded-lg border border-border/50 p-2 space-y-1">
+                    <p className="text-xs font-bold truncate">{s.name}</p>
+                    {s.resources.slice(0, 3).map(r => (
+                      <div key={r.id} className="space-y-0.5">
+                        <div className="flex justify-between text-[10px] text-muted-foreground">
+                          <span>{r.short}</span><span className="tabular-nums">{r.current}/{r.max}</span>
+                        </div>
+                        <div className="h-1 rounded-full bg-muted overflow-hidden">
+                          <div className="h-full bg-primary" style={{ width: `${r.max ? (r.current / r.max) * 100 : 0}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </CardContent></Card>
+          )}
+
           <p className="text-xs text-muted-foreground">
             Mover: arraste os personagens · Mãozinha: arraste o mapa · Névoa: cubra áreas e clique para revelar · Compartilhar: link ao vivo pros jogadores.
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Atalhos: <kbd className="px-1 rounded border border-border">M</kbd> mover · <kbd className="px-1 rounded border border-border">H</kbd> mãozinha · <kbd className="px-1 rounded border border-border">N</kbd> névoa · <kbd className="px-1 rounded border border-border">G</kbd> grade · <kbd className="px-1 rounded border border-border">+</kbd>/<kbd className="px-1 rounded border border-border">-</kbd> zoom · <kbd className="px-1 rounded border border-border">F</kbd> tela cheia
           </p>
         </>
       )}
