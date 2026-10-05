@@ -8,8 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { listRows, createRow, updateRow, deleteRow } from '@/lib/userData';
 import { listSheets, Sheet } from '@/lib/sheets';
+import { DiceBar } from '@/components/DiceBar';
 
 interface Token {
   id: string;
@@ -20,6 +22,7 @@ interface Token {
   size: number; // % da largura do mapa
 }
 interface FogRect { id: string; x: number; y: number; w: number; h: number }
+interface BoardView { zoom?: number; x?: number; y?: number }
 interface Board {
   id: string;
   name: string;
@@ -27,7 +30,9 @@ interface Board {
   tokens: Token[];
   grid: boolean;
   fog: FogRect[];
+  view?: BoardView;
   share_id?: string;
+  updated_at?: string;
 }
 
 type Tool = 'move' | 'pan' | 'fog';
