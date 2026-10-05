@@ -21,7 +21,7 @@ const SHEET_FIELDS = [
   "kind", "style", "name", "subtitle", "origin", "image_url", "accent",
   "attributes", "skills", "resources", "abilities", "notes", "in_list",
 ];
-const BOARD_FIELDS = ["name", "map_url", "tokens", "grid", "fog"];
+const BOARD_FIELDS = ["name", "map_url", "tokens", "grid", "fog", "view"];
 const TABLES: Record<string, string[]> = { sheets: SHEET_FIELDS, tabletops: BOARD_FIELDS };
 
 const pick = (obj: Record<string, unknown>, fields: string[]) => {
@@ -37,7 +37,7 @@ const strip = (row: Record<string, unknown> | null) => {
 };
 
 /** campos que o jogador pode editar pelo link da ficha */
-const SHARED_EDIT_FIELDS = ["name", "subtitle", "origin", "image_url", "attributes", "skills", "resources", "abilities", "notes"];
+const SHARED_EDIT_FIELDS = ["name", "subtitle", "origin", "image_url", "attributes", "skills", "resources", "abilities", "notes", "style"];
 
 async function hashToken(token: string) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));

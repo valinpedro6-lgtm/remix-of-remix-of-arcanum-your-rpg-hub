@@ -64,6 +64,13 @@
       "when": 1791165932920,
       "tag": "0008_enable_realtime",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791165967188,
+      "tag": "0009_tabletop_view",
+      "breakpoints": true
     }
   ]
 }
