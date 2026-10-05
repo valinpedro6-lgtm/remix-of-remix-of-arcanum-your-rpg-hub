@@ -78,6 +78,8 @@ const Tabletop = () => {
   const pan = useRef<{ sx: number; sy: number; sl: number; st: number } | null>(null);
   const fogStart = useRef<{ x: number; y: number } | null>(null);
   const saveT = useRef<ReturnType<typeof setTimeout>>();
+  const viewT = useRef<ReturnType<typeof setTimeout>>();
+  const lastSave = useRef(0);
 
   useEffect(() => {
     listRows<Board>('tabletops')
@@ -128,8 +130,17 @@ const Tabletop = () => {
     const id = board.id;
     setBoards(prev => prev.map(b => (b.id === id ? { ...b, ...p } : b)));
     clearTimeout(saveT.current);
-    const run = () => updateRow('tabletops', id, p as any).catch(() => toast.error('Não consegui salvar.'));
+    const run = () => { lastSave.current = Date.now(); updateRow('tabletops', id, p as any).catch(() => toast.error('Não consegui salvar.')); };
     if (now) run(); else saveT.current = setTimeout(run, 500);
+  };
+
+  /** Salva o zoom/posição do mestre para os jogadores acompanharem */
+  const saveView = (z: number) => {
+    if (!board || !stageRef.current) return;
+    const view = { zoom: z, x: Math.round(stageRef.current.scrollLeft), y: Math.round(stageRef.current.scrollTop) };
+    setBoards(prev => prev.map(b => (b.id === board.id ? { ...b, view } : b)));
+    clearTimeout(viewT.current);
+    viewT.current = setTimeout(() => { lastSave.current = Date.now(); updateRow('tabletops', board.id, { view } as any).catch(() => {}); }, 400);
   };
 
   const create = async () => {
