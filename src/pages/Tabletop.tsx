@@ -90,6 +90,37 @@ const Tabletop = () => {
     return () => document.removeEventListener('fullscreenchange', h);
   }, []);
 
+  // Tempo real: quando um jogador move um boneco pelo link, aparece aqui
+  useEffect(() => {
+    const channel = supabase
+      .channel('tabletops-master')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tabletops' }, (payload) => {
+        const row = payload.new as Board;
+        if (row.updated_at && lastSave.current && new Date(row.updated_at).getTime() <= lastSave.current) return;
+        setBoards(prev => prev.map(b => (b.id === row.id ? { ...b, ...row, fog: row.fog ?? [] } : b)));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  // Atalhos de teclado
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      const k = e.key.toLowerCase();
+      if (k === 'm') setTool('move');
+      else if (k === 'h') setTool('pan');
+      else if (k === 'n') setTool('fog');
+      else if (k === 'g') board && patch({ grid: !board.grid }, true);
+      else if (k === '+' || k === '=') setZoom(z => Math.min(3, z + 0.25));
+      else if (k === '-') setZoom(z => Math.max(0.5, z - 0.25));
+      else if (k === 'f') toggleFull();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
   const board = boards.find(b => b.id === activeId) ?? null;
 
   const patch = (p: Partial<Board>, now = false) => {
