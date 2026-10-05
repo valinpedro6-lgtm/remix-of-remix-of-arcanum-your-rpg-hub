@@ -241,7 +241,7 @@ const Tabletop = () => {
   };
 
   const onUp = () => {
-    if (pan.current) { pan.current = null; return; }
+    if (pan.current) { pan.current = null; saveView(zoom); return; }
     if (fogStart.current && board) {
       fogStart.current = null;
       if (draftFog && draftFog.w > 1 && draftFog.h > 1) {
@@ -332,8 +332,8 @@ const Tabletop = () => {
             </label>
             <Button size="sm" variant="outline" className="gap-1 h-9" onClick={() => setShowCast(v => !v)}><Users className="w-4 h-4" />Do elenco</Button>
             <Button size="sm" variant={board.grid ? 'default' : 'outline'} className="h-9" onClick={() => patch({ grid: !board.grid }, true)} title="Grade"><Grid3x3 className="w-4 h-4" /></Button>
-            <Button size="sm" variant="outline" className="h-9" onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}><ZoomOut className="w-4 h-4" /></Button>
-            <Button size="sm" variant="outline" className="h-9" onClick={() => setZoom(z => Math.min(3, z + 0.25))}><ZoomIn className="w-4 h-4" /></Button>
+            <Button size="sm" variant="outline" className="h-9" onClick={() => setZoom(z => { const n = Math.max(0.5, z - 0.25); saveView(n); return n; })}><ZoomOut className="w-4 h-4" /></Button>
+            <Button size="sm" variant="outline" className="h-9" onClick={() => setZoom(z => { const n = Math.min(3, z + 0.25); saveView(n); return n; })}><ZoomIn className="w-4 h-4" /></Button>
             <Button size="sm" variant="outline" className="h-9" onClick={toggleFull}>{full ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</Button>
             <Button size="sm" variant="secondary" className="h-9 gap-1" onClick={share} title="Copiar link ao vivo para os jogadores"><Share2 className="w-4 h-4" /><span className="hidden sm:inline">Compartilhar</span></Button>
             <Button size="sm" variant="outline" className="h-9 text-destructive" onClick={remove}><Trash2 className="w-4 h-4" /></Button>
