@@ -8,8 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { listRows, createRow, updateRow, deleteRow } from '@/lib/userData';
 import { listSheets, Sheet } from '@/lib/sheets';
+import { DiceBar } from '@/components/DiceBar';
 
 interface Token {
   id: string;
@@ -20,6 +22,7 @@ interface Token {
   size: number; // % da largura do mapa
 }
 interface FogRect { id: string; x: number; y: number; w: number; h: number }
+interface BoardView { zoom?: number; x?: number; y?: number }
 interface Board {
   id: string;
   name: string;
@@ -27,7 +30,9 @@ interface Board {
   tokens: Token[];
   grid: boolean;
   fog: FogRect[];
+  view?: BoardView;
   share_id?: string;
+  updated_at?: string;
 }
 
 type Tool = 'move' | 'pan' | 'fog';
@@ -73,6 +78,8 @@ const Tabletop = () => {
   const pan = useRef<{ sx: number; sy: number; sl: number; st: number } | null>(null);
   const fogStart = useRef<{ x: number; y: number } | null>(null);
   const saveT = useRef<ReturnType<typeof setTimeout>>();
+  const viewT = useRef<ReturnType<typeof setTimeout>>();
+  const lastSave = useRef(0);
 
   useEffect(() => {
     listRows<Board>('tabletops')
@@ -85,6 +92,37 @@ const Tabletop = () => {
     return () => document.removeEventListener('fullscreenchange', h);
   }, []);
 
+  // Tempo real: quando um jogador move um boneco pelo link, aparece aqui
+  useEffect(() => {
+    const channel = supabase
+      .channel('tabletops-master')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tabletops' }, (payload) => {
+        const row = payload.new as Board;
+        if (row.updated_at && lastSave.current && new Date(row.updated_at).getTime() <= lastSave.current) return;
+        setBoards(prev => prev.map(b => (b.id === row.id ? { ...b, ...row, fog: row.fog ?? [] } : b)));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  // Atalhos de teclado
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      const k = e.key.toLowerCase();
+      if (k === 'm') setTool('move');
+      else if (k === 'h') setTool('pan');
+      else if (k === 'n') setTool('fog');
+      else if (k === 'g') board && patch({ grid: !board.grid }, true);
+      else if (k === '+' || k === '=') setZoom(z => Math.min(3, z + 0.25));
+      else if (k === '-') setZoom(z => Math.max(0.5, z - 0.25));
+      else if (k === 'f') toggleFull();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
   const board = boards.find(b => b.id === activeId) ?? null;
 
   const patch = (p: Partial<Board>, now = false) => {
@@ -92,8 +130,17 @@ const Tabletop = () => {
     const id = board.id;
     setBoards(prev => prev.map(b => (b.id === id ? { ...b, ...p } : b)));
     clearTimeout(saveT.current);
-    const run = () => updateRow('tabletops', id, p as any).catch(() => toast.error('Não consegui salvar.'));
+    const run = () => { lastSave.current = Date.now(); updateRow('tabletops', id, p as any).catch(() => toast.error('Não consegui salvar.')); };
     if (now) run(); else saveT.current = setTimeout(run, 500);
+  };
+
+  /** Salva o zoom/posição do mestre para os jogadores acompanharem */
+  const saveView = (z: number) => {
+    if (!board || !stageRef.current) return;
+    const view = { zoom: z, x: Math.round(stageRef.current.scrollLeft), y: Math.round(stageRef.current.scrollTop) };
+    setBoards(prev => prev.map(b => (b.id === board.id ? { ...b, view } : b)));
+    clearTimeout(viewT.current);
+    viewT.current = setTimeout(() => { lastSave.current = Date.now(); updateRow('tabletops', board.id, { view } as any).catch(() => {}); }, 400);
   };
 
   const create = async () => {
@@ -194,7 +241,7 @@ const Tabletop = () => {
   };
 
   const onUp = () => {
-    if (pan.current) { pan.current = null; return; }
+    if (pan.current) { pan.current = null; saveView(zoom); return; }
     if (fogStart.current && board) {
       fogStart.current = null;
       if (draftFog && draftFog.w > 1 && draftFog.h > 1) {
@@ -285,8 +332,8 @@ const Tabletop = () => {
             </label>
             <Button size="sm" variant="outline" className="gap-1 h-9" onClick={() => setShowCast(v => !v)}><Users className="w-4 h-4" />Do elenco</Button>
             <Button size="sm" variant={board.grid ? 'default' : 'outline'} className="h-9" onClick={() => patch({ grid: !board.grid }, true)} title="Grade"><Grid3x3 className="w-4 h-4" /></Button>
-            <Button size="sm" variant="outline" className="h-9" onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}><ZoomOut className="w-4 h-4" /></Button>
-            <Button size="sm" variant="outline" className="h-9" onClick={() => setZoom(z => Math.min(3, z + 0.25))}><ZoomIn className="w-4 h-4" /></Button>
+            <Button size="sm" variant="outline" className="h-9" onClick={() => setZoom(z => { const n = Math.max(0.5, z - 0.25); saveView(n); return n; })}><ZoomOut className="w-4 h-4" /></Button>
+            <Button size="sm" variant="outline" className="h-9" onClick={() => setZoom(z => { const n = Math.min(3, z + 0.25); saveView(n); return n; })}><ZoomIn className="w-4 h-4" /></Button>
             <Button size="sm" variant="outline" className="h-9" onClick={toggleFull}>{full ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</Button>
             <Button size="sm" variant="secondary" className="h-9 gap-1" onClick={share} title="Copiar link ao vivo para os jogadores"><Share2 className="w-4 h-4" /><span className="hidden sm:inline">Compartilhar</span></Button>
             <Button size="sm" variant="outline" className="h-9 text-destructive" onClick={remove}><Trash2 className="w-4 h-4" /></Button>
@@ -378,8 +425,37 @@ const Tabletop = () => {
               ))}
             </div>
           </div>
+          <DiceBar />
+
+          {/* Resumo das fichas da mesa — só o mestre vê */}
+          {sheets.filter(s => s.in_list).length > 0 && (
+            <Card><CardContent className="p-3">
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Fichas na mesa</p>
+              <div className="flex gap-3 overflow-x-auto no-scrollbar">
+                {sheets.filter(s => s.in_list).map(s => (
+                  <div key={s.id} className="shrink-0 w-40 rounded-lg border border-border/50 p-2 space-y-1">
+                    <p className="text-xs font-bold truncate">{s.name}</p>
+                    {s.resources.slice(0, 3).map(r => (
+                      <div key={r.id} className="space-y-0.5">
+                        <div className="flex justify-between text-[10px] text-muted-foreground">
+                          <span>{r.short}</span><span className="tabular-nums">{r.current}/{r.max}</span>
+                        </div>
+                        <div className="h-1 rounded-full bg-muted overflow-hidden">
+                          <div className="h-full bg-primary" style={{ width: `${r.max ? (r.current / r.max) * 100 : 0}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </CardContent></Card>
+          )}
+
           <p className="text-xs text-muted-foreground">
             Mover: arraste os personagens · Mãozinha: arraste o mapa · Névoa: cubra áreas e clique para revelar · Compartilhar: link ao vivo pros jogadores.
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Atalhos: <kbd className="px-1 rounded border border-border">M</kbd> mover · <kbd className="px-1 rounded border border-border">H</kbd> mãozinha · <kbd className="px-1 rounded border border-border">N</kbd> névoa · <kbd className="px-1 rounded border border-border">G</kbd> grade · <kbd className="px-1 rounded border border-border">+</kbd>/<kbd className="px-1 rounded border border-border">-</kbd> zoom · <kbd className="px-1 rounded border border-border">F</kbd> tela cheia
           </p>
         </>
       )}

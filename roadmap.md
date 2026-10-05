@@ -25,3 +25,6 @@
 - [ ] Código teste 5 min na aba Mestre (em andamento)
 - [ ] Ficha compartilhada: opção do jogador editar a própria ficha (PIN definido pelo mestre)
 - [x] Decisão: link da ficha editável SEM PIN (jogador edita pelo próprio link)
+- [ ] Realtime (publication) em sheets/tabletops; players movem próprios tokens no link, sem revelar névoa
+- [ ] Zoom do mestre espelhado pros players; dado no tabletop (mestre+players); resumo de fichas só pro mestre
+- [ ] Atalhos de teclado no Tabletop com legenda visível; player customiza design da própria ficha pelo link

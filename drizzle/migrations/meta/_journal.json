@@ -57,6 +57,20 @@
       "when": 1791079312074,
       "tag": "0007_sheet_edit_pin",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791165932920,
+      "tag": "0008_enable_realtime",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791165967188,
+      "tag": "0009_tabletop_view",
+      "breakpoints": true
     }
   ]
 }

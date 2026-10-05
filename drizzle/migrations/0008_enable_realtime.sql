@@ -1,0 +1,1 @@
+ALTER PUBLICATION supabase_realtime ADD TABLE public.sheets; ALTER PUBLICATION supabase_realtime ADD TABLE public.tabletops;
