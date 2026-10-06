@@ -28,3 +28,7 @@
 - [ ] Realtime (publication) em sheets/tabletops; players movem próprios tokens no link, sem revelar névoa
 - [ ] Zoom do mestre espelhado pros players; dado no tabletop (mestre+players); resumo de fichas só pro mestre
 - [ ] Atalhos de teclado no Tabletop com legenda visível; player customiza design da própria ficha pelo link
+
+## Novo (05/out)
+- [ ] Sincronização real nos dois sentidos (ficha mestre<->jogador, tabletop mestre<->jogador)
+- [ ] Link único de mesa do tabletop: player vê automaticamente o mapa que o mestre abrir

@@ -163,6 +163,7 @@ export type Database = {
       }
       tabletops: {
         Row: {
+          active: boolean
           created_at: string
           fog: Json
           grid: boolean
@@ -176,6 +177,7 @@ export type Database = {
           view: Json
         }
         Insert: {
+          active?: boolean
           created_at?: string
           fog?: Json
           grid?: boolean
@@ -189,6 +191,7 @@ export type Database = {
           view?: Json
         }
         Update: {
+          active?: boolean
           created_at?: string
           fog?: Json
           grid?: boolean

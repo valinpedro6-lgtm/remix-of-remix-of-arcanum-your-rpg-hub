@@ -71,6 +71,13 @@
       "when": 1791165967188,
       "tag": "0009_tabletop_view",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791245905739,
+      "tag": "0010_tabletop_active",
+      "breakpoints": true
     }
   ]
 }
