@@ -1,1 +1,0 @@
-ALTER TABLE public.tabletops ADD COLUMN IF NOT EXISTS view jsonb NOT NULL DEFAULT '{}'::jsonb;

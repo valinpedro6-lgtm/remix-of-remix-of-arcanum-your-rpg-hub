@@ -173,7 +173,6 @@ export type Database = {
           share_id: string
           tokens: Json
           updated_at: string
-          view: Json
         }
         Insert: {
           created_at?: string
@@ -186,7 +185,6 @@ export type Database = {
           share_id?: string
           tokens?: Json
           updated_at?: string
-          view?: Json
         }
         Update: {
           created_at?: string
@@ -199,7 +197,6 @@ export type Database = {
           share_id?: string
           tokens?: Json
           updated_at?: string
-          view?: Json
         }
         Relationships: []
       }
