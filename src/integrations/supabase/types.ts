@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
   }
   public: {
     Tables: {
@@ -163,6 +163,7 @@ export type Database = {
       }
       tabletops: {
         Row: {
+          active: boolean
           created_at: string
           fog: Json
           grid: boolean
@@ -173,8 +174,10 @@ export type Database = {
           share_id: string
           tokens: Json
           updated_at: string
+          view: Json
         }
         Insert: {
+          active?: boolean
           created_at?: string
           fog?: Json
           grid?: boolean
@@ -185,8 +188,10 @@ export type Database = {
           share_id?: string
           tokens?: Json
           updated_at?: string
+          view?: Json
         }
         Update: {
+          active?: boolean
           created_at?: string
           fog?: Json
           grid?: boolean
@@ -197,6 +202,7 @@ export type Database = {
           share_id?: string
           tokens?: Json
           updated_at?: string
+          view?: Json
         }
         Relationships: []
       }
