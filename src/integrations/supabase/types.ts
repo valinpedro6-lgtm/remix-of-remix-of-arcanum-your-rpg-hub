@@ -168,6 +168,7 @@ export type Database = {
           fog: Json
           grid: boolean
           id: string
+          last_roll: Json | null
           map_url: string
           name: string
           owner: string | null
@@ -175,6 +176,7 @@ export type Database = {
           tokens: Json
           updated_at: string
           view: Json
+          zoom: number
         }
         Insert: {
           active?: boolean
@@ -182,6 +184,7 @@ export type Database = {
           fog?: Json
           grid?: boolean
           id?: string
+          last_roll?: Json | null
           map_url?: string
           name?: string
           owner?: string | null
@@ -189,6 +192,7 @@ export type Database = {
           tokens?: Json
           updated_at?: string
           view?: Json
+          zoom?: number
         }
         Update: {
           active?: boolean
@@ -196,6 +200,7 @@ export type Database = {
           fog?: Json
           grid?: boolean
           id?: string
+          last_roll?: Json | null
           map_url?: string
           name?: string
           owner?: string | null
@@ -203,6 +208,7 @@ export type Database = {
           tokens?: Json
           updated_at?: string
           view?: Json
+          zoom?: number
         }
         Relationships: []
       }
