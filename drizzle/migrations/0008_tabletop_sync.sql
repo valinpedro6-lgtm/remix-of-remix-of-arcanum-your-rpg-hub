@@ -1,0 +1,1 @@
+ALTER TABLE public.tabletops ADD COLUMN IF NOT EXISTS zoom double precision NOT NULL DEFAULT 1, ADD COLUMN IF NOT EXISTS last_roll jsonb;
