@@ -25,3 +25,17 @@
 - [ ] Código teste 5 min na aba Mestre (em andamento)
 - [ ] Ficha compartilhada: opção do jogador editar a própria ficha (PIN definido pelo mestre)
 - [x] Decisão: link da ficha editável SEM PIN (jogador edita pelo próprio link)
+
+## Fila grande (01/nov)
+- [ ] Tabletop realtime: players movem próprios bonecos (sem mexer na névoa), zoom do mestre sincroniza, dados com animação p/ todos, resumo de fichas só p/ mestre, atalhos de teclado (D, S...) com legenda visível
+- [ ] Ficha por link: jogador edita e atualiza pro mestre (quase pronto)
+- [ ] Design geral: dar um up
+- [ ] Geradores de NPC e boss por sistema
+- [ ] Mapa mental: carregar imagem; Bloco de notas: imagens + melhorias
+- [ ] Aba Comunidade: chat com e-mail como nome, imagens, denúncia, mestre/dono vê denúncias e bane
+- [ ] Aba do dono: controle de mensalidade (vitalício/mensal, lembrete de cobrança), login pede telefone + e-mail
+- [ ] Aba de apresentação de slides (setas/teclado, transição)
+- [ ] Tabletop: carregar arquivos ao lado do mapa, cartelinha de itens, ajuste de tamanho de itens
+- [ ] Abas combináveis (ex: clima ao lado do tabletop)
+- [ ] Atalhos configuráveis pelo usuário (abinha de comandos)
+- [ ] Sub-mestres: todo usuário pode ser mestre da própria mesa (gerar código, escolher nº de pessoas, transmitir tabletop, mensagens individuais/grupo, "entrar como player")
