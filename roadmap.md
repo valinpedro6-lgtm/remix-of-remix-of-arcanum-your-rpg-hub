@@ -42,3 +42,4 @@
 - [ ] Ficha: mestre personaliza o layout (mover atributos/perícias de lugar)
 - [x] Névoa cobre os personagens (z-index)
 - [ ] Inventário nas fichas do Elenco
+- [ ] Melhorar muito o gerador de loot
