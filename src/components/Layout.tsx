@@ -46,7 +46,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
             onClick={() => setOpen(false)}
             className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-base transition-all duration-200 ${
               isActive
-                ? 'bg-primary/15 text-primary font-semibold shadow-[inset_0_0_20px_hsl(0_75%_50%_/_0.08)]'
+                ? 'nav-active text-primary font-semibold'
                 : 'text-muted-foreground hover:bg-secondary hover:text-foreground hover:translate-x-1'
             }`}
           >
@@ -62,10 +62,9 @@ export const Layout = ({ children }: { children: ReactNode }) => {
   return (
     <div className="min-h-screen flex">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-60 flex-col border-r border-border/50 bg-card/30 backdrop-blur-sm fixed h-full z-40">
+      <aside className="hidden md:flex w-60 flex-col border-r border-border/50 bg-card/40 backdrop-blur-xl fixed h-full z-40">
         <div className="p-5 border-b border-border/50">
-          <h1 className="text-2xl font-display font-bold gradient-text tracking-wide">Arcanum</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Ferramentas para Mestres</p>
+          <div className="flex items-center gap-3"><div className="brand-mark w-9 h-9 rounded-lg grid place-items-center text-primary-foreground"><Dices className="w-5 h-5" /></div><div><h1 className="text-2xl font-display font-black gradient-text tracking-widest leading-none">ARCANUM</h1><p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mt-1">Ferramentas do Mestre</p></div></div>
         </div>
         <nav className="flex flex-col gap-0.5 p-3 flex-1 overflow-y-auto">
           <NavLinks />
@@ -90,8 +89,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0 bg-card/95 backdrop-blur-lg border-border/50 flex flex-col h-full">
             <div className="p-5 border-b border-border/50">
-              <h1 className="text-2xl font-display font-bold gradient-text">Arcanum</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">Ferramentas para Mestres</p>
+              <div className="flex items-center gap-3"><div className="brand-mark w-9 h-9 rounded-lg grid place-items-center text-primary-foreground"><Dices className="w-5 h-5" /></div><div><h1 className="text-2xl font-display font-black gradient-text tracking-widest leading-none">ARCANUM</h1><p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mt-1">Ferramentas do Mestre</p></div></div>
             </div>
             <nav className="flex flex-col gap-0.5 p-3 flex-1 overflow-y-auto">
               <NavLinks />
@@ -104,7 +102,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
             </div>
           </SheetContent>
         </Sheet>
-        <h1 className="text-lg font-display font-bold gradient-text">Arcanum</h1>
+        <h1 className="text-lg font-display font-black tracking-widest gradient-text">ARCANUM</h1>
         <div className="ml-auto">
           <GlobalTimerBar />
         </div>

@@ -376,6 +376,29 @@ const Cast = () => {
                 ))}
               </div>
 
+              {/* Inventário */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Inventário {(s.style.inventory?.length ?? 0) > 0 && <span className="text-muted-foreground text-xs">· peso total {(s.style.inventory ?? []).reduce((a, i) => a + (i.weight ?? 0) * i.qty, 0)}</span>}</Label>
+                  <Button size="sm" variant="outline" className="gap-1" onClick={() => patch(s.id, { style: { ...s.style, inventory: [...(s.style.inventory ?? []), { id: uid(), name: 'Novo item', qty: 1, weight: 0, note: '' }] } })}>
+                    <Plus className="w-3.5 h-3.5" /> Adicionar
+                  </Button>
+                </div>
+                {(s.style.inventory ?? []).map(it => {
+                  const setInv = (ch: Partial<typeof it> | null) => patch(s.id, { style: { ...s.style, inventory: ch === null ? (s.style.inventory ?? []).filter(x => x.id !== it.id) : (s.style.inventory ?? []).map(x => x.id === it.id ? { ...x, ...ch } : x) } });
+                  return (
+                    <div key={it.id} className="flex flex-wrap items-center gap-2 bg-secondary/30 rounded-lg p-2">
+                      <Input className="h-8 flex-1 min-w-[120px]" value={it.name} onChange={e => setInv({ name: e.target.value })} placeholder="Item" />
+                      <NumberInput className="h-8 w-14" value={it.qty} onChange={v => setInv({ qty: v })} />
+                      <NumberInput className="h-8 w-14" value={it.weight ?? 0} onChange={v => setInv({ weight: v })} />
+                      <Input className="h-8 flex-1 min-w-[100px]" value={it.note ?? ''} onChange={e => setInv({ note: e.target.value })} placeholder="Detalhe" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setInv(null)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                    </div>
+                  );
+                })}
+                {(s.style.inventory?.length ?? 0) > 0 && <p className="text-xs text-muted-foreground">Colunas: item · quantidade · peso · detalhe</p>}
+              </div>
+
               {/* Perícias */}
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">

@@ -171,6 +171,20 @@ export const SheetPoster = ({ sheet, editable, onPatch, compact }: Props) => {
               </div>
             )}
 
+            {(sheet.style?.inventory?.length ?? 0) > 0 && (
+              <div className="bg-black/60 backdrop-blur-sm border border-primary/20 rounded-lg p-3">
+                <p className="font-display font-bold text-primary text-[11px] tracking-widest uppercase mb-2">Inventário</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1">
+                  {sheet.style!.inventory!.map(it => (
+                    <div key={it.id} className="flex items-center justify-between gap-2 text-xs border-b border-white/5 py-0.5">
+                      <span className="text-white truncate">{it.name}{it.note ? <span className="text-white/50"> · {it.note}</span> : null}</span>
+                      <span className="font-display font-bold text-primary tabular-nums">x{it.qty}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {sheet.notes && (
               <div className="bg-black/60 backdrop-blur-sm border border-white/10 rounded-lg p-3">
                 <p className="text-xs text-white/70 whitespace-pre-wrap leading-relaxed">{sheet.notes}</p>

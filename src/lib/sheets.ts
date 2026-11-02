@@ -39,7 +39,10 @@ export interface SheetStyle {
   layout?: 'right' | 'left' | 'full';
   overlay?: number;     // 0-100 escurecimento
   uppercase?: boolean;
+  inventory?: InventoryItem[];
 }
+
+export interface InventoryItem { id: string; name: string; qty: number; weight?: number; note?: string; }
 
 export const STYLE_COLORS: { label: string; hsl: string }[] = [
   { label: 'Sangue', hsl: '0 78% 55%' }, { label: 'Ouro', hsl: '43 90% 55%' },
