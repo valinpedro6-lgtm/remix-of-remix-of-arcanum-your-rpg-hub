@@ -128,7 +128,7 @@ const SharedTabletop = () => {
               style={{ backgroundImage: 'linear-gradient(hsl(var(--foreground)/0.4) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)/0.4) 1px, transparent 1px)', backgroundSize: '5% 5%' }} />
           )}
           {(board.fog ?? []).map(f => (
-            <div key={f.id} className="absolute bg-black/95 pointer-events-none"
+            <div key={f.id} className="absolute z-20 bg-black/95 pointer-events-none"
               style={{ left: `${f.x}%`, top: `${f.y}%`, width: `${f.w}%`, height: `${f.h}%` }} />
           ))}
           {board.tokens.map(t => (

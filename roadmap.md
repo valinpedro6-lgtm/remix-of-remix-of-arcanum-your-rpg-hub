@@ -39,3 +39,5 @@
 - [ ] Abas combináveis (ex: clima ao lado do tabletop)
 - [ ] Atalhos configuráveis pelo usuário (abinha de comandos)
 - [ ] Sub-mestres: todo usuário pode ser mestre da própria mesa (gerar código, escolher nº de pessoas, transmitir tabletop, mensagens individuais/grupo, "entrar como player")
+- [ ] Ficha: mestre personaliza o layout (mover atributos/perícias de lugar)
+- [x] Névoa cobre os personagens (z-index)
