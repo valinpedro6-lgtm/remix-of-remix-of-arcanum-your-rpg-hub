@@ -50,6 +50,22 @@ const Cast = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Busca de novo a cada 4s para mostrar as mudanças feitas pelos jogadores no link
+  const pending = useRef<Record<string, number>>({});
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (document.hidden) return;
+      listSheets().then(fresh => setSheets(prev => {
+        const now = Date.now();
+        return fresh.map(f => {
+          const local = prev.find(p => p.id === f.id);
+          return local && (pending.current[f.id] ?? 0) > now ? local : f;
+        });
+      })).catch(() => {});
+    }, 4000);
+    return () => clearInterval(t);
+  }, []);
+
   const selected = sheets.find(s => s.id === selectedId) ?? null;
   const players = useMemo(() => sheets.filter(s => s.kind === 'player'), [sheets]);
   const story = useMemo(() => sheets.filter(s => s.kind === 'story'), [sheets]);
@@ -58,6 +74,7 @@ const Cast = () => {
 
   /** Atualiza localmente na hora e salva na nuvem com um pequeno atraso. */
   const patch = (id: string, p: Partial<Sheet>) => {
+    pending.current[id] = Date.now() + 3000;
     setSheets(prev => prev.map(s => (s.id === id ? { ...s, ...p } : s)));
     clearTimeout(saveTimer.current[id]);
     saveTimer.current[id] = setTimeout(() => {
