@@ -327,9 +327,15 @@
     cursor: url('/cursor-d4.svg') 4 2, auto;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
     font-family: 'Rajdhani', sans-serif;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, hsl(var(--primary) / 0.16), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 100% 100%, hsl(var(--ember) / 0.08), transparent 70%);
+    background-attachment: fixed;
   }
+  ::selection { background: hsl(var(--primary) / 0.35); }
+  .bg-card { box-shadow: 0 1px 0 hsl(0 0% 100% / 0.04) inset, 0 8px 24px -12px hsl(0 0% 0% / 0.6); }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Cinzel', serif;
     letter-spacing: 0.02em;
@@ -340,38 +346,39 @@
     width: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: hsl(0 0% 8%);
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
     background: hsl(0 0% 20%);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(0 75% 50% / 0.5);
+    background: hsl(var(--primary) / 0.6);
   }
 }
 
 @layer components {
   .dice-glow {
-    text-shadow: 0 0 20px hsl(0 75% 50% / 0.5), 0 0 40px hsl(0 75% 50% / 0.3);
+    text-shadow: 0 0 20px hsl(var(--primary) / 0.6), 0 0 40px hsl(0 75% 50% / 0.3);
   }
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-[0_0_20px_hsl(0_75%_50%_/_0.15)] hover:border-primary/30 hover:-translate-y-0.5;
+    @apply transition-all duration-300 hover:shadow-[0_0_28px_hsl(var(--primary)/0.22)] hover:border-primary/30 hover:-translate-y-0.5;
   }
   .glass-card {
-    @apply bg-card/60 backdrop-blur-md border border-border/50;
+    @apply bg-card/50 backdrop-blur-xl border border-border/60 shadow-[0_1px_0_hsl(0_0%_100%/0.05)_inset,0_12px_32px_-16px_hsl(0_0%_0%/0.8)];
   }
   .gradient-text {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-[hsl(var(--ember))];
   }
   .page-title {
-    @apply text-3xl md:text-4xl font-display font-bold gradient-text;
+    @apply text-3xl md:text-5xl font-display font-black gradient-text tracking-wider;
+    filter: drop-shadow(0 0 18px hsl(var(--primary) / 0.35));
   }
   .glow-border {
-    @apply border border-primary/20 shadow-[0_0_15px_hsl(0_75%_50%_/_0.1),inset_0_0_15px_hsl(0_75%_50%_/_0.05)];
+    @apply border border-primary/20 shadow-[0_0_15px_hsl(var(--primary)/0.12),inset_0_0_15px_hsl(var(--primary)/0.05)];
   }
   .subtle-pattern {
-    background-image: radial-gradient(hsl(0 0% 20% / 0.3) 1px, transparent 1px);
+    background-image: radial-gradient(hsl(var(--foreground) / 0.06) 1px, transparent 1px);
     background-size: 20px 20px;
   }
   /* Páginas embutidas em abas de hub: o título vira apenas acessível */
@@ -387,3 +394,12 @@
 /* barra de rolagem discreta para abas em telas pequenas */
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+.nav-active {
+  background: linear-gradient(90deg, hsl(var(--primary) / 0.22), hsl(var(--primary) / 0.04));
+  box-shadow: inset 2px 0 0 hsl(var(--primary)), 0 0 20px -6px hsl(var(--primary) / 0.5);
+}
+.brand-mark {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--ember)));
+  box-shadow: 0 0 22px hsl(var(--primary) / 0.55);
+}
