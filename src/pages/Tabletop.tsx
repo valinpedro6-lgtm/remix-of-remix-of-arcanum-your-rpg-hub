@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+// A névoa fica POR CIMA dos personagens (z-20) — cobre bonecos também.
 import { motion } from 'framer-motion';
 import {
   Plus, Trash2, Map as MapIcon, ImagePlus, UserPlus, Maximize2, Minimize2,
@@ -387,14 +388,14 @@ const Tabletop = () => {
                     key={f.id}
                     onClick={e => { e.stopPropagation(); revealFog(f.id); }}
                     title="Clique para revelar"
-                    className="absolute bg-black/95 hover:bg-black/80 transition-colors group"
+                    className="absolute z-20 bg-black/95 hover:bg-black/80 transition-colors group"
                     style={{ left: `${f.x}%`, top: `${f.y}%`, width: `${f.w}%`, height: `${f.h}%` }}
                   >
                     <Eye className="w-5 h-5 text-white/0 group-hover:text-white/60 absolute inset-0 m-auto" />
                   </button>
                 ))}
                 {draftFog && (
-                  <div className="absolute bg-black/70 border border-dashed border-white/60 pointer-events-none"
+                  <div className="absolute z-20 bg-black/70 border border-dashed border-white/60 pointer-events-none"
                     style={{ left: `${draftFog.x}%`, top: `${draftFog.y}%`, width: `${draftFog.w}%`, height: `${draftFog.h}%` }} />
                 )}
                 {board.tokens.map(t => (
