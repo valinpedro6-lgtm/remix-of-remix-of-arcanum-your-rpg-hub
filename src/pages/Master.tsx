@@ -302,6 +302,7 @@ const Master = () => {
             ) : filtered.map(sn => {
               const online = Date.now() - new Date(sn.last_seen).getTime() < 2 * 60_000;
               const email = isEmail(sn.label) ? sn.label : '';
+              const isManaged = Boolean(sn.phone);
               const start = startDates[sn.device_id] ?? sn.billing_start ?? today();
               return (
                 <div key={sn.device_id} className={`flex flex-wrap items-center gap-3 px-3 py-3 ${sn.banned ? 'bg-destructive/5' : ''}`}>
@@ -309,13 +310,15 @@ const Master = () => {
                   <div className="flex-1 min-w-[180px]">
                     {email ? <a href={mailto(email)} className="font-medium truncate block hover:text-primary hover:underline" title="Enviar e-mail">{email}</a> : <span className="font-medium truncate block text-muted-foreground">{sn.label || 'sem e-mail'}</span>}
                     <span className="text-[11px] text-muted-foreground block">{sn.phone || 'telefone não informado'} · {sn.banned ? 'Acesso revogado' : online ? 'Online agora' : `Visto ${fmtDate(sn.last_seen)}`} · entrou {fmtDate(sn.first_seen)}</span>
-                    <span className="text-[11px] text-primary">{sn.plan === 'monthly' && sn.billing_until ? `Mensal · vence ${new Date(`${sn.billing_until}T12:00:00`).toLocaleDateString('pt-BR')}` : sn.plan === 'lifetime' ? 'Vitalício' : 'Plano ainda não definido'}</span>
+                    <span className="text-[11px] text-primary">{!isManaged ? 'Usuário antigo · sem gestão de cobrança' : sn.plan === 'monthly' && sn.billing_until ? `Mensal · vence ${new Date(`${sn.billing_until}T12:00:00`).toLocaleDateString('pt-BR')}` : sn.plan === 'lifetime' ? 'Vitalício' : 'Plano ainda não definido'}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto md:max-w-[420px] md:justify-end">
-                    <Input type="date" value={start} onChange={e => setStartDates(v => ({ ...v, [sn.device_id]: e.target.value }))} className="h-8 w-[145px] text-xs" title="Data de início da mensalidade" />
-                    <Button size="sm" variant={sn.plan === 'monthly' ? 'default' : 'outline'} onClick={() => setPlan(sn.device_id, 'monthly', start)} disabled={busy}><CalendarDays className="w-3.5 h-3.5 mr-1" /> Mensal</Button>
-                    <Button size="sm" variant={sn.plan === 'lifetime' ? 'default' : 'outline'} onClick={() => setPlan(sn.device_id, 'lifetime', start)} disabled={busy}><Crown className="w-3.5 h-3.5 mr-1" /> Vitalício</Button>
-                    {sn.banned ? <Button size="sm" variant="secondary" onClick={() => releaseCustomer(sn.device_id)} disabled={busy}><UserCheck className="w-3.5 h-3.5 mr-1" /> Liberar</Button> : <Button size="sm" variant="destructive" onClick={() => banCustomer(sn.device_id)} disabled={busy}><Ban className="w-3.5 h-3.5 mr-1" /> Revogar</Button>}
+                    {isManaged ? <>
+                      <Input type="date" value={start} onChange={e => setStartDates(v => ({ ...v, [sn.device_id]: e.target.value }))} className="h-8 w-[145px] text-xs" title="Data de início da mensalidade" />
+                      <Button size="sm" variant={sn.plan === 'monthly' ? 'default' : 'outline'} onClick={() => setPlan(sn.device_id, 'monthly', start)} disabled={busy}><CalendarDays className="w-3.5 h-3.5 mr-1" /> Mensal</Button>
+                      <Button size="sm" variant={sn.plan === 'lifetime' ? 'default' : 'outline'} onClick={() => setPlan(sn.device_id, 'lifetime', start)} disabled={busy}><Crown className="w-3.5 h-3.5 mr-1" /> Vitalício</Button>
+                      {sn.banned ? <Button size="sm" variant="secondary" onClick={() => releaseCustomer(sn.device_id)} disabled={busy}><UserCheck className="w-3.5 h-3.5 mr-1" /> Liberar</Button> : <Button size="sm" variant="destructive" onClick={() => banCustomer(sn.device_id)} disabled={busy}><Ban className="w-3.5 h-3.5 mr-1" /> Revogar</Button>}
+                    </> : <span className="text-xs text-muted-foreground">Gestão disponível para novos usuários</span>}
                     {email && <Button asChild size="icon" variant="ghost" className="h-8 w-8"><a href={mailto(email)} aria-label={`Enviar e-mail para ${email}`}><Mail className="w-4 h-4" /></a></Button>}
                     {email && <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Copiar e-mail" onClick={() => { navigator.clipboard?.writeText(email); toast({ title: 'E-mail copiado' }); }}><Copy className="w-4 h-4" /></Button>}
                   </div>

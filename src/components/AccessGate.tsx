@@ -42,7 +42,7 @@ const Heartbeat = () => {
       }).catch(() => {});
     };
     ping();
-    const id = setInterval(ping, 60000);
+    const id = setInterval(ping, 10000);
     return () => clearInterval(id);
   }, []);
   return null;

@@ -152,11 +152,11 @@ async function consumeUse(row: { code_uses_left: number; code_max_uses: number }
 
 async function stats() {
   const since = new Date(Date.now() - 2 * 60_000).toISOString();
-  const { data } = await admin
+  const { data, count } = await admin
     .from("access_sessions")
     .select("device_id, label, phone, first_seen, last_seen, plan, billing_start, billing_until, banned, needs_code, notes")
     .order("last_seen", { ascending: false })
-    .limit(100);
+    .limit(5000);
   const rows = data ?? [];
   const { data: events } = await admin
     .from("access_events")
@@ -164,7 +164,7 @@ async function stats() {
     .order("created_at", { ascending: false })
     .limit(100);
   return {
-    total: rows.length,
+    total: count ?? rows.length,
     active: rows.filter((r) => r.last_seen > since && !r.banned && !r.needs_code).length,
     sessions: rows,
     events: events ?? [],
@@ -295,6 +295,8 @@ Deno.serve(async (req) => {
       const start = String(body.startDate ?? "").slice(0, 10);
       if (master !== row.master_password) return json({ ok: false }, 200);
       if (!device || !["monthly", "lifetime"].includes(plan)) return json({ ok: false, error: "Plano inválido" });
+      const customer = await sessionFor(device);
+      if (!customer?.phone) return json({ ok: false, error: "Gestão disponível apenas para usuários novos." });
       const billingStart = /^\d{4}-\d{2}-\d{2}$/.test(start) ? start : new Date().toISOString().slice(0, 10);
       const billingUntil = plan === "monthly" ? addMonth(billingStart) : null;
       const { error } = await admin.from("access_sessions").update({ plan, billing_start: billingStart, billing_until: billingUntil, banned: false, needs_code: false }).eq("device_id", device);
@@ -307,6 +309,8 @@ Deno.serve(async (req) => {
       const master = String(body.master ?? "").trim();
       const device = String(body.device ?? "").slice(0, 64);
       if (master !== row.master_password) return json({ ok: false }, 200);
+      const customer = await sessionFor(device);
+      if (!customer?.phone) return json({ ok: false, error: "Gestão disponível apenas para usuários novos." });
       const { error } = await admin.from("access_sessions").update({ banned: true, needs_code: true }).eq("device_id", device);
       if (error) throw error;
       await event(device, "banned", { reason: String(body.reason ?? "manual") });
@@ -317,6 +321,8 @@ Deno.serve(async (req) => {
       const master = String(body.master ?? "").trim();
       const device = String(body.device ?? "").slice(0, 64);
       if (master !== row.master_password) return json({ ok: false }, 200);
+      const customer = await sessionFor(device);
+      if (!customer?.phone) return json({ ok: false, error: "Gestão disponível apenas para usuários novos." });
       const { error } = await admin.from("access_sessions").update({ banned: false, needs_code: true }).eq("device_id", device);
       if (error) throw error;
       await event(device, "released", { requires_new_code: true });
