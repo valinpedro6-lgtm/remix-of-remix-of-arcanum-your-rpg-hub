@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
   Users, StickyNote, LayoutDashboard, Menu, Gauge, Dices, Wand2, BookOpen, Network
-, Drama, Map as MapIcon, Shield, LogOut } from 'lucide-react';
+ , Drama, Map as MapIcon, Shield, LogOut, Crosshair } from 'lucide-react';
 import { GlobalTimerBar } from '@/components/GlobalTimerBar';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { SystemModeSwitcher } from '@/components/SystemModeSwitcher';
@@ -13,6 +13,7 @@ import { SystemModeSwitcher } from '@/components/SystemModeSwitcher';
 const navItems = [
   { path: '/', label: 'Início', icon: LayoutDashboard },
   { path: '/painel', label: 'Painel', icon: Gauge },
+  { path: '/diretor', label: 'Diretor de Sessão', icon: Crosshair },
   { path: '/mesa', label: 'Mesa', icon: Dices },
   { path: '/elenco', label: 'Elenco', icon: Drama },
   { path: '/tabletop', label: 'Tabletop', icon: MapIcon },

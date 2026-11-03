@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import {
   Swords, Clock, Dices, Users, Skull, StickyNote, FlaskConical,
   Sparkles, Sword, CloudSun, UserPlus, Gamepad2, ChevronRight,
-  Heart, Shield, Sun, Moon, Sunrise, Sunset, Coins
+  Heart, Shield, Sun, Moon, Sunrise, Sunset, Coins, Crosshair, MapPin, Target
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SystemCockpit } from '@/components/SystemCockpit';
@@ -55,6 +55,7 @@ const Dashboard = () => {
   const [currentTurn] = useLocalStorage<number>('arcanum-initiative-turn', 0);
   const [round] = useLocalStorage<number>('arcanum-initiative-round', 1);
   const [notes] = useLocalStorage<Note[]>('arcanum-notes', []);
+  const [session] = useLocalStorage<{ title: string; scene: string; objective: string; clues: string[]; threats: string[] }>('arcanum-session-director', { title: 'Sessão sem título', scene: 'Cena de abertura', objective: 'Defina o próximo objetivo', clues: [], threats: [] });
 
   const totalMinutes = Math.floor(timer.gameMinutesElapsed);
   const days = Math.floor(totalMinutes / 1440) + 1;
@@ -87,6 +88,18 @@ const Dashboard = () => {
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
         <SystemCockpit />
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }}>
+        <Link to="/diretor">
+          <Card className="card-hover border-primary/25 bg-primary/5 group">
+            <CardContent className="flex flex-wrap items-center gap-4 p-5">
+              <div className="rounded-xl bg-primary/15 p-3"><Crosshair className="h-6 w-6 text-primary" /></div>
+              <div className="min-w-[180px] flex-1"><p className="section-kicker">Diretor de Sessão Vivo</p><h2 className="font-display text-lg font-bold">{session.title}</h2><p className="text-sm text-muted-foreground"><MapPin className="mr-1 inline h-3.5 w-3.5" />{session.scene} · <Target className="mr-1 inline h-3.5 w-3.5" />{session.objective}</p></div>
+              <div className="flex items-center gap-2"><Badge variant="outline">{session.clues.length} pistas</Badge><Badge variant="outline">{session.threats.length} ameaças</Badge><ChevronRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1" /></div>
+            </CardContent>
+          </Card>
+        </Link>
       </motion.div>
 
       {/* Quick Access */}
