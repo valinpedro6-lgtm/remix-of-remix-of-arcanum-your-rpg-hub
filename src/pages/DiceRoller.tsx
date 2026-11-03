@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ interface RollResult {
 }
 
 const QUICK_DICE = [4, 6, 8, 10, 12, 20];
+const ROLL_PARTICLES = Array.from({ length: 12 }, (_, index) => index);
 
 // Returns RPG-style label and color based on roll quality
 function getRollQuality(rolls: number[], sides: number, total: number, modifier: number): { label: string; color: string; emoji: string } | null {
@@ -55,28 +56,32 @@ function getRollQuality(rolls: number[], sides: number, total: number, modifier:
 // SVG dice face component
 const DiceFace = ({ value, isRolling }: { value: number; isRolling: boolean }) => (
   <motion.div
-    className="relative"
+    className="relative z-10"
     animate={isRolling ? {
-      rotateX: [0, 360, 720, 1080],
-      rotateY: [0, 180, 360, 540],
-      rotateZ: [0, 90, 180, 270],
-    } : { rotateX: 0, rotateY: 0, rotateZ: 0 }}
+      rotateX: [0, 180, 360, 540, 720],
+      rotateY: [0, 270, 540, 810, 1080],
+      rotateZ: [0, 45, -30, 20, 0],
+      scale: [1, 1.12, 0.92, 1.08, 1],
+      y: [0, -8, 4, -3, 0],
+    } : { rotateX: 0, rotateY: 0, rotateZ: 0, scale: 1, y: 0 }}
     transition={isRolling ? {
-      duration: 0.75,
+      duration: 0.8,
       repeat: Infinity,
       ease: 'linear',
-    } : { type: 'spring', stiffness: 200, damping: 15 }}
-    style={{ perspective: 600 }}
+    } : { type: 'spring', stiffness: 260, damping: 16 }}
+    style={{ perspective: 900, transformStyle: 'preserve-3d' }}
   >
-    <svg viewBox="0 0 100 100" className="w-28 h-28 drop-shadow-2xl" style={{ filter: isRolling ? 'blur(1px)' : 'none' }}>
+    <svg viewBox="0 0 100 100" className="w-36 h-36 drop-shadow-2xl" style={{ filter: isRolling ? 'blur(1px) drop-shadow(0 0 18px hsl(var(--primary) / 0.55))' : 'drop-shadow(0 0 18px hsl(var(--primary) / 0.35))' }}>
       <defs>
         <linearGradient id="diceFill" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
           <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.1" />
         </linearGradient>
       </defs>
-      <rect x="5" y="5" width="90" height="90" rx="15" ry="15"
+      <rect x="5" y="5" width="90" height="90" rx="22" ry="22"
         fill="url(#diceFill)" stroke="hsl(var(--primary))" strokeWidth="2.5" />
+      <rect x="11" y="11" width="78" height="78" rx="17" ry="17"
+        fill="none" stroke="hsl(var(--primary) / 0.28)" strokeWidth="1" />
       <text x="50" y="58" textAnchor="middle" dominantBaseline="middle"
         fill="hsl(var(--primary))" fontSize={value > 999 ? '18' : value > 99 ? '24' : '32'}
         fontWeight="bold" fontFamily="var(--font-display, serif)">
@@ -98,16 +103,23 @@ const DiceRoller = () => {
   const [history, setHistory] = useLocalStorage<RollResult[]>('arcanum-dice-history', []);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  useEffect(() => () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+  }, []);
+
   const getDiceSides = useCallback(() => {
     if (diceType === 'custom') return Math.max(2, parseInt(customDice) || 6);
     return parseInt(diceType);
   }, [diceType, customDice]);
 
   const rollDice = useCallback((overrideSides?: number, overrideQty?: number) => {
-    const sides = overrideSides || getDiceSides();
-    const qty = overrideQty || quantity;
+    if (isRolling) return;
+    const sides = overrideSides ?? getDiceSides();
+    const qty = overrideQty ?? quantity;
     if (sides < 2) return;
+    if (intervalRef.current) clearInterval(intervalRef.current);
     setIsRolling(true);
+    setDisplayValue(null);
     setLastRolls([]);
     setLastSides(sides);
     let count = 0;
@@ -130,7 +142,7 @@ const DiceRoller = () => {
         }, ...prev.slice(0, 49)]);
       }
     }, 50);
-  }, [getDiceSides, quantity, modifier, setHistory]);
+  }, [getDiceSides, quantity, modifier, isRolling, setHistory]);
 
   const quickRoll = (sides: number) => {
     rollDice(sides, quantity);
@@ -225,8 +237,23 @@ const DiceRoller = () => {
                   )}
                 </AnimatePresence>
 
-                {/* Animated dice */}
-                <div className="my-4">
+                {/* Animated dice stage */}
+                <div className={`relative my-4 flex h-56 w-full items-center justify-center overflow-hidden rounded-3xl border transition-all duration-500 ${isRolling ? 'border-primary/60 bg-primary/10 shadow-[inset_0_0_60px_hsl(var(--primary)/0.12)]' : 'border-border/50 bg-secondary/20'}`}>
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,hsl(var(--primary)/0.16),transparent_58%)]" />
+                  <motion.div
+                    className="absolute h-40 w-40 rounded-full border border-primary/20"
+                    animate={isRolling ? { rotate: 360, scale: [0.9, 1.08, 0.9] } : { rotate: 0, scale: 1 }}
+                    transition={isRolling ? { rotate: { duration: 2, repeat: Infinity, ease: 'linear' }, scale: { duration: 1.2, repeat: Infinity } } : { duration: 0.4 }}
+                  />
+                  {isRolling && ROLL_PARTICLES.map(particle => (
+                    <motion.span
+                      key={particle}
+                      className="absolute h-1.5 w-1.5 rounded-full bg-primary"
+                      initial={{ opacity: 0, x: 0, y: 0, scale: 0 }}
+                      animate={{ opacity: [0, 1, 0], x: Math.cos((particle / 12) * Math.PI * 2) * 92, y: Math.sin((particle / 12) * Math.PI * 2) * 92, scale: [0, 1, 0] }}
+                      transition={{ duration: 0.9, repeat: Infinity, delay: particle * 0.05, ease: 'easeOut' }}
+                    />
+                  ))}
                   {displayValue !== null || isRolling ? (
                     <DiceFace value={displayValue ?? 0} isRolling={isRolling} />
                   ) : (
@@ -238,6 +265,13 @@ const DiceRoller = () => {
                       <DiceFace value={0} isRolling={false} />
                     </motion.div>
                   )}
+                  <motion.div
+                    className="absolute bottom-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground"
+                    animate={isRolling ? { opacity: [0.35, 1, 0.35] } : { opacity: 0.55 }}
+                    transition={{ duration: 1, repeat: isRolling ? Infinity : 0 }}
+                  >
+                    {isRolling ? 'O destino está rolando' : 'Pronto para rolar'}
+                  </motion.div>
                 </div>
 
                 {!isRolling && displayValue !== null && (

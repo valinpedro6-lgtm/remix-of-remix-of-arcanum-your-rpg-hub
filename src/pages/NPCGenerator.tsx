@@ -456,14 +456,21 @@ const HIDDEN_WEAKNESSES = [
 
 function getCurrentRegion(): RegionType {
   try {
-    const stored = localStorage.getItem('arcanum-environment');
-    if (stored) {
-      const env = JSON.parse(stored);
-      if (env.region && REGION_LABELS[env.region as RegionType]) {
-        return env.region as RegionType;
+    const currentRegion = localStorage.getItem('arcanum-current-region');
+    if (currentRegion) {
+      const region = JSON.parse(currentRegion) as RegionType;
+      if (REGION_LABELS[region]) return region;
+    }
+    const environment = localStorage.getItem('arcanum-environment');
+    if (environment) {
+      const env = JSON.parse(environment) as { region?: RegionType };
+      if (env.region && REGION_LABELS[env.region]) {
+        return env.region;
       }
     }
-  } catch {}
+  } catch (error) {
+    console.warn('Não foi possível recuperar a região atual:', error);
+  }
   return 'cidade';
 }
 
@@ -627,7 +634,8 @@ const NPCGenerator = () => {
   const toggleSecret = (id: string) => {
     setRevealedSecrets(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
@@ -635,7 +643,8 @@ const NPCGenerator = () => {
   const toggleExpand = (id: string) => {
     setExpandedCards(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };

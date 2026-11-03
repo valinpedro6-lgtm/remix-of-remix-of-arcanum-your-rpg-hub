@@ -41,7 +41,10 @@ export const GlobalTimerBar = () => {
           lastTickTimestamp: Date.now(),
         });
       }
-    } catch {}
+    } catch (error) {
+      console.warn('Não foi possível recuperar o timer salvo:', error);
+      localStorage.removeItem('arcanum-timer');
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

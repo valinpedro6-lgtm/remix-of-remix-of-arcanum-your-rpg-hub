@@ -449,7 +449,11 @@ const MindMap = () => {
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       if (e.key === 'Escape') { setFullscreen(false); setLinking(null); setSelected(null); }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selected) { e.preventDefault(); removeNode(selected); }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
+      }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd' && selected && nodeById[selected]) {
         e.preventDefault(); duplicateNode(nodeById[selected]);
       }
