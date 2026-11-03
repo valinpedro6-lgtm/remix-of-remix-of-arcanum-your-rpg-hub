@@ -73,46 +73,25 @@ export type Database = {
       }
       access_sessions: {
         Row: {
-          banned: boolean
-          billing_start: string | null
-          billing_until: string | null
           device_id: string
           first_seen: string
           id: string
           label: string
           last_seen: string
-          needs_code: boolean
-          notes: string
-          phone: string
-          plan: string
         }
         Insert: {
-          banned?: boolean
-          billing_start?: string | null
-          billing_until?: string | null
           device_id: string
           first_seen?: string
           id?: string
           label?: string
           last_seen?: string
-          needs_code?: boolean
-          notes?: string
-          phone?: string
-          plan?: string
         }
         Update: {
-          banned?: boolean
-          billing_start?: string | null
-          billing_until?: string | null
           device_id?: string
           first_seen?: string
           id?: string
           label?: string
           last_seen?: string
-          needs_code?: boolean
-          notes?: string
-          phone?: string
-          plan?: string
         }
         Relationships: []
       }

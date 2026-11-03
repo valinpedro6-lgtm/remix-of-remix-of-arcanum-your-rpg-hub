@@ -7,7 +7,7 @@ import { KeyRound, Shield, Loader2, Lock, AlertTriangle, Mail, Phone } from 'luc
 import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
-import { GRANT_KEY, LOCK_KEY, EMAIL_KEY, PHONE_KEY, deviceId, callGate, becomeMaster, grantTestAccess, testAccessLeft, expireTestAccess, logout } from '@/lib/access';
+import { GRANT_KEY, LOCK_KEY, EMAIL_KEY, PHONE_KEY, deviceId, callGate, becomeMaster, grantTestAccess, testAccessLeft, expireTestAccess } from '@/lib/access';
 import { currentOwnerToken, setOwnerToken } from '@/lib/userData';
 
 /** avisa o servidor, de tempos em tempos, que este aparelho continua na mesa */
@@ -34,15 +34,10 @@ const TestExpiry = () => {
 const Heartbeat = () => {
   useEffect(() => {
     const ping = () => {
-      supabase.functions.invoke('access-gate', { body: { action: 'heartbeat', device: deviceId() } }).then(({ data }) => {
-        if (data?.banned) {
-          toast({ title: 'Acesso revogado', description: 'Peça um novo código ao mestre para entrar novamente.', variant: 'destructive' });
-          logout();
-        }
-      }).catch(() => {});
+      supabase.functions.invoke('access-gate', { body: { action: 'heartbeat', device: deviceId() } }).catch(() => {});
     };
     ping();
-    const id = setInterval(ping, 10000);
+    const id = setInterval(ping, 60000);
     return () => clearInterval(id);
   }, []);
   return null;
@@ -163,8 +158,8 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
       return;
     }
     const phoneValue = phone.trim();
-    if (phoneValue.replace(/\D/g, '').length < 8) {
-      toast({ title: 'Telefone inválido', description: 'Digite um telefone com DDD para continuar.', variant: 'destructive' });
+    if (!/^[+\d][\d\s().-]{7,19}$/.test(phoneValue)) {
+      toast({ title: 'Telefone inválido', description: 'Digite um telefone válido para continuar.', variant: 'destructive' });
       return;
     }
     setLoading(true);
@@ -200,7 +195,7 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
                   <Mail className="w-6 h-6" />
                 </div>
                 <h1 className="text-3xl font-display font-bold gradient-text">Quase lá</h1>
-                <p className="text-sm text-muted-foreground">Deixe seus contatos para o mestre confirmar seu acesso e manter seu histórico.</p>
+                <p className="text-sm text-muted-foreground">Informe seu e-mail e telefone para o mestre identificar sua entrada.</p>
               </div>
               <form onSubmit={sendEmail} className="space-y-3">
                 <Input
@@ -213,18 +208,15 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
                   maxLength={120}
                   className="text-center"
                 />
-                <div className="relative">
-                  <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    type="tel"
-                    inputMode="tel"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    placeholder="(11) 99999-9999"
-                    maxLength={32}
-                    className="pl-9 text-center"
-                  />
-                </div>
+                <Input
+                  type="tel"
+                  inputMode="tel"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  placeholder="(00) 00000-0000"
+                  maxLength={20}
+                  className="text-center"
+                />
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Entrar na mesa'}
                 </Button>
