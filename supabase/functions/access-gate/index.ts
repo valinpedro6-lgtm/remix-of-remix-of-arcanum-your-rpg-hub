@@ -309,8 +309,6 @@ Deno.serve(async (req) => {
       const master = String(body.master ?? "").trim();
       const device = String(body.device ?? "").slice(0, 64);
       if (master !== row.master_password) return json({ ok: false }, 200);
-      const customer = await sessionFor(device);
-      if (!customer?.phone) return json({ ok: false, error: "Gestão disponível apenas para usuários novos." });
       const { error } = await admin.from("access_sessions").update({ banned: true, needs_code: true }).eq("device_id", device);
       if (error) throw error;
       await event(device, "banned", { reason: String(body.reason ?? "manual") });
@@ -321,8 +319,6 @@ Deno.serve(async (req) => {
       const master = String(body.master ?? "").trim();
       const device = String(body.device ?? "").slice(0, 64);
       if (master !== row.master_password) return json({ ok: false }, 200);
-      const customer = await sessionFor(device);
-      if (!customer?.phone) return json({ ok: false, error: "Gestão disponível apenas para usuários novos." });
       const { error } = await admin.from("access_sessions").update({ banned: false, needs_code: true }).eq("device_id", device);
       if (error) throw error;
       await event(device, "released", { requires_new_code: true });
