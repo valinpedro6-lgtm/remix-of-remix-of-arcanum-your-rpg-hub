@@ -315,10 +315,12 @@ const Master = () => {
                     <span className="text-[11px] text-primary">{!isManaged ? 'Usuário antigo · sem gestão de cobrança' : sn.plan === 'monthly' && sn.billing_until ? `Mensal · vence ${new Date(`${sn.billing_until}T12:00:00`).toLocaleDateString('pt-BR')}` : sn.plan === 'lifetime' ? 'Vitalício' : 'Plano ainda não definido'}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto md:max-w-[420px] md:justify-end">
-                    {isManaged && <>
+                    {isManaged && sn.plan !== 'lifetime' && <>
                       <Input type="date" value={start} onChange={e => setStartDates(v => ({ ...v, [sn.device_id]: e.target.value }))} className="h-8 w-[145px] text-xs" title="Data de início da mensalidade" />
-                      <Button size="sm" variant={sn.plan === 'monthly' ? 'default' : 'outline'} onClick={() => setPlan(sn.device_id, 'monthly', start)} disabled={busy}><CalendarDays className="w-3.5 h-3.5 mr-1" /> Mensal</Button>
-                      <Button size="sm" variant={sn.plan === 'lifetime' ? 'default' : 'outline'} onClick={() => setPlan(sn.device_id, 'lifetime', start)} disabled={busy}><Crown className="w-3.5 h-3.5 mr-1" /> Vitalício</Button>
+                      {sn.plan === 'monthly' ? <Button size="sm" variant="default" onClick={() => setPlan(sn.device_id, 'monthly', start)} disabled={busy}><CalendarDays className="w-3.5 h-3.5 mr-1" /> Renovar mês</Button> : <>
+                        <Button size="sm" variant="outline" onClick={() => setPlan(sn.device_id, 'monthly', start)} disabled={busy}><CalendarDays className="w-3.5 h-3.5 mr-1" /> Mensal</Button>
+                        <Button size="sm" variant="outline" onClick={() => setPlan(sn.device_id, 'lifetime', start)} disabled={busy}><Crown className="w-3.5 h-3.5 mr-1" /> Vitalício</Button>
+                      </>}
                     </>}
                     {sn.banned ? <Button size="sm" variant="secondary" onClick={() => releaseCustomer(sn.device_id)} disabled={busy}><UserCheck className="w-3.5 h-3.5 mr-1" /> Liberar</Button> : <Button size="sm" variant="destructive" onClick={() => banCustomer(sn.device_id)} disabled={busy}><Ban className="w-3.5 h-3.5 mr-1" /> Revogar</Button>}
                     {!isManaged && <span className="text-xs text-muted-foreground">Usuário antigo · somente revogação</span>}
