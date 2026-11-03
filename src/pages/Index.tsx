@@ -69,8 +69,8 @@ const Index = () => {
             transition={{ delay: 0.1 + i * 0.04, duration: 0.4 }}
           >
             <Link to={f.path}>
-              <Card className="card-hover h-full group border-border/30 bg-card/40 backdrop-blur-sm overflow-hidden relative">
-                <div className={`absolute inset-0 bg-gradient-to-br ${f.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+              <Card className="card-hover h-full group border-border/45 bg-card/75 overflow-hidden relative">
+                <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r ${f.accent} opacity-50 group-hover:opacity-100 transition-opacity duration-300`} />
                 <CardContent className="p-4 md:p-5 relative">
                   <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300 w-fit mb-3">
                     <f.icon className="w-5 h-5 md:w-6 md:h-6" />

@@ -362,7 +362,7 @@ const LootGenerator = () => {
 
       {/* Controles */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <Card className="card-hover glow-border overflow-hidden bg-gradient-to-br from-card via-card to-primary/[0.04]">
+          <Card className="card-hover glow-border overflow-hidden bg-card/90">
             <CardContent className="p-5 space-y-4">
             <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/15 bg-primary/[0.04] px-4 py-3">
               <div className="min-w-0">
@@ -461,7 +461,7 @@ const LootGenerator = () => {
               )}
             </AnimatePresence>
 
-            <Button onClick={generate} className="w-full gap-2 shadow-lg shadow-primary/15 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary" size="lg">
+            <Button onClick={generate} className="w-full gap-2 shadow-md shadow-black/20" size="lg">
               <Dices className="w-5 h-5" />Gerar tesouro <span className="ml-auto text-xs opacity-70">{activeSystem.currency}</span>
             </Button>
           </CardContent>

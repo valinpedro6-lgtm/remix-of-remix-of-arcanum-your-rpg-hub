@@ -62,9 +62,9 @@ export const Layout = ({ children }: { children: ReactNode }) => {
   return (
     <div className="min-h-screen flex">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r border-border/50 bg-card/55 backdrop-blur-2xl fixed h-full z-40 shadow-[12px_0_40px_-28px_hsl(var(--primary)/0.5)]">
-        <div className="p-5 border-b border-border/50 bg-gradient-to-br from-primary/[0.08] to-transparent">
-          <div className="flex items-center gap-3"><div className="brand-mark w-10 h-10 rounded-xl grid place-items-center text-primary-foreground"><Dices className="w-5 h-5" /></div><div><h1 className="text-2xl font-display font-black gradient-text tracking-widest leading-none">ARCANUM</h1><p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mt-1">Command center</p></div></div>
+      <aside className="hidden md:flex w-64 flex-col border-r border-border/50 bg-background/95 fixed h-full z-40 shadow-[8px_0_26px_-20px_hsl(0_0%_0%/0.9)]">
+        <div className="p-5 border-b border-border/50">
+          <div className="flex items-center gap-3"><div className="brand-mark w-10 h-10 rounded-lg grid place-items-center text-primary-foreground"><Dices className="w-5 h-5" /></div><div><h1 className="text-2xl font-display font-black gradient-text tracking-widest leading-none">ARCANUM</h1><p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mt-1">Ferramentas para sua mesa</p></div></div>
         </div>
         <nav className="flex flex-col gap-1 p-3 flex-1 overflow-y-auto">
           <NavLinks />
@@ -89,7 +89,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0 bg-card/95 backdrop-blur-lg border-border/50 flex flex-col h-full">
             <div className="p-5 border-b border-border/50">
-              <div className="flex items-center gap-3"><div className="brand-mark w-9 h-9 rounded-lg grid place-items-center text-primary-foreground"><Dices className="w-5 h-5" /></div><div><h1 className="text-2xl font-display font-black gradient-text tracking-widest leading-none">ARCANUM</h1><p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mt-1">Ferramentas do Mestre</p></div></div>
+              <div className="flex items-center gap-3"><div className="brand-mark w-9 h-9 rounded-lg grid place-items-center text-primary-foreground"><Dices className="w-5 h-5" /></div><div><h1 className="text-2xl font-display font-black gradient-text tracking-widest leading-none">ARCANUM</h1><p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mt-1">Ferramentas para sua mesa</p></div></div>
             </div>
             <nav className="flex flex-col gap-0.5 p-3 flex-1 overflow-y-auto">
               <NavLinks />
