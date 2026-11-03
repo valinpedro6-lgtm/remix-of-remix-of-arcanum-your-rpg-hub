@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/hooks/use-toast';
+import { getSystemIdentity } from '@/data/systemIdentity';
 
 const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const rollD = (sides: number) => Math.floor(Math.random() * sides) + 1;
@@ -310,6 +311,7 @@ const LootGenerator = () => {
   const [favorites, setFavorites] = useLocalStorage<LootItem[]>('arcanum-loot-favorites', []);
   const [currentDrop, setCurrentDrop] = useState<LootDrop | null>(null);
   const activeSystem = getLootSystem(systemId);
+  const systemIdentity = getSystemIdentity(systemId);
 
   const generate = () => {
     const drop = generateLoot(systemId, encounter, level, types, boost, autoCount ? null : count, withGold);
@@ -357,17 +359,17 @@ const LootGenerator = () => {
           <p className="text-[11px] uppercase tracking-[0.25em] text-primary/80 font-semibold mb-1">Tesouros do Mestre</p>
           <h1 className="page-title flex items-center gap-3"><span className="inline-flex p-2 rounded-xl bg-yellow-400/10 border border-yellow-400/20"><Coins className="w-6 h-6 text-yellow-400" /></span>Gerador de Loot</h1>
         </div>
-        <Badge variant="outline" className="h-8 gap-2 border-primary/30 bg-primary/5 text-primary"><Sparkles className="w-3.5 h-3.5" /> {activeSystem.label}</Badge>
+        <Badge variant="outline" style={{ borderColor: `${systemIdentity.accent}66`, background: systemIdentity.surface, color: systemIdentity.accent }} className="h-8 gap-2"><Sparkles className="w-3.5 h-3.5" /> {activeSystem.label}</Badge>
       </motion.div>
 
       {/* Controles */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <Card className="card-hover glow-border overflow-hidden bg-card/90">
             <CardContent className="p-5 space-y-4">
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/15 bg-primary/[0.04] px-4 py-3">
+            <div className="flex items-center justify-between gap-3 rounded-xl border px-4 py-3" style={{ borderColor: `${systemIdentity.accent}44`, background: systemIdentity.surface }}>
               <div className="min-w-0">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Perfil do tesouro</p>
-                <p className="font-display font-semibold truncate">{activeSystem.label}</p>
+                <p className="font-display font-semibold truncate">{activeSystem.label} <span className="text-xs font-sans text-muted-foreground">— {systemIdentity.tagline}</span></p>
               </div>
               <div className="text-right shrink-0"><p className="text-[10px] uppercase tracking-widest text-muted-foreground">Moeda</p><p className="font-mono font-bold text-yellow-400">{activeSystem.currency}</p></div>
             </div>

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { PLAYER_SYSTEM_PRESETS, type PlayerPreset } from '@/data/rpgSystemPresets';
 import { getFlavor, rollAttribute, rollVitals } from '@/data/systemFlavor';
+import { getSystemIdentity } from '@/data/systemIdentity';
 import { ImageUploader } from '@/components/ImageUploader';
 import { ZoomImage } from '@/components/ImageLightbox';
 import { AttachmentGallery, type Attachment } from '@/components/AttachmentGallery';
@@ -608,6 +609,7 @@ const NPCGenerator = () => {
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
   const getPreset = () => PLAYER_SYSTEM_PRESETS.find(p => p.id === selectedSystem) || PLAYER_SYSTEM_PRESETS[0];
+  const selectedIdentity = getSystemIdentity(getPreset().system);
 
   // Sync region from environment
   useEffect(() => {
@@ -901,6 +903,10 @@ const NPCGenerator = () => {
               ))}
             </SelectContent>
           </Select>
+          <div className="hidden sm:flex items-center gap-2 rounded-lg border px-3 py-2" style={{ borderColor: `${selectedIdentity.accent}55`, background: selectedIdentity.surface }}>
+            <span className="text-[10px] font-black" style={{ color: selectedIdentity.accent }}>{selectedIdentity.mark}</span>
+            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{selectedIdentity.tagline}</span>
+          </div>
         </div>
       </div>
 
