@@ -21,6 +21,7 @@ const SharedTabletop = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ id: string; dx: number; dy: number } | null>(null);
   const dirty = useRef(false);
+  const [dragId, setDragId] = useState<string | null>(null);
   const saveT = useRef<ReturnType<typeof setTimeout>>();
   const lastRollAt = useRef(0);
 
@@ -39,7 +40,7 @@ const SharedTabletop = () => {
       } else if (!board) setMissing(true);
     };
     load();
-    const id = setInterval(load, 1500);
+    const id = setInterval(load, 800);
     return () => { stop = true; clearInterval(id); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shareId]);
@@ -51,8 +52,8 @@ const SharedTabletop = () => {
     clearTimeout(saveT.current);
     saveT.current = setTimeout(() => {
       supabase.functions.invoke('shared-tabletop', { body: { action: 'shared-update', shareId, tokens } })
-        .catch(() => {}).finally(() => { dirty.current = false; });
-    }, 400);
+        .catch(() => {}).finally(() => { setTimeout(() => { if (!drag.current) dirty.current = false; }, 600); });
+    }, 120);
   };
 
   const rollDice = (roll: Roll) => {
@@ -71,6 +72,7 @@ const SharedTabletop = () => {
     e.stopPropagation();
     const p = pct(e);
     drag.current = { id: t.id, dx: p.x - t.x, dy: p.y - t.y };
+    setDragId(t.id);
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
@@ -82,7 +84,7 @@ const SharedTabletop = () => {
     pushTokens(board.tokens.map(t => (t.id === drag.current!.id ? { ...t, x, y } : t)));
   };
 
-  const onUp = () => { drag.current = null; };
+  const onUp = () => { drag.current = null; setDragId(null); };
 
   if (missing && !board) {
     return (
@@ -111,7 +113,7 @@ const SharedTabletop = () => {
         <div
           ref={mapRef}
           className="relative mx-auto select-none touch-none"
-          style={{ width: `${(board.zoom ?? 1) * 100}%`, minWidth: (board.zoom ?? 1) * 320 }}
+          style={{ width: `${(board.zoom ?? 1) * 100}%`, minWidth: (board.zoom ?? 1) * 320, transition: 'width 300ms ease-out' }}
           onPointerMove={onMove}
           onPointerUp={onUp}
           onPointerCancel={onUp}
@@ -134,7 +136,7 @@ const SharedTabletop = () => {
           {board.tokens.map(t => (
             <div key={t.id}
               onPointerDown={e => onTokenDown(e, t)}
-              className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing"
+              className={`absolute -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing ${dragId === t.id ? '' : 'transition-[left,top] duration-300 ease-out'}`}
               style={{ left: `${t.x}%`, top: `${t.y}%`, width: `${t.size}%` }}>
               <img src={t.image} alt={t.name} draggable={false}
                 className="w-full object-contain pointer-events-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]" />
