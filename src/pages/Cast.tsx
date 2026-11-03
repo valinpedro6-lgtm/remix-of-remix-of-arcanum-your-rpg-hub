@@ -524,8 +524,8 @@ const Cast = () => {
   return (
     <div className="space-y-5">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="page-title">Elenco</h1>
-        <p className="text-sm text-muted-foreground mt-1">Fichas em estilo pôster para projetar na mesa</p>
+        <h1 className="page-title">Personagens da Campanha</h1>
+        <p className="text-sm text-muted-foreground mt-1">Fichas, elenco narrativo e criaturas em um só lugar</p>
       </motion.div>
 
       <Tabs value={tab} onValueChange={setTab}>
