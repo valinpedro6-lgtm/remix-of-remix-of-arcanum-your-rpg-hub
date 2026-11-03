@@ -164,6 +164,8 @@ export type Database = {
       tabletops: {
         Row: {
           active: boolean
+          camera_x: number
+          camera_y: number
           created_at: string
           fog: Json
           grid: boolean
@@ -180,6 +182,8 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          camera_x?: number
+          camera_y?: number
           created_at?: string
           fog?: Json
           grid?: boolean
@@ -196,6 +200,8 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          camera_x?: number
+          camera_y?: number
           created_at?: string
           fog?: Json
           grid?: boolean

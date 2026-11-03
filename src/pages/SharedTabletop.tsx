@@ -2,14 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Map as MapIcon, Loader2, Share2, Info } from 'lucide-react';
-import { useStageZoom } from '@/hooks/useStageZoom';
 import { DiceBar, DiceAnimation, Roll } from '@/components/DiceBar';
 
 interface Token { id: string; name: string; image: string; x: number; y: number; size: number }
 interface FogRect { id: string; x: number; y: number; w: number; h: number }
 interface SharedBoard {
   id: string; name: string; map_url: string; tokens: Token[]; grid: boolean;
-  fog: FogRect[]; zoom: number; last_roll: Roll | null; updated_at: string;
+  fog: FogRect[]; zoom: number; camera_x?: number; camera_y?: number; last_roll: Roll | null; updated_at: string;
 }
 
 /** Mapa compartilhado pelo mestre: jogadores veem em tempo real, movem os bonecos e rolam dados.
@@ -26,10 +25,19 @@ const SharedTabletop = () => {
   const saveT = useRef<ReturnType<typeof setTimeout>>();
   const lastRollAt = useRef(0);
   const stageRef = useRef<HTMLDivElement>(null);
-  const [myZoom, setMyZoom] = useState<number | null>(null);
   const [showHelp, setShowHelp] = useState(false);
-  const zoom = myZoom ?? board?.zoom ?? 1;
-  const zoomCtl = useStageZoom(stageRef, zoom, setMyZoom, () => { drag.current = null; setDragId(null); });
+  const zoom = board?.zoom ?? 1;
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || !board) return;
+    requestAnimationFrame(() => {
+      const maxX = Math.max(0, stage.scrollWidth - stage.clientWidth);
+      const maxY = Math.max(0, stage.scrollHeight - stage.clientHeight);
+      stage.scrollLeft = maxX * Math.max(0, Math.min(1, board.camera_x ?? 0));
+      stage.scrollTop = maxY * Math.max(0, Math.min(1, board.camera_y ?? 0));
+    });
+  }, [board?.zoom, board?.camera_x, board?.camera_y, board?.map_url]);
 
   useEffect(() => {
     let stop = false;
@@ -119,10 +127,8 @@ const SharedTabletop = () => {
       <header className="sticky top-0 z-30 flex items-center gap-2 px-3 sm:px-4 py-2.5 border-b border-border/50 bg-background/95 backdrop-blur-md">
         <MapIcon className="w-4 h-4 text-primary" />
         <div className="min-w-0"><h1 className="font-display font-bold truncate text-sm sm:text-base">{board.name}</h1><p className="text-[10px] text-muted-foreground">Mesa ao vivo</p></div>
-        <div className="ml-auto flex items-center gap-1">
-          <button type="button" aria-label="Diminuir zoom" onClick={() => zoomCtl.zoomOut()} className="w-8 h-8 rounded-md border border-border/60 text-lg leading-none">−</button>
-          <button type="button" onClick={() => setMyZoom(null)} className="h-8 px-2 rounded-md border border-border/60 text-[10px] tabular-nums" title="Voltar ao zoom do mestre">{myZoom === null ? 'Mestre' : `${Math.round(zoom * 100)}%`}</button>
-          <button type="button" aria-label="Aumentar zoom" onClick={() => zoomCtl.zoomIn()} className="w-8 h-8 rounded-md border border-border/60 text-lg leading-none">+</button>
+        <div className="ml-auto flex items-center gap-2">
+          <span className="h-8 px-2 rounded-md border border-border/60 inline-flex items-center text-[10px] tabular-nums text-muted-foreground">Visão do Mestre · {Math.round(zoom * 100)}%</span>
         </div>
         <button type="button" aria-label="Compartilhar mesa" onClick={shareTable} className="w-8 h-8 rounded-md border border-border/60 grid place-items-center hover:border-primary"><Share2 className="w-4 h-4" /></button>
         <button type="button" aria-label="Como usar" onClick={() => setShowHelp(v => !v)} className="w-8 h-8 rounded-md border border-border/60 grid place-items-center hover:border-primary"><Info className="w-4 h-4" /></button>

@@ -17,7 +17,7 @@ const admin = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
 );
 
-const SELECT = "id, name, map_url, tokens, grid, fog, zoom, last_roll, share_id, updated_at";
+const SELECT = "id, name, map_url, tokens, grid, fog, zoom, camera_x, camera_y, last_roll, share_id, updated_at";
 const validId = (s: string) => /^[a-zA-Z0-9_-]{4,64}$/.test(s);
 
 Deno.serve(async (req) => {

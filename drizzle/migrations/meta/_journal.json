@@ -71,6 +71,13 @@
       "when": 1793679180000,
       "tag": "0009_access_session_phone",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793680590000,
+      "tag": "0010_tabletop_master_camera",
+      "breakpoints": true
     }
   ]
 }

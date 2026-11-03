@@ -32,6 +32,8 @@ interface Board {
   fog: FogRect[];
   share_id?: string;
   zoom?: number;
+  camera_x?: number;
+  camera_y?: number;
   last_roll?: Roll | null;
 }
 
@@ -115,7 +117,7 @@ const Tabletop = () => {
 
   const board = boards.find(b => b.id === activeId) ?? null;
   const zoom = board?.zoom ?? 1;
-  const zoomCtl = useStageZoom(stageRef, zoom, z => patch({ zoom: z }), () => { drag.current = null; pan.current = null; fogStart.current = null; setDraftFog(null); });
+  const zoomCtl = useStageZoom(stageRef, zoom, z => { patch({ zoom: z }); requestAnimationFrame(syncCamera); }, () => { drag.current = null; pan.current = null; fogStart.current = null; setDraftFog(null); });
 
   const patch = (p: Partial<Board>, now = false) => {
     if (!board) return;
@@ -125,6 +127,18 @@ const Tabletop = () => {
     clearTimeout(saveT.current);
     const run = () => updateRow('tabletops', id, p as any).catch(() => toast.error('Não consegui salvar.'));
     if (now) run(); else saveT.current = setTimeout(run, 150);
+  };
+
+  // Salva a posição relativa da janela para que todos acompanhem o enquadramento do Mestre.
+  const syncCamera = () => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const maxX = Math.max(0, stage.scrollWidth - stage.clientWidth);
+    const maxY = Math.max(0, stage.scrollHeight - stage.clientHeight);
+    patch({
+      camera_x: maxX ? stage.scrollLeft / maxX : 0,
+      camera_y: maxY ? stage.scrollTop / maxY : 0,
+    });
   };
 
   // Atalhos de teclado: M mover, H mãozinha, N névoa, G grade, F tela cheia, +/- zoom
@@ -419,6 +433,7 @@ const Tabletop = () => {
           <div className="flex gap-3 items-start">
             <div
               ref={stageRef}
+              onScroll={syncCamera}
               className={`relative flex-1 min-w-0 overflow-auto rounded-xl border border-border/50 bg-background min-h-[58dvh] ${full ? 'flex items-center' : 'max-h-[calc(100dvh-13rem)] sm:max-h-[75dvh]'} ${tool === 'pan' ? 'cursor-grab active:cursor-grabbing' : ''} ${tool === 'fog' ? 'cursor-crosshair' : ''}`}
             >
               <div
