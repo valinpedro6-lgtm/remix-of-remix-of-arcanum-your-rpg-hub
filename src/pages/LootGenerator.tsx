@@ -146,17 +146,76 @@ const LEVELS = ['1-4', '5-10', '11-16', '17-20'];
 const ALL_TYPES: LootType[] = ['arma', 'armadura', 'pocao', 'pergaminho', 'anel', 'amuleto', 'gema', 'misc'];
 
 const LOOT_SYSTEMS = [
-  { id: 'dnd5e', label: 'D&D 5e', currency: 'PO', themes: ['A tradição diz que este item foi batizado por uma guilda antiga.', 'Há uma marca de sintonia gravada no item.'] },
-  { id: 'tormenta20', label: 'Tormenta 20', currency: 'T$', themes: ['O item carrega uma bênção — ou uma dívida — com uma divindade.', 'A fabricação tem sinais de uma oficina de Valkaria.'] },
-  { id: 'ordemparanormal', label: 'Ordem Paranormal', currency: 'R$', themes: ['A evidência parece normal, mas algo nela desafia a realidade.', 'Há uma assinatura de energia paranormal residual.'] },
-  { id: 'cthulhu', label: 'Call of Cthulhu 7e', currency: '£', themes: ['A procedência foi apagada de todos os registros oficiais.', 'O objeto provoca uma sensação incômoda de déjà-vu.'] },
-  { id: 'vtm5', label: 'Vampiro: A Máscara 5e', currency: 'favores', themes: ['O verdadeiro preço não está escrito: alguém importante quer este item.', 'A posse do objeto pode alterar o equilíbrio de poder da cidade.'] },
-  { id: 'pf2e', label: 'Pathfinder 2e', currency: 'PO', themes: ['O item traz runas que indicam seu nível de criação.', 'A peça foi avaliada por um artesão de reputação impecável.'] },
-  { id: 'generic', label: 'Fantasia genérica', currency: 'PO', themes: FLAVORS },
+  { id: 'dnd5e', label: 'D&D 5e', currency: 'PO', goldMultiplier: 1, themes: ['A aura revela uma escola de magia quando o item é identificado.', 'Há uma marca de sintonia gravada no item.'] },
+  { id: 'tormenta20', label: 'Tormenta 20', currency: 'T$', goldMultiplier: 1.2, themes: ['O item carrega uma bênção — ou uma dívida — com uma divindade.', 'A fabricação tem sinais de uma oficina de Valkaria.'] },
+  { id: 'ordemparanormal', label: 'Ordem Paranormal', currency: 'R$', goldMultiplier: 0.8, themes: ['A evidência parece normal, mas algo nela desafia a realidade.', 'A Membrana reage quando alguém segura o objeto.'] },
+  { id: 'cthulhu', label: 'Call of Cthulhu 7e', currency: '£', goldMultiplier: 0.6, themes: ['A procedência foi apagada de todos os registros oficiais.', 'O objeto provoca uma sensação incômoda de déjà-vu.'] },
+  { id: 'vtm5', label: 'Vampiro: A Máscara 5e', currency: 'favores', goldMultiplier: 0.5, themes: ['O verdadeiro preço não está escrito: alguém importante quer este item.', 'A posse do objeto pode alterar o equilíbrio de poder da cidade.'] },
+  { id: 'pf2e', label: 'Pathfinder 2e', currency: 'PO', goldMultiplier: 1.4, themes: ['O item traz runas que indicam seu nível de criação.', 'A peça foi avaliada por um artesão de reputação impecável.'] },
+  { id: 'generic', label: 'Fantasia genérica', currency: 'PO', goldMultiplier: 1, themes: FLAVORS },
 ] as const;
 
 type LootSystemId = typeof LOOT_SYSTEMS[number]['id'];
 const getLootSystem = (id: string) => LOOT_SYSTEMS.find(system => system.id === id) ?? LOOT_SYSTEMS[LOOT_SYSTEMS.length - 1];
+
+type SystemLootPool = Partial<Record<LootType, readonly string[]>>;
+const SYSTEM_LOOT_POOLS: Record<LootSystemId, SystemLootPool> = {
+  dnd5e: {
+    arma: ['Espada longa +1', 'Arco do alerta', 'Espada vorpal', 'Cajado do poder'],
+    armadura: ['Armadura de mithral', 'Escudo +1', 'Manto de resistência', 'Armadura de adamantina'],
+    pocao: ['Poção de cura', 'Poção de velocidade', 'Poção de resistência', 'Poção de força de gigante'],
+    pergaminho: ['Pergaminho de dissipar magia', 'Pergaminho de teletransporte', 'Pergaminho de reviver', 'Pergaminho de desejo'],
+    anel: ['Anel de proteção', 'Anel de armazenamento de magias', 'Anel de invisibilidade'],
+    amuleto: ['Amuleto de saúde', 'Amuleto contra detecção', 'Talismã de boa sorte'],
+  },
+  tormenta20: {
+    arma: ['Espada justiceira', 'Machado anão de aço-rubi', 'Arco élfico', 'Lança de Azgher'],
+    armadura: ['Couraça de aço-rubi', 'Escudo de Valkaria', 'Armadura de couro de bulette', 'Manto de Wynna'],
+    pocao: ['Poção de cura', 'Elixir de mana', 'Poção de coragem', 'Poção de resistência elemental'],
+    pergaminho: ['Pergaminho de luz', 'Pergaminho de bênção', 'Pergaminho de teletransporte', 'Pergaminho de ressurreição'],
+    anel: ['Anel de Kallyadranoch', 'Anel de proteção', 'Anel de sorte de Nimb'],
+    amuleto: ['Símbolo sagrado de Lena', 'Medalhão de Valkaria', 'Amuleto da Tormenta'],
+  },
+  ordemparanormal: {
+    arma: ['Pistola amaldiçoada', 'Faca ritualística', 'Espingarda modificada', 'Arma de sangue'],
+    armadura: ['Colete balístico', 'Máscara de proteção', 'Traje tático', 'Blindagem paranormal'],
+    pocao: ['Kit de primeiros socorros', 'Dose de estimulante', 'Ampola de antídoto', 'Soro de sanidade'],
+    pergaminho: ['Relatório de manifestação', 'Ritual transcrito', 'Gravação impossível', 'Documento da Ordo Realitas'],
+    anel: ['Anel com símbolo ocultista', 'Dispositivo de contenção', 'Câmera de evidência'],
+    amuleto: ['Selo de proteção', 'Amuleto de Exposição', 'Fragmento de cristal'],
+    misc: ['Evidência paranormal', 'Cartão de acesso', 'Fragmento de objeto amaldiçoado'],
+  },
+  cthulhu: {
+    arma: ['Revólver Webley', 'Espingarda de caça', 'Faca cerimonial', 'Pistola automática'],
+    armadura: ['Casaco pesado', 'Colete de couro', 'Máscara de gás', 'Terno reforçado'],
+    pocao: ['Láudano', 'Kit médico', 'Tônico experimental', 'Frasco de sedativo'],
+    pergaminho: ['Diário de culto', 'Papiro de Aklo', 'Carta de Innsmouth', 'Livro de Dzyan'],
+    anel: ['Anel de prata de família', 'Selo de culto', 'Relicário de Yith'],
+    amuleto: ['Símbolo dos Antigos', 'Talismã de proteção', 'Fragmento de ídolo'],
+    misc: ['Fotografia impossível', 'Mapa de R’lyeh', 'Artefato extraterrestre'],
+  },
+  vtm5: {
+    arma: ['Pistola de prata', 'Faca de osso', 'Espada cerimonial', 'Arma de fogo escondida'],
+    armadura: ['Colete discreto', 'Casaco blindado', 'Armadura ritual', 'Refúgio portátil'],
+    pocao: ['Bolsa de sangue humano', 'Sangue engarrafado', 'Dose de vitae potente', 'Sangue de presa rara'],
+    pergaminho: ['Convite da corte', 'Dossiê de influência', 'Carta de prestação', 'Registro de domínio'],
+    anel: ['Anel de linhagem', 'Anel de juramento', 'Selo de príncipe'],
+    amuleto: ['Fetiche de proteção', 'Relicário de santo', 'Medalhão de sangue'],
+    misc: ['Favor de um Primogênito', 'Segredo de um mortal', 'Chave de Elísio'],
+  },
+  pf2e: {
+    arma: ['Espada longa +1', 'Arco striking', 'Arma com runa de flaming', 'Lâmina vorpal'],
+    armadura: ['Armadura resiliente', 'Escudo de aço', 'Armadura fortificada', 'Manto de resistência maior'],
+    pocao: ['Poção de cura menor', 'Poção de invisibilidade', 'Elixir de vida', 'Poção de voo'],
+    pergaminho: ['Pergaminho de 2º círculo', 'Pergaminho de dissipar magia', 'Pergaminho de teletransporte', 'Pergaminho de ressurreição'],
+    anel: ['Anel de proteção', 'Anel de energia', 'Anel de armazenamento'],
+    amuleto: ['Amuleto de armadura natural', 'Talismã de golpe certeiro', 'Amuleto de vida'],
+  },
+  generic: {},
+};
+
+const getItemPool = (systemId: LootSystemId, type: LootType, rarity: Rarity) =>
+  SYSTEM_LOOT_POOLS[systemId]?.[type]?.length ? SYSTEM_LOOT_POOLS[systemId][type]! : LOOT_TABLES[type][rarity];
 
 function getRarityForEncounter(encounter: string, level: string, boost: number): Rarity {
   const rarities: Rarity[] = ['comum', 'incomum', 'raro', 'muito_raro', 'lendario'];
@@ -170,17 +229,17 @@ function getRarityForEncounter(encounter: string, level: string, boost: number):
   return rarities[Math.min(4, base + 2)];
 }
 
-function generateGold(encounter: string, level: string): number {
+function generateGold(encounter: string, level: string, systemId: LootSystemId): number {
   const levelIdx = LEVELS.indexOf(level);
   const multipliers: Record<string, number> = { facil: 1, medio: 2, dificil: 3, mortal: 5, tesouro: 4, boss: 8 };
   const base = [rollDice(2, 6), rollDice(4, 6) * 5, rollDice(3, 6) * 50, rollDice(4, 6) * 500][levelIdx] || rollDice(2, 6);
-  return Math.floor(base * (multipliers[encounter] || 1));
+  return Math.max(1, Math.floor(base * (multipliers[encounter] || 1) * getLootSystem(systemId).goldMultiplier));
 }
 
 function makeItem(types: LootType[], encounter: string, level: string, boost: number, systemId: LootSystemId): LootItem {
   const type = pick(types.length ? types : ALL_TYPES);
   const rarity = getRarityForEncounter(encounter, level, boost);
-  const name = pick(LOOT_TABLES[type][rarity]);
+  const name = pick(getItemPool(systemId, type, rarity));
   const system = getLootSystem(systemId);
   const values: Record<Rarity, string> = {
     comum: `${rollDice(1, 6) * 10} ${system.currency}`,
@@ -211,7 +270,7 @@ function generateLoot(
     id: crypto.randomUUID(),
     systemId,
     level, encounter, items,
-    gold: withGold ? generateGold(encounter, level) : 0,
+    gold: withGold ? generateGold(encounter, level, systemId) : 0,
     timestamp: Date.now(),
   };
 }
