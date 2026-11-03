@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Shield, Copy, RefreshCw, Mail, Users, Radio, Loader2, LogOut, KeyRound, Trash2, Search, Send,
+  Shield, Copy, RefreshCw, Mail, Users, Radio, Loader2, LogOut, KeyRound, Trash2, Search, Send, Phone, CalendarDays, Ban, UserCheck, Crown, History,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,12 +11,19 @@ import { toast } from '@/hooks/use-toast';
 import { MASTER_KEY, callGate, becomeMaster, leaveMaster } from '@/lib/access';
 import { currentOwnerToken } from '@/lib/userData';
 
-interface Session { device_id: string; label: string; first_seen: string; last_seen: string }
+interface Session {
+  device_id: string; label: string; phone: string; first_seen: string; last_seen: string;
+  plan: 'pending' | 'monthly' | 'lifetime'; billing_start: string | null; billing_until: string | null;
+  banned: boolean; needs_code: boolean; notes: string;
+}
+interface AccessEvent { id: string; device_id: string; event_type: string; details: Record<string, string>; created_at: string }
 
 const isEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 const fmtClock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+const today = () => new Date().toISOString().slice(0, 10);
+const planLabel = (plan: Session['plan']) => plan === 'monthly' ? 'Mensal' : plan === 'lifetime' ? 'Vitalício' : 'Sem plano';
 
 const mailto = (to: string | string[], subject = 'Arcanum — mensagem do mestre') => {
   const list = Array.isArray(to) ? to.join(',') : to;
@@ -31,6 +38,7 @@ const Master = () => {
   const [pwd, setPwd] = useState('');
   const [current, setCurrent] = useState('');
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [events, setEvents] = useState<AccessEvent[]>([]);
   const [info, setInfo] = useState({ total: 0, active: 0 });
   const [custom, setCustom] = useState('');
   const [uses, setUses] = useState(1);
@@ -41,6 +49,7 @@ const Master = () => {
   const [testLeft, setTestLeft] = useState(0);
   const [newMaster, setNewMaster] = useState('');
   const [query, setQuery] = useState('');
+  const [startDates, setStartDates] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async (key: string) => {
@@ -52,6 +61,7 @@ const Master = () => {
     setUsesLeft(res.usesLeft ?? 1);
     if (!usesTouched) setUses(res.maxUses ?? 1);
     setSessions(res.sessions ?? []);
+    setEvents(res.events ?? []);
     setInfo({ total: res.total ?? 0, active: res.active ?? 0 });
     return true;
   }, [usesTouched]);
@@ -128,6 +138,26 @@ const Master = () => {
     if (res?.ok) { setSessions(res.sessions ?? []); setInfo({ total: res.total ?? 0, active: res.active ?? 0 }); }
   };
 
+  const setPlan = async (device: string, plan: 'monthly' | 'lifetime', startDate: string) => {
+    setBusy(true);
+    try {
+      const res = await callGate({ action: 'set-customer-plan', master, device, plan, startDate });
+      if (res?.ok) { setSessions(res.sessions ?? []); setEvents(res.events ?? []); toast({ title: plan === 'monthly' ? 'Plano mensal salvo' : 'Acesso vitalício salvo' }); }
+      else toast({ title: 'Não foi possível salvar o plano', variant: 'destructive' });
+    } finally { setBusy(false); }
+  };
+
+  const banCustomer = async (device: string) => {
+    if (!confirm('Revogar o acesso desta pessoa? Ela será desconectada e precisará de um novo código.')) return;
+    const res = await callGate({ action: 'ban-customer', master, device });
+    if (res?.ok) { setSessions(res.sessions ?? []); setEvents(res.events ?? []); toast({ title: 'Acesso revogado' }); }
+  };
+
+  const releaseCustomer = async (device: string) => {
+    const res = await callGate({ action: 'release-customer', master, device });
+    if (res?.ok) { setSessions(res.sessions ?? []); setEvents(res.events ?? []); toast({ title: 'Pessoa liberada', description: 'Ela precisará informar um novo código.' }); }
+  };
+
   const exit = () => { leaveMaster(); navigate('/'); };
 
   if (checking) {
@@ -158,6 +188,7 @@ const Master = () => {
 
   const withEmail = sessions.filter(s => isEmail(s.label));
   const filtered = sessions.filter(s => !query || s.label.toLowerCase().includes(query.toLowerCase()));
+  const dueSoon = sessions.filter(s => s.plan === 'monthly' && s.billing_until && !s.banned && new Date(`${s.billing_until}T23:59:59`) <= new Date(Date.now() + 7 * 86400000));
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -240,6 +271,15 @@ const Master = () => {
         </div>
       </div>
 
+      <Card className="glass-card border-primary/30">
+        <CardContent className="p-5 space-y-3">
+          <div className="flex items-center gap-2"><CalendarDays className="w-5 h-5 text-primary" /><h2 className="font-display text-xl font-bold">Cobranças próximas</h2><span className="ml-auto rounded-full bg-primary/15 px-2 py-1 text-xs font-bold text-primary">{dueSoon.length}</span></div>
+          {dueSoon.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma cobrança nos próximos 7 dias. Os vencimentos aparecem aqui automaticamente.</p> : (
+            <div className="grid gap-2 md:grid-cols-2">{dueSoon.map(s => <div key={s.device_id} className="flex items-center gap-3 rounded-lg border border-border/40 p-3"><div className="min-w-0 flex-1"><p className="font-medium truncate">{s.label || 'Sem e-mail'}</p><p className="text-xs text-muted-foreground">{s.phone || 'Sem telefone'} · vence em {s.billing_until ? new Date(`${s.billing_until}T12:00:00`).toLocaleDateString('pt-BR') : ''}</p></div>{isEmail(s.label) && <Button asChild size="sm" variant="outline"><a href={mailto(s.label, 'Arcanum — renovação mensal')}>Cobrar</a></Button>}</div>)}</div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card className="glass-card">
         <CardContent className="p-5 space-y-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -262,34 +302,34 @@ const Master = () => {
             ) : filtered.map(sn => {
               const online = Date.now() - new Date(sn.last_seen).getTime() < 2 * 60_000;
               const email = isEmail(sn.label) ? sn.label : '';
+              const start = startDates[sn.device_id] ?? sn.billing_start ?? today();
               return (
-                <div key={sn.device_id} className="flex items-center gap-3 px-3 py-3">
-                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${online ? 'bg-primary animate-pulse' : 'bg-muted-foreground/40'}`} />
-                  <div className="flex-1 min-w-0">
-                    {email ? (
-                      <a href={mailto(email)} className="font-medium truncate block hover:text-primary hover:underline" title="Enviar e-mail">{email}</a>
-                    ) : (
-                      <span className="font-medium truncate block text-muted-foreground">{sn.label || 'sem e-mail'}</span>
-                    )}
-                    <span className="text-[11px] text-muted-foreground">
-                      {online ? 'Online agora' : `Visto ${fmtDate(sn.last_seen)}`} · entrou {fmtDate(sn.first_seen)}
-                    </span>
+                <div key={sn.device_id} className={`flex flex-wrap items-center gap-3 px-3 py-3 ${sn.banned ? 'bg-destructive/5' : ''}`}>
+                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${sn.banned ? 'bg-destructive' : online ? 'bg-primary animate-pulse' : 'bg-muted-foreground/40'}`} />
+                  <div className="flex-1 min-w-[180px]">
+                    {email ? <a href={mailto(email)} className="font-medium truncate block hover:text-primary hover:underline" title="Enviar e-mail">{email}</a> : <span className="font-medium truncate block text-muted-foreground">{sn.label || 'sem e-mail'}</span>}
+                    <span className="text-[11px] text-muted-foreground block">{sn.phone || 'telefone não informado'} · {sn.banned ? 'Acesso revogado' : online ? 'Online agora' : `Visto ${fmtDate(sn.last_seen)}`} · entrou {fmtDate(sn.first_seen)}</span>
+                    <span className="text-[11px] text-primary">{sn.plan === 'monthly' && sn.billing_until ? `Mensal · vence ${new Date(`${sn.billing_until}T12:00:00`).toLocaleDateString('pt-BR')}` : sn.plan === 'lifetime' ? 'Vitalício' : 'Plano ainda não definido'}</span>
                   </div>
-                  {email && (
-                    <div className="flex gap-1 shrink-0">
-                      <Button asChild size="icon" variant="ghost" className="h-9 w-9">
-                        <a href={mailto(email)} aria-label={`Enviar e-mail para ${email}`}><Mail className="w-4 h-4" /></a>
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-9 w-9" aria-label="Copiar e-mail"
-                        onClick={() => { navigator.clipboard?.writeText(email); toast({ title: 'E-mail copiado' }); }}>
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto md:max-w-[420px] md:justify-end">
+                    <Input type="date" value={start} onChange={e => setStartDates(v => ({ ...v, [sn.device_id]: e.target.value }))} className="h-8 w-[145px] text-xs" title="Data de início da mensalidade" />
+                    <Button size="sm" variant={sn.plan === 'monthly' ? 'default' : 'outline'} onClick={() => setPlan(sn.device_id, 'monthly', start)} disabled={busy}><CalendarDays className="w-3.5 h-3.5 mr-1" /> Mensal</Button>
+                    <Button size="sm" variant={sn.plan === 'lifetime' ? 'default' : 'outline'} onClick={() => setPlan(sn.device_id, 'lifetime', start)} disabled={busy}><Crown className="w-3.5 h-3.5 mr-1" /> Vitalício</Button>
+                    {sn.banned ? <Button size="sm" variant="secondary" onClick={() => releaseCustomer(sn.device_id)} disabled={busy}><UserCheck className="w-3.5 h-3.5 mr-1" /> Liberar</Button> : <Button size="sm" variant="destructive" onClick={() => banCustomer(sn.device_id)} disabled={busy}><Ban className="w-3.5 h-3.5 mr-1" /> Revogar</Button>}
+                    {email && <Button asChild size="icon" variant="ghost" className="h-8 w-8"><a href={mailto(email)} aria-label={`Enviar e-mail para ${email}`}><Mail className="w-4 h-4" /></a></Button>}
+                    {email && <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Copiar e-mail" onClick={() => { navigator.clipboard?.writeText(email); toast({ title: 'E-mail copiado' }); }}><Copy className="w-4 h-4" /></Button>}
+                  </div>
                 </div>
               );
             })}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="glass-card">
+        <CardContent className="p-5 space-y-3">
+          <h2 className="font-display text-xl font-bold flex items-center gap-2"><History className="w-5 h-5 text-primary" /> Histórico do mestre</h2>
+          {events.length === 0 ? <p className="text-sm text-muted-foreground">As entradas, planos e revogações aparecerão aqui.</p> : <div className="divide-y divide-border/30">{events.slice(0, 30).map(ev => { const person = sessions.find(s => s.device_id === ev.device_id); const labels: Record<string, string> = { joined: 'entrou na mesa', plan_changed: 'teve o plano atualizado', banned: 'teve o acesso revogado', released: 'foi liberado e precisa de novo código', reauthorized: 'reentrou com novo código' }; return <div key={ev.id} className="flex items-center gap-3 py-2 text-sm"><span className="w-2 h-2 rounded-full bg-primary shrink-0" /><span className="flex-1"><strong>{person?.label || person?.phone || 'Pessoa'}</strong> {labels[ev.event_type] || ev.event_type}</span><span className="text-xs text-muted-foreground">{fmtDate(ev.created_at)}</span></div>; })}</div>}
         </CardContent>
       </Card>
     </div>

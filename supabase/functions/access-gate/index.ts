@@ -44,6 +44,21 @@ async function checkTicket(device: string, ticket: string) {
   if (!exp || !sig || Number(exp) < Date.now()) return false;
   return sig === await hmac("ticket:" + device + ":" + exp);
 }
+async function sessionFor(device: string) {
+  if (!device) return null;
+  const { data } = await admin.from("access_sessions").select("*").eq("device_id", device).maybeSingle();
+  return data;
+}
+async function event(device: string, eventType: string, details: Record<string, unknown> = {}) {
+  if (!device) return;
+  await admin.from("access_events").insert({ device_id: device, event_type: eventType, details });
+}
+function addMonth(date: string) {
+  const [year, month, day] = date.split("-").map(Number);
+  const nextMonth = new Date(Date.UTC(year, month + 1, 0));
+  const d = new Date(Date.UTC(year, month, Math.min(day, nextMonth.getUTCDate())));
+  return d.toISOString().slice(0, 10);
+}
 /** passa fichas/mapas do token antigo deste aparelho para a conta */
 async function adoptRows(oldToken: string, newToken: string) {
   if (!oldToken || oldToken.length < 20 || oldToken === newToken) return;
@@ -139,14 +154,20 @@ async function stats() {
   const since = new Date(Date.now() - 2 * 60_000).toISOString();
   const { data } = await admin
     .from("access_sessions")
-    .select("device_id, label, first_seen, last_seen")
+    .select("device_id, label, phone, first_seen, last_seen, plan, billing_start, billing_until, banned, needs_code, notes")
     .order("last_seen", { ascending: false })
     .limit(100);
   const rows = data ?? [];
+  const { data: events } = await admin
+    .from("access_events")
+    .select("id, device_id, event_type, details, created_at")
+    .order("created_at", { ascending: false })
+    .limit(100);
   return {
     total: rows.length,
-    active: rows.filter((r) => r.last_seen > since).length,
+    active: rows.filter((r) => r.last_seen > since && !r.banned && !r.needs_code).length,
     sessions: rows,
+    events: events ?? [],
   };
 }
 
@@ -182,6 +203,7 @@ Deno.serve(async (req) => {
         return json({ ok: false, ...r });
       }
       const device = String(body.device ?? "").slice(0, 64);
+      const existing = await sessionFor(device);
       if (code === row.master_password) {
         await clearAttempts(ip);
         await touchSession(device, "Mestre");
@@ -198,6 +220,10 @@ Deno.serve(async (req) => {
       if (code === row.current_code) {
         await clearAttempts(ip);
         await touchSession(device);
+        if (existing?.banned || existing?.needs_code) {
+          await admin.from("access_sessions").update({ banned: false, needs_code: false }).eq("device_id", device);
+          await event(device, "reauthorized", { reason: "new_access_code" });
+        }
         await consumeUse(row);
         return json({ ok: true, master: false, ticket: await makeTicket(device) });
       }
@@ -220,13 +246,18 @@ Deno.serve(async (req) => {
     if (action === "register") {
       const device = String(body.device ?? "").slice(0, 64);
       const email = String(body.email ?? "").trim().slice(0, 120);
+      const phone = String(body.phone ?? "").trim().slice(0, 32);
       if (!device || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
         return json({ ok: false, error: "E-mail inválido" });
+      }
+      if (!phone || phone.replace(/\D/g, "").length < 8) {
+        return json({ ok: false, error: "Telefone inválido" });
       }
       if (!(await checkTicket(device, String(body.ticket ?? "")))) {
         return json({ ok: false, error: "Digite o código de acesso de novo." });
       }
-      await touchSession(device, email);
+      await admin.from("access_sessions").update({ label: email, phone, banned: false, needs_code: false }).eq("device_id", device);
+      await event(device, "joined", { email, phone });
       const token = await ownerTokenFor("email:" + email.toLowerCase());
       await adoptRows(String(body.oldToken ?? ""), token);
       return json({ ok: true, token });
@@ -234,6 +265,8 @@ Deno.serve(async (req) => {
 
     if (action === "heartbeat") {
       const device = String(body.device ?? "").slice(0, 64);
+      const current = await sessionFor(device);
+      if (current?.banned || current?.needs_code) return json({ ok: false, banned: true });
       await touchSession(device);
       return json({ ok: true });
     }
@@ -253,6 +286,41 @@ Deno.serve(async (req) => {
       const { error } = await admin.from("access_gate").update({ test_code: next, test_code_expires_at: expires }).eq("id", 1);
       if (error) throw error;
       return json({ ok: true, testCode: next, testExpiresAt: expires });
+    }
+
+    if (action === "set-customer-plan") {
+      const master = String(body.master ?? "").trim();
+      const device = String(body.device ?? "").slice(0, 64);
+      const plan = String(body.plan ?? "");
+      const start = String(body.startDate ?? "").slice(0, 10);
+      if (master !== row.master_password) return json({ ok: false }, 200);
+      if (!device || !["monthly", "lifetime"].includes(plan)) return json({ ok: false, error: "Plano inválido" });
+      const billingStart = /^\d{4}-\d{2}-\d{2}$/.test(start) ? start : new Date().toISOString().slice(0, 10);
+      const billingUntil = plan === "monthly" ? addMonth(billingStart) : null;
+      const { error } = await admin.from("access_sessions").update({ plan, billing_start: billingStart, billing_until: billingUntil, banned: false, needs_code: false }).eq("device_id", device);
+      if (error) throw error;
+      await event(device, "plan_changed", { plan, billing_start: billingStart, billing_until: billingUntil });
+      return json({ ok: true, plan, billingStart, billingUntil, ...(await stats()) });
+    }
+
+    if (action === "ban-customer") {
+      const master = String(body.master ?? "").trim();
+      const device = String(body.device ?? "").slice(0, 64);
+      if (master !== row.master_password) return json({ ok: false }, 200);
+      const { error } = await admin.from("access_sessions").update({ banned: true, needs_code: true }).eq("device_id", device);
+      if (error) throw error;
+      await event(device, "banned", { reason: String(body.reason ?? "manual") });
+      return json({ ok: true, ...(await stats()) });
+    }
+
+    if (action === "release-customer") {
+      const master = String(body.master ?? "").trim();
+      const device = String(body.device ?? "").slice(0, 64);
+      if (master !== row.master_password) return json({ ok: false }, 200);
+      const { error } = await admin.from("access_sessions").update({ banned: false, needs_code: true }).eq("device_id", device);
+      if (error) throw error;
+      await event(device, "released", { requires_new_code: true });
+      return json({ ok: true, ...(await stats()) });
     }
 
     if (action === "reset-sessions") {
