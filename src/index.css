@@ -331,7 +331,8 @@
     font-family: 'Rajdhani', sans-serif;
     background-image:
       radial-gradient(ellipse 80% 50% at 50% -10%, hsl(var(--primary) / 0.16), transparent 70%),
-      radial-gradient(ellipse 60% 40% at 100% 100%, hsl(var(--ember) / 0.08), transparent 70%);
+      radial-gradient(ellipse 60% 40% at 100% 100%, hsl(var(--ember) / 0.08), transparent 70%),
+      linear-gradient(125deg, hsl(var(--background)), hsl(var(--card) / 0.35) 48%, hsl(var(--background)));
     background-attachment: fixed;
   }
   ::selection { background: hsl(var(--primary) / 0.35); }
@@ -362,10 +363,10 @@
     text-shadow: 0 0 20px hsl(var(--primary) / 0.6), 0 0 40px hsl(0 75% 50% / 0.3);
   }
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-[0_0_28px_hsl(var(--primary)/0.22)] hover:border-primary/30 hover:-translate-y-0.5;
+    @apply transition-all duration-300 hover:shadow-[0_0_32px_hsl(var(--primary)/0.22)] hover:border-primary/35 hover:-translate-y-1;
   }
   .glass-card {
-    @apply bg-card/50 backdrop-blur-xl border border-border/60 shadow-[0_1px_0_hsl(0_0%_100%/0.05)_inset,0_12px_32px_-16px_hsl(0_0%_0%/0.8)];
+    @apply bg-card/55 backdrop-blur-xl border border-border/60 shadow-[0_1px_0_hsl(0_0%_100%/0.06)_inset,0_18px_42px_-18px_hsl(0_0%_0%/0.9)];
   }
   .gradient-text {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-[hsl(var(--ember))];
@@ -378,8 +379,9 @@
     @apply border border-primary/20 shadow-[0_0_15px_hsl(var(--primary)/0.12),inset_0_0_15px_hsl(var(--primary)/0.05)];
   }
   .subtle-pattern {
-    background-image: radial-gradient(hsl(var(--foreground) / 0.06) 1px, transparent 1px);
-    background-size: 20px 20px;
+    background-image: radial-gradient(hsl(var(--foreground) / 0.055) 1px, transparent 1px), linear-gradient(135deg, hsl(var(--primary) / 0.025), transparent 35%, hsl(var(--ember) / 0.025));
+    background-size: 22px 22px, 100% 100%;
+    background-attachment: fixed;
   }
   /* Páginas embutidas em abas de hub: o título vira apenas acessível */
   .embedded-page .page-title {
@@ -397,9 +399,25 @@
 
 .nav-active {
   background: linear-gradient(90deg, hsl(var(--primary) / 0.22), hsl(var(--primary) / 0.04));
-  box-shadow: inset 2px 0 0 hsl(var(--primary)), 0 0 20px -6px hsl(var(--primary) / 0.5);
+  box-shadow: inset 3px 0 0 hsl(var(--primary)), 0 0 24px -6px hsl(var(--primary) / 0.55);
 }
 .brand-mark {
   background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--ember)));
-  box-shadow: 0 0 22px hsl(var(--primary) / 0.55);
+  box-shadow: 0 0 22px hsl(var(--primary) / 0.55), inset 0 1px 0 hsl(0 0% 100% / 0.25);
+  position: relative;
+  overflow: hidden;
+}
+.brand-mark::after {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(115deg, transparent 35%, hsl(0 0% 100% / 0.3), transparent 65%);
+  transform: translateX(-70%);
+  transition: transform 700ms ease;
+}
+.brand-mark:hover::after { transform: translateX(70%); }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid hsl(var(--primary) / 0.8);
+  outline-offset: 2px;
 }

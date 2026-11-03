@@ -62,11 +62,11 @@ export const Layout = ({ children }: { children: ReactNode }) => {
   return (
     <div className="min-h-screen flex">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-60 flex-col border-r border-border/50 bg-card/40 backdrop-blur-xl fixed h-full z-40">
-        <div className="p-5 border-b border-border/50">
-          <div className="flex items-center gap-3"><div className="brand-mark w-9 h-9 rounded-lg grid place-items-center text-primary-foreground"><Dices className="w-5 h-5" /></div><div><h1 className="text-2xl font-display font-black gradient-text tracking-widest leading-none">ARCANUM</h1><p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mt-1">Ferramentas do Mestre</p></div></div>
+      <aside className="hidden md:flex w-64 flex-col border-r border-border/50 bg-card/55 backdrop-blur-2xl fixed h-full z-40 shadow-[12px_0_40px_-28px_hsl(var(--primary)/0.5)]">
+        <div className="p-5 border-b border-border/50 bg-gradient-to-br from-primary/[0.08] to-transparent">
+          <div className="flex items-center gap-3"><div className="brand-mark w-10 h-10 rounded-xl grid place-items-center text-primary-foreground"><Dices className="w-5 h-5" /></div><div><h1 className="text-2xl font-display font-black gradient-text tracking-widest leading-none">ARCANUM</h1><p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mt-1">Command center</p></div></div>
         </div>
-        <nav className="flex flex-col gap-0.5 p-3 flex-1 overflow-y-auto">
+        <nav className="flex flex-col gap-1 p-3 flex-1 overflow-y-auto">
           <NavLinks />
         </nav>
         <div className="p-3 border-t border-border/50 space-y-2">
@@ -80,7 +80,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
       </aside>
 
       {/* Mobile header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center gap-3 px-4 py-3 bg-background/90 backdrop-blur-lg border-b border-border/50">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center gap-3 px-4 py-3 bg-background/85 backdrop-blur-2xl border-b border-primary/15 shadow-lg shadow-black/10">
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="shrink-0">
@@ -109,7 +109,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
       </div>
 
       {/* Main content */}
-      <main className="flex-1 min-w-0 overflow-x-hidden md:ml-60 p-4 md:p-6 pt-16 md:pt-6 min-h-screen subtle-pattern">
+      <main className="flex-1 min-w-0 overflow-x-hidden md:ml-64 p-4 md:p-8 pt-16 md:pt-8 min-h-screen subtle-pattern">
         <div className="animate-fade-in">
           {children}
         </div>

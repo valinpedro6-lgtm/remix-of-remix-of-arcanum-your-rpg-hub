@@ -79,9 +79,10 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="page-title">
-        Painel do Mestre
-      </motion.h1>
+      <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-end justify-between gap-4 flex-wrap">
+        <div><p className="text-[11px] uppercase tracking-[0.25em] text-primary/80 font-semibold mb-1">Visão da sessão</p><h1 className="page-title">Painel do Mestre</h1></div>
+        <Badge variant="outline" className="h-8 gap-2 border-primary/30 bg-primary/5 text-primary"><span className="w-2 h-2 rounded-full bg-primary animate-pulse" /> Mesa em preparação</Badge>
+      </motion.div>
 
       {/* Quick Access */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -91,7 +92,7 @@ const Dashboard = () => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.05 * i }}
-              className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-card/60 border border-border/30 hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer group"
+              className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-card/55 backdrop-blur-sm border border-border/30 hover:border-primary/40 hover:bg-primary/8 hover:-translate-y-0.5 transition-all cursor-pointer group shadow-sm"
             >
               <l.icon className={`w-5 h-5 ${l.color} group-hover:scale-110 transition-transform`} />
               <span className="text-xs font-semibold text-muted-foreground group-hover:text-foreground">{l.label}</span>

@@ -309,6 +309,7 @@ const LootGenerator = () => {
   const [history, setHistory] = useLocalStorage<LootDrop[]>('arcanum-loot-history', []);
   const [favorites, setFavorites] = useLocalStorage<LootItem[]>('arcanum-loot-favorites', []);
   const [currentDrop, setCurrentDrop] = useState<LootDrop | null>(null);
+  const activeSystem = getLootSystem(systemId);
 
   const generate = () => {
     const drop = generateLoot(systemId, encounter, level, types, boost, autoCount ? null : count, withGold);
@@ -351,17 +352,28 @@ const LootGenerator = () => {
 
   return (
     <div className="space-y-6">
-      <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="page-title">
-        Gerador de Loot
-      </motion.h1>
+      <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.25em] text-primary/80 font-semibold mb-1">Tesouros do Mestre</p>
+          <h1 className="page-title flex items-center gap-3"><span className="inline-flex p-2 rounded-xl bg-yellow-400/10 border border-yellow-400/20"><Coins className="w-6 h-6 text-yellow-400" /></span>Gerador de Loot</h1>
+        </div>
+        <Badge variant="outline" className="h-8 gap-2 border-primary/30 bg-primary/5 text-primary"><Sparkles className="w-3.5 h-3.5" /> {activeSystem.label}</Badge>
+      </motion.div>
 
       {/* Controles */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <Card className="card-hover glow-border">
-          <CardContent className="p-5 space-y-4">
+          <Card className="card-hover glow-border overflow-hidden bg-gradient-to-br from-card via-card to-primary/[0.04]">
+            <CardContent className="p-5 space-y-4">
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/15 bg-primary/[0.04] px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Perfil do tesouro</p>
+                <p className="font-display font-semibold truncate">{activeSystem.label}</p>
+              </div>
+              <div className="text-right shrink-0"><p className="text-[10px] uppercase tracking-widest text-muted-foreground">Moeda</p><p className="font-mono font-bold text-yellow-400">{activeSystem.currency}</p></div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
-                <label className="text-sm text-muted-foreground mb-1.5 block">Sistema</label>
+                <label className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5 block">Sistema de RPG</label>
                 <Select value={systemId} onValueChange={value => setSystemId(value as LootSystemId)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -370,7 +382,7 @@ const LootGenerator = () => {
                 </Select>
               </div>
               <div>
-                <label className="text-sm text-muted-foreground mb-1.5 block">Nível do Grupo</label>
+                <label className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5 block">Nível do grupo</label>
                 <Select value={level} onValueChange={setLevel}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -379,7 +391,7 @@ const LootGenerator = () => {
                 </Select>
               </div>
               <div>
-                <label className="text-sm text-muted-foreground mb-1.5 block">Tipo de Encontro</label>
+                <label className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5 block">Tipo de encontro</label>
                 <Select value={encounter} onValueChange={setEncounter}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -449,8 +461,8 @@ const LootGenerator = () => {
               )}
             </AnimatePresence>
 
-            <Button onClick={generate} className="w-full gap-2" size="lg">
-              <Dices className="w-5 h-5" />Gerar Tesouro
+            <Button onClick={generate} className="w-full gap-2 shadow-lg shadow-primary/15 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary" size="lg">
+              <Dices className="w-5 h-5" />Gerar tesouro <span className="ml-auto text-xs opacity-70">{activeSystem.currency}</span>
             </Button>
           </CardContent>
         </Card>
@@ -470,12 +482,12 @@ const LootGenerator = () => {
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2">
                     <Coins className="w-5 h-5 text-yellow-400" />
-                    <h3 className="font-display font-semibold text-lg">Tesouro Encontrado</h3>
+                    <div><h3 className="font-display font-semibold text-lg">Tesouro encontrado</h3><p className="text-[11px] text-muted-foreground">{activeSystem.label} · Nível {currentDrop.level}</p></div>
                   </div>
                   <div className="flex items-center gap-1.5">
                     {currentDrop.gold > 0 && (
-                      <Badge variant="outline" className="gap-1">
-                        <Coins className="w-3 h-3 text-yellow-400" />{currentDrop.gold} PO
+                        <Badge variant="outline" className="gap-1 border-yellow-400/30 bg-yellow-400/5">
+                        <Coins className="w-3 h-3 text-yellow-400" />{currentDrop.gold} {getLootSystem(currentDrop.systemId).currency}
                       </Badge>
                     )}
                     <Button size="icon" variant="ghost" className="h-9 w-9" title="Copiar tudo"
@@ -498,9 +510,9 @@ const LootGenerator = () => {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.06 }}
-                        className={`flex items-start gap-3 p-3 rounded-lg bg-secondary/50 border ${rInfo.ring}`}
+                        className={`group flex items-start gap-3 p-3 rounded-xl bg-secondary/40 border ${rInfo.ring} hover:bg-secondary/70 hover:-translate-y-0.5 transition-all shadow-sm`}
                       >
-                        <div className="p-2 rounded-lg bg-primary/10 shrink-0">
+                          <div className={`p-2.5 rounded-xl bg-primary/10 shrink-0 ring-1 ring-inset ${rInfo.ring}`}>
                           <Icon className="w-4 h-4 text-primary" />
                         </div>
                         <div className="min-w-0 flex-1">
