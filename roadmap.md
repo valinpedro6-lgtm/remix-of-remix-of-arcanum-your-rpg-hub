@@ -44,3 +44,4 @@
 - [x] Inventário nas fichas do Elenco
 - [ ] Melhorar muito o gerador de loot
 - [x] Tabletop: zoom no link dos jogadores, movimento fluido, selecionar vários e mover juntos
+- [ ] Tabletop: zoom melhor (pinça, roda, ancorado) mestre e players
