@@ -95,8 +95,9 @@ const Tabletop = () => {
       .then(list => {
         const room = localStorage.getItem(ROOM_KEY) || list.find(b => b.room_id)?.room_id || uid() + uid();
         localStorage.setItem(ROOM_KEY, room);
+        const hasPersistedRoom = list.some(b => Boolean(b.room_id));
         const hasCurrent = list.some(b => b.is_current);
-        const next = list.map((b, i) => ({ ...b, room_id: room, is_current: hasCurrent ? !!b.is_current : i === 0, view_enabled: b.view_enabled !== false, fog: b.fog ?? [] }));
+        const next = list.map((b, i) => ({ ...b, room_id: hasPersistedRoom ? room : undefined, is_current: hasCurrent ? !!b.is_current : i === 0, view_enabled: b.view_enabled !== false, fog: b.fog ?? [] }));
         setBoards(next); setActiveId(next.find(b => b.is_current)?.id ?? next[0]?.id ?? null);
         Promise.all(next.map(b => updateRow('tabletops', b.id, { room_id: b.room_id, is_current: b.is_current, view_enabled: b.view_enabled } as any).catch(() => {})));
       })
@@ -184,7 +185,7 @@ const Tabletop = () => {
     let data: Board;
     try { data = await createRow<Board>('tabletops', { name: `Mapa ${boards.length + 1}`, room_id: room, is_current: boards.length === 0, view_enabled: true }); }
     catch { return toast.error('Não consegui criar o mapa.'); }
-    setBoards(prev => [...prev, { ...data, room_id: room, is_current: boards.length === 0, view_enabled: true, fog: data.fog ?? [] }]);
+    setBoards(prev => [...prev, { ...data, room_id: data.room_id, is_current: data.is_current ?? boards.length === 0, view_enabled: data.view_enabled !== false, fog: data.fog ?? [] }]);
     setActiveId(data.id);
   };
 
