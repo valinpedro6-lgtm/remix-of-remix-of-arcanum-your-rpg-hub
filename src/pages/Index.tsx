@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import heroBanner from '@/assets/hero-banner.jpg';
 import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
 
 const features = [
   { path: '/painel', label: 'Painel do Mestre', desc: 'Dashboard com tudo resumido', icon: Gauge, accent: 'from-amber-500/20 to-yellow-500/10' },
@@ -55,11 +56,19 @@ const Index = () => {
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-foreground/70 mt-3 text-lg max-w-lg leading-relaxed">
               Tudo que você precisa para criar sessões épicas de RPG de mesa.
             </motion.p>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }} className="flex flex-wrap gap-2 mt-5">
+              <Button asChild className="gap-2 shadow-lg shadow-primary/20"><Link to="/painel"><Gauge className="w-4 h-4" />Abrir o painel</Link></Button>
+              <Button asChild variant="outline" className="gap-2 bg-background/35"><Link to="/mesa"><Dices className="w-4 h-4" />Começar uma sessão</Link></Button>
+            </motion.div>
           </div>
         </div>
       </motion.div>
 
       {/* Feature Grid */}
+      <div className="flex items-end justify-between gap-4">
+        <div><p className="section-kicker">Seu arsenal de mesa</p><h2 className="font-display text-xl md:text-2xl font-bold mt-1">Tudo no alcance de um d20</h2></div>
+        <div className="hidden sm:flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground"><span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_hsl(var(--primary)/.8)]" />Pronto para jogar</div>
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
         {features.map((f, i) => (
           <motion.div

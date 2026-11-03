@@ -80,7 +80,7 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-end justify-between gap-4 flex-wrap">
-        <div><p className="text-[11px] uppercase tracking-[0.25em] text-primary/80 font-semibold mb-1">Visão da sessão</p><h1 className="page-title">Painel do Mestre</h1></div>
+        <div><p className="section-kicker mb-2">Visão da sessão</p><h1 className="page-title">Painel do Mestre</h1><div className="rune-divider w-40 mt-3" /></div>
         <Badge variant="outline" className="h-8 gap-2 border-primary/30 bg-primary/5 text-primary"><span className="w-2 h-2 rounded-full bg-primary animate-pulse" /> Mesa pronta</Badge>
       </motion.div>
 

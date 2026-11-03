@@ -67,6 +67,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
           <div className="flex items-center gap-3"><div className="brand-mark w-10 h-10 rounded-lg grid place-items-center text-primary-foreground"><Dices className="w-5 h-5" /></div><div><h1 className="text-2xl font-display font-black gradient-text tracking-widest leading-none">ARCANUM</h1><p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mt-1">Ferramentas para sua mesa</p></div></div>
         </div>
         <nav className="flex flex-col gap-1 p-3 flex-1 overflow-y-auto">
+          <p className="section-kicker px-3 pb-2 pt-1">Livro da campanha</p>
           <NavLinks />
         </nav>
         <div className="p-3 border-t border-border/50 space-y-2">
@@ -92,6 +93,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
               <div className="flex items-center gap-3"><div className="brand-mark w-9 h-9 rounded-lg grid place-items-center text-primary-foreground"><Dices className="w-5 h-5" /></div><div><h1 className="text-2xl font-display font-black gradient-text tracking-widest leading-none">ARCANUM</h1><p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mt-1">Ferramentas para sua mesa</p></div></div>
             </div>
             <nav className="flex flex-col gap-0.5 p-3 flex-1 overflow-y-auto">
+              <p className="section-kicker px-3 pb-2 pt-1">Livro da campanha</p>
               <NavLinks />
             </nav>
             <div className="p-3 border-t border-border/50 space-y-2">
