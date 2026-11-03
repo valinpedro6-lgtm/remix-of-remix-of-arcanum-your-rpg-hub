@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/hooks/use-toast';
 import { getSystemIdentity } from '@/data/systemIdentity';
+import { getActiveSystemId, getLiveSystem } from '@/lib/systemMode';
 
 const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const rollD = (sides: number) => Math.floor(Math.random() * sides) + 1;
@@ -297,7 +298,7 @@ const copy = async (text: string, title = 'Copiado!') => {
 };
 
 const LootGenerator = () => {
-  const [systemId, setSystemId] = useState<LootSystemId>('generic');
+  const [systemId, setSystemId] = useState<LootSystemId>(() => getLiveSystem(getActiveSystemId()).generatorIds.loot as LootSystemId);
   const [level, setLevel] = useState('1-4');
   const [encounter, setEncounter] = useState('medio');
   const [types, setTypes] = useState<LootType[]>(ALL_TYPES);
@@ -312,6 +313,11 @@ const LootGenerator = () => {
   const [currentDrop, setCurrentDrop] = useState<LootDrop | null>(null);
   const activeSystem = getLootSystem(systemId);
   const systemIdentity = getSystemIdentity(systemId);
+  useEffect(() => {
+    const sync = () => setSystemId(getLiveSystem(getActiveSystemId()).generatorIds.loot as LootSystemId);
+    window.addEventListener('arcanum-system-change', sync);
+    return () => window.removeEventListener('arcanum-system-change', sync);
+  }, []);
 
   const generate = () => {
     const drop = generateLoot(systemId, encounter, level, types, boost, autoCount ? null : count, withGold);

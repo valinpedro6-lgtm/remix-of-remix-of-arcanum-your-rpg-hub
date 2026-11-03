@@ -13,6 +13,7 @@ import {
 import { PLAYER_SYSTEM_PRESETS, type PlayerPreset } from '@/data/rpgSystemPresets';
 import { getFlavor, rollAttribute, rollVitals } from '@/data/systemFlavor';
 import { getSystemIdentity } from '@/data/systemIdentity';
+import { getActiveSystemId, getLiveSystem } from '@/lib/systemMode';
 import { ImageUploader } from '@/components/ImageUploader';
 import { ZoomImage } from '@/components/ImageLightbox';
 import { AttachmentGallery, type Attachment } from '@/components/AttachmentGallery';
@@ -604,7 +605,7 @@ const NPCGenerator = () => {
   const [current, setCurrent] = useState<Character | null>(null);
   const [saved, setSaved] = useLocalStorage<Character[]>('arcanum-npcs', []);
   const [region, setRegion] = useState<RegionType>(getCurrentRegion);
-  const [selectedSystem, setSelectedSystem] = useState<string>(PLAYER_SYSTEM_PRESETS[0].id);
+  const [selectedSystem, setSelectedSystem] = useState<string>(() => getLiveSystem(getActiveSystemId()).generatorIds.player);
   const [revealedSecrets, setRevealedSecrets] = useState<Set<string>>(new Set());
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
@@ -617,6 +618,11 @@ const NPCGenerator = () => {
     sync();
     const interval = setInterval(sync, 5000);
     return () => clearInterval(interval);
+  }, []);
+  useEffect(() => {
+    const sync = () => setSelectedSystem(getLiveSystem(getActiveSystemId()).generatorIds.player);
+    window.addEventListener('arcanum-system-change', sync);
+    return () => window.removeEventListener('arcanum-system-change', sync);
   }, []);
 
   const generate = (villain: boolean) => setCurrent(villain ? generateVillain(region, getPreset()) : generateNPC(region, getPreset()));
