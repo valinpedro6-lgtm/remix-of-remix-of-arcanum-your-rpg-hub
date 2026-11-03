@@ -21,6 +21,7 @@ interface RollResult {
 
 const QUICK_DICE = [4, 6, 8, 10, 12, 20];
 const ROLL_PARTICLES = Array.from({ length: 12 }, (_, index) => index);
+const IMPACT_PARTICLES = Array.from({ length: 18 }, (_, index) => index);
 
 // Returns RPG-style label and color based on roll quality
 function getRollQuality(rolls: number[], sides: number, total: number, modifier: number): { label: string; color: string; emoji: string } | null {
@@ -100,11 +101,14 @@ const DiceRoller = () => {
   const [displayValue, setDisplayValue] = useState<number | null>(null);
   const [lastRolls, setLastRolls] = useState<number[]>([]);
   const [lastSides, setLastSides] = useState(20);
+  const [hasImpact, setHasImpact] = useState(false);
   const [history, setHistory] = useLocalStorage<RollResult[]>('arcanum-dice-history', []);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const impactTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
+    if (impactTimeoutRef.current) clearTimeout(impactTimeoutRef.current);
   }, []);
 
   const getDiceSides = useCallback(() => {
@@ -118,7 +122,9 @@ const DiceRoller = () => {
     const qty = overrideQty ?? quantity;
     if (sides < 2) return;
     if (intervalRef.current) clearInterval(intervalRef.current);
+    if (impactTimeoutRef.current) clearTimeout(impactTimeoutRef.current);
     setIsRolling(true);
+    setHasImpact(false);
     setDisplayValue(null);
     setLastRolls([]);
     setLastSides(sides);
@@ -136,6 +142,8 @@ const DiceRoller = () => {
         setDisplayValue(total);
         setLastRolls(rolls);
         setIsRolling(false);
+        setHasImpact(true);
+        impactTimeoutRef.current = setTimeout(() => setHasImpact(false), 900);
         setHistory(prev => [{
           dice: `${qty}d${sides}${modifier >= 0 ? '+' : ''}${modifier !== 0 ? modifier : ''}`,
           rolls, modifier, total, timestamp: Date.now(), sides,
@@ -238,8 +246,18 @@ const DiceRoller = () => {
                 </AnimatePresence>
 
                 {/* Animated dice stage */}
-                <div className={`relative my-4 flex h-56 w-full items-center justify-center overflow-hidden rounded-3xl border transition-all duration-500 ${isRolling ? 'border-primary/60 bg-primary/10 shadow-[inset_0_0_60px_hsl(var(--primary)/0.12)]' : 'border-border/50 bg-secondary/20'}`}>
+                <motion.div
+                  className={`relative my-4 flex h-56 w-full items-center justify-center overflow-hidden rounded-3xl border transition-all duration-500 ${isRolling ? 'border-primary/60 bg-primary/10 shadow-[inset_0_0_60px_hsl(var(--primary)/0.12)]' : hasImpact ? 'border-primary bg-primary/15 shadow-[inset_0_0_90px_hsl(var(--primary)/0.28)]' : 'border-border/50 bg-secondary/20'}`}
+                  animate={isRolling ? { x: [0, -2, 2, -1, 0], scale: [1, 1.015, 1] } : hasImpact ? { x: [0, -7, 7, -4, 0], scale: [1, 1.025, 0.99, 1] } : { x: 0, scale: 1 }}
+                  transition={isRolling ? { duration: 0.32, repeat: Infinity, repeatDelay: 0.08 } : { duration: 0.38, ease: 'easeOut' }}
+                >
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,hsl(var(--primary)/0.16),transparent_58%)]" />
+                  <motion.div
+                    className="absolute inset-0 bg-primary/20"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: hasImpact ? [0, 0.8, 0] : 0 }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                  />
                   <motion.div
                     className="absolute h-40 w-40 rounded-full border border-primary/20"
                     animate={isRolling ? { rotate: 360, scale: [0.9, 1.08, 0.9] } : { rotate: 0, scale: 1 }}
@@ -254,6 +272,22 @@ const DiceRoller = () => {
                       transition={{ duration: 0.9, repeat: Infinity, delay: particle * 0.05, ease: 'easeOut' }}
                     />
                   ))}
+                  <AnimatePresence>
+                    {hasImpact && IMPACT_PARTICLES.map(particle => {
+                      const angle = (particle / IMPACT_PARTICLES.length) * Math.PI * 2;
+                      const distance = 70 + (particle % 4) * 15;
+                      return (
+                        <motion.span
+                          key={`impact-${particle}`}
+                          className="absolute h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_10px_hsl(var(--primary))]"
+                          initial={{ opacity: 1, x: 0, y: 0, scale: 1.5 }}
+                          animate={{ opacity: 0, x: Math.cos(angle) * distance, y: Math.sin(angle) * distance, scale: 0 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.72, ease: 'easeOut', delay: (particle % 3) * 0.02 }}
+                        />
+                      );
+                    })}
+                  </AnimatePresence>
                   {displayValue !== null || isRolling ? (
                     <DiceFace value={displayValue ?? 0} isRolling={isRolling} />
                   ) : (
@@ -267,12 +301,12 @@ const DiceRoller = () => {
                   )}
                   <motion.div
                     className="absolute bottom-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground"
-                    animate={isRolling ? { opacity: [0.35, 1, 0.35] } : { opacity: 0.55 }}
-                    transition={{ duration: 1, repeat: isRolling ? Infinity : 0 }}
+                    animate={isRolling ? { opacity: [0.35, 1, 0.35] } : hasImpact ? { opacity: [0.5, 1, 0.65] } : { opacity: 0.55 }}
+                    transition={{ duration: hasImpact ? 0.45 : 1, repeat: isRolling ? Infinity : 0 }}
                   >
-                    {isRolling ? 'O destino está rolando' : 'Pronto para rolar'}
+                    {isRolling ? 'O destino está rolando' : hasImpact ? 'Resultado confirmado' : 'Pronto para rolar'}
                   </motion.div>
-                </div>
+                </motion.div>
 
                 {!isRolling && displayValue !== null && (
                   <motion.div
