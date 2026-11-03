@@ -164,8 +164,6 @@ export type Database = {
       tabletops: {
         Row: {
           active: boolean
-          camera_x: number
-          camera_y: number
           created_at: string
           fog: Json
           grid: boolean
@@ -174,19 +172,14 @@ export type Database = {
           map_url: string
           name: string
           owner: string | null
-          room_id: string | null
           share_id: string
-          is_current: boolean
           tokens: Json
           updated_at: string
-          view_enabled: boolean
           view: Json
           zoom: number
         }
         Insert: {
           active?: boolean
-          camera_x?: number
-          camera_y?: number
           created_at?: string
           fog?: Json
           grid?: boolean
@@ -195,19 +188,14 @@ export type Database = {
           map_url?: string
           name?: string
           owner?: string | null
-          room_id?: string | null
           share_id?: string
-          is_current?: boolean
           tokens?: Json
           updated_at?: string
-          view_enabled?: boolean
           view?: Json
           zoom?: number
         }
         Update: {
           active?: boolean
-          camera_x?: number
-          camera_y?: number
           created_at?: string
           fog?: Json
           grid?: boolean
@@ -216,12 +204,9 @@ export type Database = {
           map_url?: string
           name?: string
           owner?: string | null
-          room_id?: string | null
           share_id?: string
-          is_current?: boolean
           tokens?: Json
           updated_at?: string
-          view_enabled?: boolean
           view?: Json
           zoom?: number
         }

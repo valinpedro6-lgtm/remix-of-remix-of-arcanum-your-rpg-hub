@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Plus, Trash2, Map as MapIcon, ImagePlus, UserPlus, Maximize2, Minimize2,
-  Grid3x3, Loader2, ZoomIn, ZoomOut, Users, Hand, MousePointer2, Square, Share2, Eye, EyeOff, ScrollText, Copy, ExternalLink,
+  Grid3x3, Loader2, ZoomIn, ZoomOut, Users, Hand, MousePointer2, Square, Share2, Eye, ScrollText, Copy, ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,18 +32,12 @@ interface Board {
   fog: FogRect[];
   share_id?: string;
   zoom?: number;
-  camera_x?: number;
-  camera_y?: number;
   last_roll?: Roll | null;
-  room_id?: string;
-  is_current?: boolean;
-  view_enabled?: boolean;
 }
 
 type Tool = 'move' | 'pan' | 'fog';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
-const ROOM_KEY = 'arcanum-tabletop-room';
 
 const shrink = (file: File | string, max: number, keepPng: boolean): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -92,15 +86,7 @@ const Tabletop = () => {
 
   useEffect(() => {
     listRows<Board>('tabletops')
-      .then(list => {
-        const room = localStorage.getItem(ROOM_KEY) || list.find(b => b.room_id)?.room_id || uid() + uid();
-        localStorage.setItem(ROOM_KEY, room);
-        const hasPersistedRoom = list.some(b => Boolean(b.room_id));
-        const hasCurrent = list.some(b => b.is_current);
-        const next = list.map((b, i) => ({ ...b, room_id: hasPersistedRoom ? room : undefined, is_current: hasCurrent ? !!b.is_current : i === 0, view_enabled: b.view_enabled !== false, fog: b.fog ?? [] }));
-        setBoards(next); setActiveId(next.find(b => b.is_current)?.id ?? next[0]?.id ?? null);
-        Promise.all(next.map(b => updateRow('tabletops', b.id, { room_id: b.room_id, is_current: b.is_current, view_enabled: b.view_enabled } as any).catch(() => {})));
-      })
+      .then(list => { setBoards(list.map(b => ({ ...b, fog: b.fog ?? [] }))); setActiveId(list[0]?.id ?? null); })
       .catch(() => toast.error('Não consegui carregar os mapas.'))
       .finally(() => setLoading(false));
     listSheets().then(setSheets).catch(() => {});
@@ -129,7 +115,7 @@ const Tabletop = () => {
 
   const board = boards.find(b => b.id === activeId) ?? null;
   const zoom = board?.zoom ?? 1;
-  const zoomCtl = useStageZoom(stageRef, zoom, z => { patch({ zoom: z }); requestAnimationFrame(syncCamera); }, () => { drag.current = null; pan.current = null; fogStart.current = null; setDraftFog(null); });
+  const zoomCtl = useStageZoom(stageRef, zoom, z => patch({ zoom: z }), () => { drag.current = null; pan.current = null; fogStart.current = null; setDraftFog(null); });
 
   const patch = (p: Partial<Board>, now = false) => {
     if (!board) return;
@@ -139,18 +125,6 @@ const Tabletop = () => {
     clearTimeout(saveT.current);
     const run = () => updateRow('tabletops', id, p as any).catch(() => toast.error('Não consegui salvar.'));
     if (now) run(); else saveT.current = setTimeout(run, 150);
-  };
-
-  // Salva a posição relativa da janela para que todos acompanhem o enquadramento do Mestre.
-  const syncCamera = () => {
-    const stage = stageRef.current;
-    if (!stage) return;
-    const maxX = Math.max(0, stage.scrollWidth - stage.clientWidth);
-    const maxY = Math.max(0, stage.scrollHeight - stage.clientHeight);
-    patch({
-      camera_x: maxX ? stage.scrollLeft / maxX : 0,
-      camera_y: maxY ? stage.scrollTop / maxY : 0,
-    });
   };
 
   // Atalhos de teclado: M mover, H mãozinha, N névoa, G grade, F tela cheia, +/- zoom
@@ -171,21 +145,11 @@ const Tabletop = () => {
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  const activate = async (id: string) => {
-    const room = localStorage.getItem(ROOM_KEY) || board?.room_id;
-    if (!room) return;
-    const next = boards.map(b => ({ ...b, room_id: room, is_current: b.id === id }));
-    setBoards(next); setActiveId(id); setSelToken(null);
-    await Promise.all(next.map(b => updateRow('tabletops', b.id, { room_id: room, is_current: b.id === id } as any).catch(() => {})));
-  };
-
   const create = async () => {
-    const room = localStorage.getItem(ROOM_KEY) || uid() + uid();
-    localStorage.setItem(ROOM_KEY, room);
     let data: Board;
-    try { data = await createRow<Board>('tabletops', { name: `Mapa ${boards.length + 1}`, room_id: room, is_current: boards.length === 0, view_enabled: true }); }
+    try { data = await createRow<Board>('tabletops', { name: `Mapa ${boards.length + 1}` }); }
     catch { return toast.error('Não consegui criar o mapa.'); }
-    setBoards(prev => [...prev, { ...data, room_id: data.room_id, is_current: data.is_current ?? boards.length === 0, view_enabled: data.view_enabled !== false, fog: data.fog ?? [] }]);
+    setBoards(prev => [...prev, { ...data, fog: data.fog ?? [] }]);
     setActiveId(data.id);
   };
 
@@ -312,7 +276,7 @@ const Tabletop = () => {
     else await document.exitFullscreen().catch(() => {});
   };
 
-  const shareUrl = board?.room_id ? `${window.location.origin}/#/mapa-ao-vivo/${board.room_id}` : board?.share_id ? `${window.location.origin}/#/mapa-ao-vivo/${board.share_id}` : '';
+  const shareUrl = board?.share_id ? `${window.location.origin}/#/mapa-ao-vivo/${board.share_id}` : '';
 
   const copyShare = async () => {
     if (!shareUrl) return toast.error('Este mapa ainda não tem link. Salve uma alteração e tente de novo.');
@@ -338,7 +302,6 @@ const Tabletop = () => {
   const sel = board?.tokens.find(t => t.id === selToken);
   const fogCount = board?.fog?.length ?? 0;
   const tableSheets = sheets.filter(s => s.in_list);
-  const ViewIcon = board?.view_enabled === false ? Eye : EyeOff;
 
   const toolBtn = (t: Tool, icon: React.ReactNode, label: string, keyHint: string) => (
     <Button size="sm" variant={tool === t ? 'default' : 'outline'} className="h-9 gap-1" onClick={() => setTool(t)} title={`${label} (tecla ${keyHint})`}>
@@ -358,7 +321,7 @@ const Tabletop = () => {
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
         {boards.map(b => (
           <Button key={b.id} size="sm" variant={b.id === activeId ? 'default' : 'outline'} className="gap-1.5 shrink-0"
-            onClick={() => activate(b.id)}>
+            onClick={() => { setActiveId(b.id); setSelToken(null); }}>
             <MapIcon className="w-3.5 h-3.5" />{b.name}
           </Button>
         ))}
@@ -406,7 +369,6 @@ const Tabletop = () => {
             <Button size="sm" variant="outline" className="h-9" onClick={toggleFull}>{full ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</Button>
             <Button size="sm" variant={showSummary ? 'default' : 'outline'} className="h-9 gap-1" onClick={() => setShowSummary(v => !v)} title="Resumo das fichas na mesa"><ScrollText className="w-4 h-4" /><span className="hidden sm:inline">Fichas</span></Button>
             <Button size="sm" variant="secondary" className="h-9 gap-1" onClick={share} title="Copiar link ao vivo para os jogadores"><Share2 className="w-4 h-4" /><span className="hidden sm:inline">Compartilhar</span></Button>
-            <Button size="sm" variant={board.view_enabled === false ? 'default' : 'outline'} className="h-9 gap-1" onClick={() => patch({ view_enabled: board.view_enabled === false }, true)} title="Pausar ou liberar a visão dos jogadores"><ViewIcon className="w-4 h-4" /><span className="hidden sm:inline">{board.view_enabled === false ? 'Liberar visão' : 'Cancelar visualização'}</span></Button>
             <Button size="sm" variant="outline" className="h-9 text-destructive" onClick={remove}><Trash2 className="w-4 h-4" /></Button>
           </div>
 
@@ -457,7 +419,6 @@ const Tabletop = () => {
           <div className="flex gap-3 items-start">
             <div
               ref={stageRef}
-              onScroll={syncCamera}
               className={`relative flex-1 min-w-0 overflow-auto rounded-xl border border-border/50 bg-background min-h-[58dvh] ${full ? 'flex items-center' : 'max-h-[calc(100dvh-13rem)] sm:max-h-[75dvh]'} ${tool === 'pan' ? 'cursor-grab active:cursor-grabbing' : ''} ${tool === 'fog' ? 'cursor-crosshair' : ''}`}
             >
               <div
