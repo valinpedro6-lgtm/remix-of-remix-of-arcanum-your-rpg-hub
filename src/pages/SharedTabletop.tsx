@@ -8,7 +8,7 @@ interface Token { id: string; name: string; image: string; x: number; y: number;
 interface FogRect { id: string; x: number; y: number; w: number; h: number }
 interface SharedBoard {
   id: string; name: string; map_url: string; tokens: Token[]; grid: boolean;
-  fog: FogRect[]; zoom: number; camera_x?: number; camera_y?: number; last_roll: Roll | null; updated_at: string;
+  fog: FogRect[]; zoom: number; camera_x?: number; camera_y?: number; room_id?: string; is_current?: boolean; view_enabled?: boolean; last_roll: Roll | null; updated_at: string;
 }
 
 /** Mapa compartilhado pelo mestre: jogadores veem em tempo real, movem os bonecos e rolam dados.
@@ -120,6 +120,10 @@ const SharedTabletop = () => {
         <Loader2 className="w-4 h-4 animate-spin" /> Abrindo o mapa...
       </div>
     );
+  }
+
+  if (board.view_enabled === false) {
+    return <div className="min-h-[100dvh] bg-black text-white flex flex-col items-center justify-center gap-3 p-6 text-center"><MapIcon className="w-8 h-8 text-white/40" /><h1 className="font-display text-xl">A mesa está em pausa</h1><p className="text-sm text-white/50">O Mestre pausou a visualização. A tela volta quando ele liberar novamente.</p><span className="text-xs text-white/30 animate-pulse">Aguardando o Mestre…</span></div>;
   }
 
   return (

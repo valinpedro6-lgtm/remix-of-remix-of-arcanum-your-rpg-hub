@@ -174,9 +174,12 @@ export type Database = {
           map_url: string
           name: string
           owner: string | null
+          room_id: string | null
           share_id: string
+          is_current: boolean
           tokens: Json
           updated_at: string
+          view_enabled: boolean
           view: Json
           zoom: number
         }
@@ -192,9 +195,12 @@ export type Database = {
           map_url?: string
           name?: string
           owner?: string | null
+          room_id?: string | null
           share_id?: string
+          is_current?: boolean
           tokens?: Json
           updated_at?: string
+          view_enabled?: boolean
           view?: Json
           zoom?: number
         }
@@ -210,9 +216,12 @@ export type Database = {
           map_url?: string
           name?: string
           owner?: string | null
+          room_id?: string | null
           share_id?: string
+          is_current?: boolean
           tokens?: Json
           updated_at?: string
+          view_enabled?: boolean
           view?: Json
           zoom?: number
         }

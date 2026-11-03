@@ -78,6 +78,13 @@
       "when": 1793680590000,
       "tag": "0010_tabletop_master_camera",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793680860000,
+      "tag": "0011_tabletop_shared_room",
+      "breakpoints": true
     }
   ]
 }

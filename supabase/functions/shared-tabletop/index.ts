@@ -17,7 +17,7 @@ const admin = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
 );
 
-const SELECT = "id, name, map_url, tokens, grid, fog, zoom, camera_x, camera_y, last_roll, share_id, updated_at";
+const SELECT = "id, name, map_url, tokens, grid, fog, zoom, camera_x, camera_y, last_roll, share_id, room_id, is_current, view_enabled, updated_at";
 const validId = (s: string) => /^[a-zA-Z0-9_-]{4,64}$/.test(s);
 
 Deno.serve(async (req) => {
@@ -51,12 +51,16 @@ Deno.serve(async (req) => {
         };
       }
       if (Object.keys(values).length === 0) return json({ ok: true });
-      const { error } = await admin.from("tabletops").update(values).eq("share_id", shareId);
+      const { data: current } = await admin.from("tabletops").select("id").eq("room_id", shareId).eq("is_current", true).maybeSingle();
+      const target = current ? admin.from("tabletops").update(values).eq("id", current.id) : admin.from("tabletops").update(values).eq("share_id", shareId);
+      const { error } = await target;
       if (error) throw error;
       return json({ ok: true });
     }
 
-    const { data } = await admin.from("tabletops").select(SELECT).eq("share_id", shareId).maybeSingle();
+    const { data: current } = await admin.from("tabletops").select(SELECT).eq("room_id", shareId).eq("is_current", true).maybeSingle();
+    const { data: legacy } = current ? { data: null } : await admin.from("tabletops").select(SELECT).eq("share_id", shareId).maybeSingle();
+    const data = current ?? legacy;
     return json({ board: data ?? null });
   } catch (e) {
     console.error("shared-tabletop error", e);
