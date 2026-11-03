@@ -43,3 +43,4 @@
 - [x] Névoa cobre os personagens (z-index)
 - [x] Inventário nas fichas do Elenco
 - [ ] Melhorar muito o gerador de loot
+- [ ] Tabletop: zoom no link dos jogadores, movimento fluido, selecionar vários e mover juntos
