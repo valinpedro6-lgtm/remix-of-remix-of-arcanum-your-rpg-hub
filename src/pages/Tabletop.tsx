@@ -74,7 +74,10 @@ const Tabletop = () => {
   const [animRoll, setAnimRoll] = useState<Roll | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ id: string; dx: number; dy: number } | null>(null);
+  const drag = useRef<{ start: { x: number; y: number }; orig: Record<string, { x: number; y: number }> } | null>(null);
+  const [multi, setMulti] = useState<string[]>([]);
+  const [multiMode, setMultiMode] = useState(false);
+  const busyUntil = useRef(0);
   const pan = useRef<{ sx: number; sy: number; sl: number; st: number } | null>(null);
   const fogStart = useRef<{ x: number; y: number } | null>(null);
   const saveT = useRef<ReturnType<typeof setTimeout>>();
@@ -90,16 +93,35 @@ const Tabletop = () => {
     return () => document.removeEventListener('fullscreenchange', h);
   }, []);
 
+  // Puxa as mudanças feitas pelos jogadores no link (bonecos e dados)
+  useEffect(() => {
+    if (!activeId) return;
+    const t = setInterval(() => {
+      if (document.hidden || drag.current || Date.now() < busyUntil.current) return;
+      listRows<Board>('tabletops').then(list => {
+        if (drag.current || Date.now() < busyUntil.current) return;
+        const f = list.find(b => b.id === activeId);
+        if (!f) return;
+        setBoards(prev => prev.map(b => b.id === f.id ? { ...b, tokens: f.tokens, last_roll: (f as any).last_roll } as Board : b));
+        const lr = (f as any).last_roll as Roll | null;
+        if (lr && lr.at > lastSeenRoll.current) { lastSeenRoll.current = lr.at; if (lr.by !== 'Mestre') setAnimRoll(lr); }
+      }).catch(() => {});
+    }, 1500);
+    return () => clearInterval(t);
+  }, [activeId]);
+  const lastSeenRoll = useRef(Date.now());
+
   const board = boards.find(b => b.id === activeId) ?? null;
   const zoom = board?.zoom ?? 1;
 
   const patch = (p: Partial<Board>, now = false) => {
     if (!board) return;
     const id = board.id;
+    busyUntil.current = Date.now() + 2500;
     setBoards(prev => prev.map(b => (b.id === id ? { ...b, ...p } : b)));
     clearTimeout(saveT.current);
     const run = () => updateRow('tabletops', id, p as any).catch(() => toast.error('Não consegui salvar.'));
-    if (now) run(); else saveT.current = setTimeout(run, 500);
+    if (now) run(); else saveT.current = setTimeout(run, 150);
   };
 
   // Atalhos de teclado: M mover, H mãozinha, N névoa, G grade, F tela cheia, +/- zoom
@@ -169,7 +191,16 @@ const Tabletop = () => {
     if (tool !== 'move') return;
     e.stopPropagation();
     const p = pct(e);
-    drag.current = { id: t.id, dx: p.x - t.x, dy: p.y - t.y };
+    const additive = multiMode || e.shiftKey || e.ctrlKey || e.metaKey;
+    let group = multi;
+    if (additive) {
+      group = multi.includes(t.id) ? multi.filter(x => x !== t.id) : [...multi, t.id];
+      setMulti(group);
+    } else if (!multi.includes(t.id)) { group = [t.id]; setMulti(group); }
+    const ids = group.includes(t.id) ? group : [t.id];
+    const orig: Record<string, { x: number; y: number }> = {};
+    board!.tokens.forEach(k => { if (ids.includes(k.id)) orig[k.id] = { x: k.x, y: k.y }; });
+    drag.current = { start: p, orig };
     setSelToken(t.id);
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
@@ -189,6 +220,7 @@ const Tabletop = () => {
       return;
     }
     setSelToken(null);
+    if (!multiMode) setMulti([]);
   };
 
   const onMove = (e: React.PointerEvent) => {
@@ -209,10 +241,10 @@ const Tabletop = () => {
     }
     if (!drag.current || !mapRef.current) return;
     const p = pct(e);
-    updateToken(drag.current.id, {
-      x: Math.max(0, Math.min(100, p.x - drag.current.dx)),
-      y: Math.max(0, Math.min(100, p.y - drag.current.dy)),
-    });
+    const { start, orig } = drag.current;
+    const dx = p.x - start.x, dy = p.y - start.y;
+    if (!board) return;
+    patch({ tokens: board.tokens.map(t => orig[t.id] ? { ...t, x: Math.max(0, Math.min(100, orig[t.id].x + dx)), y: Math.max(0, Math.min(100, orig[t.id].y + dy)) } : t) });
   };
 
   const onUp = () => {
@@ -226,8 +258,8 @@ const Tabletop = () => {
       return;
     }
     if (drag.current) {
-      updateToken(drag.current.id, {}, true);
       drag.current = null;
+      if (board) patch({ tokens: board.tokens }, true);
     }
   };
 
@@ -315,6 +347,9 @@ const Tabletop = () => {
             </label>
             <Button size="sm" variant="outline" className="gap-1 h-9" onClick={() => setShowCast(v => !v)}><Users className="w-4 h-4" />Do elenco</Button>
             <Button size="sm" variant={board.grid ? 'default' : 'outline'} className="h-9" onClick={() => patch({ grid: !board.grid }, true)} title="Grade (G)"><Grid3x3 className="w-4 h-4" /></Button>
+            <Button size="sm" variant={multiMode ? 'default' : 'outline'} className="h-9" title="Selecionar vários (ou segure Shift)" onClick={() => { setMultiMode(m => !m); if (multiMode) setMulti([]); }}>
+              {multiMode ? `Selecionando (${multi.length})` : 'Selecionar vários'}
+            </Button>
             <Button size="sm" variant="outline" className="h-9" onClick={() => patch({ zoom: Math.max(0.5, zoom - 0.25) }, true)}><ZoomOut className="w-4 h-4" /></Button>
             <Button size="sm" variant="outline" className="h-9" onClick={() => patch({ zoom: Math.min(3, zoom + 0.25) }, true)}><ZoomIn className="w-4 h-4" /></Button>
             <Button size="sm" variant="outline" className="h-9" onClick={toggleFull}>{full ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</Button>
@@ -404,7 +439,7 @@ const Tabletop = () => {
                     className={`absolute -translate-x-1/2 -translate-y-1/2 ${tool === 'move' ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'}`}
                     style={{ left: `${t.x}%`, top: `${t.y}%`, width: `${t.size}%` }}>
                     <img src={t.image} alt={t.name} draggable={false}
-                      className={`w-full object-contain pointer-events-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] ${selToken === t.id ? 'ring-2 ring-primary rounded-full' : ''}`} />
+                      className={`w-full object-contain pointer-events-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] ${multi.includes(t.id) || selToken === t.id ? 'ring-2 ring-primary rounded-full shadow-[0_0_16px_hsl(var(--primary))]' : ''}`} />
                     <p className="text-center text-[10px] sm:text-xs font-bold text-foreground bg-background/70 rounded px-1 mt-0.5 truncate">{t.name}</p>
                   </div>
                 ))}
