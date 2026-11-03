@@ -1,3 +1,4 @@
+import { useStageZoom } from '@/hooks/useStageZoom';
 import { useEffect, useRef, useState } from 'react';
 // A névoa fica POR CIMA dos personagens (z-20) — cobre bonecos também.
 import { motion } from 'framer-motion';
@@ -113,6 +114,7 @@ const Tabletop = () => {
 
   const board = boards.find(b => b.id === activeId) ?? null;
   const zoom = board?.zoom ?? 1;
+  const zoomCtl = useStageZoom(stageRef, zoom, z => patch({ zoom: z }), () => { drag.current = null; pan.current = null; fogStart.current = null; setDraftFog(null); });
 
   const patch = (p: Partial<Board>, now = false) => {
     if (!board) return;
@@ -135,8 +137,8 @@ const Tabletop = () => {
       else if (k === 'n') setTool('fog');
       else if (k === 'g') patch({ grid: !board?.grid }, true);
       else if (k === 'f') toggleFull();
-      else if (k === '+' || k === '=') patch({ zoom: Math.min(3, zoom + 0.25) }, true);
-      else if (k === '-') patch({ zoom: Math.max(0.5, zoom - 0.25) }, true);
+      else if (k === '+' || k === '=') zoomCtl.zoomIn();
+      else if (k === '-') zoomCtl.zoomOut();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -350,8 +352,9 @@ const Tabletop = () => {
             <Button size="sm" variant={multiMode ? 'default' : 'outline'} className="h-9" title="Selecionar vários (ou segure Shift)" onClick={() => { setMultiMode(m => !m); if (multiMode) setMulti([]); }}>
               {multiMode ? `Selecionando (${multi.length})` : 'Selecionar vários'}
             </Button>
-            <Button size="sm" variant="outline" className="h-9" onClick={() => patch({ zoom: Math.max(0.5, zoom - 0.25) }, true)}><ZoomOut className="w-4 h-4" /></Button>
-            <Button size="sm" variant="outline" className="h-9" onClick={() => patch({ zoom: Math.min(3, zoom + 0.25) }, true)}><ZoomIn className="w-4 h-4" /></Button>
+            <Button size="sm" variant="outline" className="h-9" onClick={() => zoomCtl.zoomOut()}><ZoomOut className="w-4 h-4" /></Button>
+            <Button size="sm" variant="outline" className="h-9" onClick={() => zoomCtl.zoomIn()}><ZoomIn className="w-4 h-4" /></Button>
+            <Button size="sm" variant="outline" className="h-9 px-2 tabular-nums text-xs" onClick={() => zoomCtl.reset()}>{Math.round(zoom * 100)}%</Button>
             <Button size="sm" variant="outline" className="h-9" onClick={toggleFull}>{full ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</Button>
             <Button size="sm" variant={showSummary ? 'default' : 'outline'} className="h-9 gap-1" onClick={() => setShowSummary(v => !v)} title="Resumo das fichas na mesa"><ScrollText className="w-4 h-4" /><span className="hidden sm:inline">Fichas</span></Button>
             <Button size="sm" variant="secondary" className="h-9 gap-1" onClick={share} title="Copiar link ao vivo para os jogadores"><Share2 className="w-4 h-4" /><span className="hidden sm:inline">Compartilhar</span></Button>
@@ -401,7 +404,7 @@ const Tabletop = () => {
               <div
                 ref={mapRef}
                 className="relative mx-auto select-none touch-none"
-                style={{ width: `${zoom * 100}%`, minWidth: zoom * 320 }}
+                style={{ width: `${zoom * 100}%` }}
                 onPointerDown={onStageDown}
                 onPointerMove={onMove}
                 onPointerUp={onUp}
@@ -477,7 +480,7 @@ const Tabletop = () => {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Atalhos: <kbd className="border border-border rounded px-1">M</kbd> mover · <kbd className="border border-border rounded px-1">H</kbd> mãozinha · <kbd className="border border-border rounded px-1">N</kbd> névoa · <kbd className="border border-border rounded px-1">G</kbd> grade · <kbd className="border border-border rounded px-1">F</kbd> tela cheia · <kbd className="border border-border rounded px-1">+</kbd>/<kbd className="border border-border rounded px-1">-</kbd> zoom (o zoom aparece igual para os jogadores)
+            Atalhos: <kbd className="border border-border rounded px-1">M</kbd> mover · <kbd className="border border-border rounded px-1">H</kbd> mãozinha · <kbd className="border border-border rounded px-1">N</kbd> névoa · <kbd className="border border-border rounded px-1">G</kbd> grade · <kbd className="border border-border rounded px-1">F</kbd> tela cheia · <kbd className="border border-border rounded px-1">+</kbd>/<kbd className="border border-border rounded px-1">-</kbd> zoom · roda do mouse ou pinça com dois dedos (o zoom aparece igual para os jogadores)
           </p>
         </>
       )}
