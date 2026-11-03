@@ -8,7 +8,6 @@ import { AccessGate } from "@/components/AccessGate";
 import Index from "./pages/Index";
 import Notes from "./pages/Notes";
 import Dashboard from "./pages/Dashboard";
-import SessionDirector from "./pages/SessionDirector";
 import TableHub from "./pages/TableHub";
 import SheetsHub from "./pages/SheetsHub";
 import GeneratorsHub from "./pages/GeneratorsHub";
@@ -42,7 +41,6 @@ const App = () => (
             <Route path="/elenco" element={<Cast />} />
             <Route path="/tabletop" element={<Tabletop />} />
             <Route path="/painel" element={<Dashboard />} />
-            <Route path="/diretor" element={<SessionDirector />} />
             <Route path="/mesa" element={<TableHub />} />
             <Route path="/fichas" element={<SheetsHub />} />
             <Route path="/geradores" element={<GeneratorsHub />} />
