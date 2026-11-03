@@ -14,7 +14,6 @@ import CompendiumHub from "./pages/CompendiumHub";
 import MindMap from "./pages/MindMap";
 import Cast from "./pages/Cast";
 import Tabletop from "./pages/Tabletop";
-import TableScreen from "./pages/TableScreen";
 import SharedSheet from "./pages/SharedSheet";
 import SharedTabletop from "./pages/SharedTabletop";
 import Master from "./pages/Master";
@@ -40,7 +39,6 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/personagens" element={<Cast />} />
             <Route path="/tabletop" element={<Tabletop />} />
-            <Route path="/tela-de-mesa" element={<TableScreen />} />
             <Route path="/painel" element={<Dashboard />} />
             <Route path="/mesa" element={<TableHub />} />
             <Route path="/elenco" element={<Navigate to="/personagens" replace />} />

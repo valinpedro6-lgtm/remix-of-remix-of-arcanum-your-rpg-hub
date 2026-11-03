@@ -8,7 +8,6 @@ import {
   Heart, Shield, Sun, Moon, Sunrise, Sunset, Coins
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { SystemCockpit } from '@/components/SystemCockpit';
 
 interface TimerState {
   realMinutesPerGameHour: number;
@@ -83,10 +82,6 @@ const Dashboard = () => {
       <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-end justify-between gap-4 flex-wrap">
         <div><p className="section-kicker mb-2">Visão da sessão</p><h1 className="page-title">Painel do Mestre</h1><div className="rune-divider w-40 mt-3" /></div>
         <Badge variant="outline" className="h-8 gap-2 border-primary/30 bg-primary/5 text-primary"><span className="w-2 h-2 rounded-full bg-primary animate-pulse" /> Mesa pronta</Badge>
-      </motion.div>
-
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
-        <SystemCockpit />
       </motion.div>
 
       {/* Quick Access */}
