@@ -13,7 +13,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/hooks/use-toast';
 
-const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const rollD = (sides: number) => Math.floor(Math.random() * sides) + 1;
 const rollDice = (count: number, sides: number) => {
   let total = 0;
@@ -35,6 +35,7 @@ interface LootItem {
 
 interface LootDrop {
   id: string;
+  systemId: string;
   level: string;
   encounter: string;
   items: LootItem[];
@@ -144,6 +145,19 @@ const ENCOUNTER_TYPES = [
 const LEVELS = ['1-4', '5-10', '11-16', '17-20'];
 const ALL_TYPES: LootType[] = ['arma', 'armadura', 'pocao', 'pergaminho', 'anel', 'amuleto', 'gema', 'misc'];
 
+const LOOT_SYSTEMS = [
+  { id: 'dnd5e', label: 'D&D 5e', currency: 'PO', themes: ['A tradição diz que este item foi batizado por uma guilda antiga.', 'Há uma marca de sintonia gravada no item.'] },
+  { id: 'tormenta20', label: 'Tormenta 20', currency: 'T$', themes: ['O item carrega uma bênção — ou uma dívida — com uma divindade.', 'A fabricação tem sinais de uma oficina de Valkaria.'] },
+  { id: 'ordemparanormal', label: 'Ordem Paranormal', currency: 'R$', themes: ['A evidência parece normal, mas algo nela desafia a realidade.', 'Há uma assinatura de energia paranormal residual.'] },
+  { id: 'cthulhu', label: 'Call of Cthulhu 7e', currency: '£', themes: ['A procedência foi apagada de todos os registros oficiais.', 'O objeto provoca uma sensação incômoda de déjà-vu.'] },
+  { id: 'vtm5', label: 'Vampiro: A Máscara 5e', currency: 'favores', themes: ['O verdadeiro preço não está escrito: alguém importante quer este item.', 'A posse do objeto pode alterar o equilíbrio de poder da cidade.'] },
+  { id: 'pf2e', label: 'Pathfinder 2e', currency: 'PO', themes: ['O item traz runas que indicam seu nível de criação.', 'A peça foi avaliada por um artesão de reputação impecável.'] },
+  { id: 'generic', label: 'Fantasia genérica', currency: 'PO', themes: FLAVORS },
+] as const;
+
+type LootSystemId = typeof LOOT_SYSTEMS[number]['id'];
+const getLootSystem = (id: string) => LOOT_SYSTEMS.find(system => system.id === id) ?? LOOT_SYSTEMS[LOOT_SYSTEMS.length - 1];
+
 function getRarityForEncounter(encounter: string, level: string, boost: number): Rarity {
   const rarities: Rarity[] = ['comum', 'incomum', 'raro', 'muito_raro', 'lendario'];
   const levelIdx = LEVELS.indexOf(level);
@@ -163,27 +177,28 @@ function generateGold(encounter: string, level: string): number {
   return Math.floor(base * (multipliers[encounter] || 1));
 }
 
-function makeItem(types: LootType[], encounter: string, level: string, boost: number): LootItem {
+function makeItem(types: LootType[], encounter: string, level: string, boost: number, systemId: LootSystemId): LootItem {
   const type = pick(types.length ? types : ALL_TYPES);
   const rarity = getRarityForEncounter(encounter, level, boost);
   const name = pick(LOOT_TABLES[type][rarity]);
+  const system = getLootSystem(systemId);
   const values: Record<Rarity, string> = {
-    comum: `${rollDice(1, 6) * 10} PO`,
-    incomum: `${rollDice(2, 6) * 50} PO`,
-    raro: `${rollDice(2, 6) * 500} PO`,
-    muito_raro: `${rollDice(2, 4) * 5000} PO`,
-    lendario: `${rollDice(2, 6) * 25000} PO`,
+    comum: `${rollDice(1, 6) * 10} ${system.currency}`,
+    incomum: `${rollDice(2, 6) * 50} ${system.currency}`,
+    raro: `${rollDice(2, 6) * 500} ${system.currency}`,
+    muito_raro: `${rollDice(2, 4) * 5000} ${system.currency}`,
+    lendario: `${rollDice(2, 6) * 25000} ${system.currency}`,
   };
   return {
     id: crypto.randomUUID(),
     name, type, rarity,
-    description: pick(FLAVORS),
+    description: pick(system.themes),
     value: values[rarity],
   };
 }
 
 function generateLoot(
-  encounter: string, level: string, types: LootType[], boost: number, count: number | null, withGold: boolean,
+  systemId: LootSystemId, encounter: string, level: string, types: LootType[], boost: number, count: number | null, withGold: boolean,
 ): LootDrop {
   const itemCount = count ?? (
     encounter === 'facil' ? rollD(2)
@@ -191,9 +206,10 @@ function generateLoot(
     : encounter === 'boss' ? rollD(4) + 2
     : rollD(3) + 1
   );
-  const items = Array.from({ length: itemCount }, () => makeItem(types, encounter, level, boost));
+  const items = Array.from({ length: itemCount }, () => makeItem(types, encounter, level, boost, systemId));
   return {
     id: crypto.randomUUID(),
+    systemId,
     level, encounter, items,
     gold: withGold ? generateGold(encounter, level) : 0,
     timestamp: Date.now(),
@@ -202,9 +218,10 @@ function generateLoot(
 
 const dropToText = (drop: LootDrop) => {
   const enc = ENCOUNTER_TYPES.find(e => e.value === drop.encounter)?.label ?? drop.encounter;
+  const system = getLootSystem(drop.systemId);
   const lines = [
-    `${enc} — Nível ${drop.level}`,
-    drop.gold ? `Moedas: ${drop.gold} PO` : null,
+    `${system.label} · ${enc} — Nível ${drop.level}`,
+    drop.gold ? `Moedas: ${drop.gold} ${system.currency}` : null,
     ...drop.items.map(i => `• ${i.name} [${RARITY_INFO[i.rarity].label}] — ${i.value} (${i.description})`),
   ].filter(Boolean);
   return lines.join('\n');
@@ -220,6 +237,7 @@ const copy = async (text: string, title = 'Copiado!') => {
 };
 
 const LootGenerator = () => {
+  const [systemId, setSystemId] = useState<LootSystemId>('generic');
   const [level, setLevel] = useState('1-4');
   const [encounter, setEncounter] = useState('medio');
   const [types, setTypes] = useState<LootType[]>(ALL_TYPES);
@@ -234,7 +252,7 @@ const LootGenerator = () => {
   const [currentDrop, setCurrentDrop] = useState<LootDrop | null>(null);
 
   const generate = () => {
-    const drop = generateLoot(encounter, level, types, boost, autoCount ? null : count, withGold);
+    const drop = generateLoot(systemId, encounter, level, types, boost, autoCount ? null : count, withGold);
     setCurrentDrop(drop);
     setHistory(prev => [drop, ...prev.slice(0, 19)]);
   };
@@ -242,7 +260,7 @@ const LootGenerator = () => {
   const rerollItem = (id: string) => {
     setCurrentDrop(prev => prev && ({
       ...prev,
-      items: prev.items.map(i => (i.id === id ? makeItem(types, encounter, level, boost) : i)),
+      items: prev.items.map(i => (i.id === id ? makeItem(types, encounter, level, boost, systemId) : i)),
     }));
   };
 
@@ -282,7 +300,16 @@ const LootGenerator = () => {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <Card className="card-hover glow-border">
           <CardContent className="p-5 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm text-muted-foreground mb-1.5 block">Sistema</label>
+                <Select value={systemId} onValueChange={value => setSystemId(value as LootSystemId)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {LOOT_SYSTEMS.map(system => <SelectItem key={system.id} value={system.id}>{system.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <label className="text-sm text-muted-foreground mb-1.5 block">Nível do Grupo</label>
                 <Select value={level} onValueChange={setLevel}>
@@ -493,7 +520,8 @@ const LootGenerator = () => {
                       onClick={() => setCurrentDrop(drop)}
                     >
                       <div>
-                        <span className="text-sm font-semibold">{enc?.label || drop.encounter}</span>
+                        <span className="text-sm font-semibold">{getLootSystem(drop.systemId).label}</span>
+                        <span className="text-xs text-muted-foreground">{enc?.label || drop.encounter}</span>
                         <span className="text-xs text-muted-foreground ml-2">Nv. {drop.level}</span>
                       </div>
                       <div className="flex items-center gap-3">

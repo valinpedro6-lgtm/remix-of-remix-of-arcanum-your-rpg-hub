@@ -55,6 +55,8 @@ export const STYLE_COLORS: { label: string; hsl: string }[] = [
 export interface Sheet {
   id: string;
   kind: SheetKind;
+  systemId?: string;
+  systemName?: string;
   style: SheetStyle;
   name: string;
   subtitle: string;
@@ -103,6 +105,8 @@ export const DEFAULT_SKILLS = (): SheetSkill[] =>
 
 export const emptySheet = (kind: SheetKind): Omit<Sheet, 'id' | 'share_id' | 'created_at' | 'updated_at'> => ({
   kind,
+  systemId: 'preset-op',
+  systemName: 'Ordem Paranormal',
   style: {},
   name: kind === 'monster' ? 'Nova Criatura' : 'Novo Personagem',
   subtitle: '',
