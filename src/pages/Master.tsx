@@ -151,11 +151,13 @@ const Master = () => {
     if (!confirm('Revogar o acesso desta pessoa? Ela será desconectada e precisará de um novo código.')) return;
     const res = await callGate({ action: 'ban-customer', master, device });
     if (res?.ok) { setSessions(res.sessions ?? []); setEvents(res.events ?? []); toast({ title: 'Acesso revogado' }); }
+    else toast({ title: 'Não foi possível revogar', description: res?.error ?? 'Atualize a página e tente novamente.', variant: 'destructive' });
   };
 
   const releaseCustomer = async (device: string) => {
     const res = await callGate({ action: 'release-customer', master, device });
     if (res?.ok) { setSessions(res.sessions ?? []); setEvents(res.events ?? []); toast({ title: 'Pessoa liberada', description: 'Ela precisará informar um novo código.' }); }
+    else toast({ title: 'Não foi possível liberar', description: res?.error ?? 'Atualize a página e tente novamente.', variant: 'destructive' });
   };
 
   const exit = () => { leaveMaster(); navigate('/'); };
@@ -302,7 +304,7 @@ const Master = () => {
             ) : filtered.map(sn => {
               const online = Date.now() - new Date(sn.last_seen).getTime() < 2 * 60_000;
               const email = isEmail(sn.label) ? sn.label : '';
-              const isManaged = Boolean(sn.phone);
+              const isManaged = Boolean(sn.phone) || new Date(sn.first_seen).getTime() >= Date.parse('2026-11-03T00:00:00Z');
               const start = startDates[sn.device_id] ?? sn.billing_start ?? today();
               return (
                 <div key={sn.device_id} className={`flex flex-wrap items-center gap-3 px-3 py-3 ${sn.banned ? 'bg-destructive/5' : ''}`}>

@@ -295,8 +295,6 @@ Deno.serve(async (req) => {
       const start = String(body.startDate ?? "").slice(0, 10);
       if (master !== row.master_password) return json({ ok: false }, 200);
       if (!device || !["monthly", "lifetime"].includes(plan)) return json({ ok: false, error: "Plano inválido" });
-      const customer = await sessionFor(device);
-      if (!customer?.phone) return json({ ok: false, error: "Gestão disponível apenas para usuários novos." });
       const billingStart = /^\d{4}-\d{2}-\d{2}$/.test(start) ? start : new Date().toISOString().slice(0, 10);
       const billingUntil = plan === "monthly" ? addMonth(billingStart) : null;
       const { error } = await admin.from("access_sessions").update({ plan, billing_start: billingStart, billing_until: billingUntil, banned: false, needs_code: false }).eq("device_id", device);
