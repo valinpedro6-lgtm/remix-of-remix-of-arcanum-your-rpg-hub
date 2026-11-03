@@ -122,7 +122,7 @@ const SharedTabletop = () => {
       <div ref={stageRef} className="relative flex-1 overflow-auto pb-20 overscroll-contain">
         <div
           ref={mapRef}
-          className="relative mx-auto select-none touch-none"
+          className="relative mx-auto select-none touch-pan-x touch-pan-y"
           style={{ width: `${zoom * 100}%`, transition: myZoom === null ? 'width 300ms ease-out' : undefined }}
           onPointerMove={onMove}
           onPointerUp={onUp}
@@ -146,7 +146,7 @@ const SharedTabletop = () => {
           {board.tokens.map(t => (
             <div key={t.id}
               onPointerDown={e => onTokenDown(e, t)}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing ${dragId === t.id ? '' : 'transition-[left,top] duration-300 ease-out'}`}
+              className={`absolute touch-none -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing ${dragId === t.id ? '' : 'transition-[left,top] duration-300 ease-out'}`}
               style={{ left: `${t.x}%`, top: `${t.y}%`, width: `${t.size}%` }}>
               <img src={t.image} alt={t.name} draggable={false}
                 className="w-full object-contain pointer-events-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]" />
