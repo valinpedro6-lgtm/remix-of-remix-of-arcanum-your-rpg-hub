@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Plus, Trash2, Map as MapIcon, ImagePlus, UserPlus, Maximize2, Minimize2,
-  Grid3x3, Loader2, ZoomIn, ZoomOut, Users, Hand, MousePointer2, Square, Share2, Eye, ScrollText, Copy, ExternalLink,
+  Grid3x3, Loader2, ZoomIn, ZoomOut, Users, Hand, MousePointer2, Square, Share2, Eye, ScrollText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,7 +70,6 @@ const Tabletop = () => {
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [showCast, setShowCast] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
-  const [showShare, setShowShare] = useState(false);
   const [tool, setTool] = useState<Tool>('move');
   const [draftFog, setDraftFog] = useState<FogRect | null>(null);
   const [animRoll, setAnimRoll] = useState<Roll | null>(null);
@@ -276,21 +275,11 @@ const Tabletop = () => {
     else await document.exitFullscreen().catch(() => {});
   };
 
-  const shareUrl = board?.share_id ? `${window.location.origin}/#/mapa-ao-vivo/${board.share_id}` : '';
-
-  const copyShare = async () => {
-    if (!shareUrl) return toast.error('Este mapa ainda não tem link. Salve uma alteração e tente de novo.');
-    try { await navigator.clipboard.writeText(shareUrl); toast.success('Link da mesa copiado.'); }
-    catch { toast.error('Não consegui copiar. Selecione o link e copie manualmente.'); }
-  };
-
-  const share = async () => {
-    if (!shareUrl) return toast.error('Este mapa ainda não tem link. Salve uma alteração e tente de novo.');
-    setShowShare(true);
-    if (navigator.share) {
-      try { await navigator.share({ title: `Mesa — ${board?.name ?? 'Arcanum'}`, text: 'Entre na mesa ao vivo pelo Arcanum.', url: shareUrl }); }
-      catch { /* o jogador fechou a folha de compartilhamento */ }
-    } else await copyShare();
+  const share = () => {
+    if (!board?.share_id) return toast.error('Este mapa ainda não tem link. Salve uma alteração e tente de novo.');
+    const url = `${window.location.origin}${window.location.pathname}#/mapa-ao-vivo/${board.share_id}`;
+    navigator.clipboard?.writeText(url);
+    toast.success('Link copiado! Os jogadores veem e movem os bonecos em tempo real.');
   };
 
   const rollDice = (roll: Roll) => {
@@ -339,7 +328,7 @@ const Tabletop = () => {
       ) : (
         <>
           {/* Ferramentas */}
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap sm:overflow-visible">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="flex gap-1 rounded-lg border border-border/60 p-1">
               {toolBtn('move', <MousePointer2 className="w-4 h-4" />, 'Mover', 'M')}
               {toolBtn('pan', <Hand className="w-4 h-4" />, 'Mãozinha', 'H')}
@@ -371,15 +360,6 @@ const Tabletop = () => {
             <Button size="sm" variant="secondary" className="h-9 gap-1" onClick={share} title="Copiar link ao vivo para os jogadores"><Share2 className="w-4 h-4" /><span className="hidden sm:inline">Compartilhar</span></Button>
             <Button size="sm" variant="outline" className="h-9 text-destructive" onClick={remove}><Trash2 className="w-4 h-4" /></Button>
           </div>
-
-          {showShare && shareUrl && (
-            <Card className="border-primary/30 bg-card/95 shadow-lg">
-              <CardContent className="p-3 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="min-w-0 flex-1"><p className="text-sm font-semibold">Convide os jogadores</p><p className="text-xs text-muted-foreground">Eles poderão ver o mapa, mover personagens e rolar dados em tempo real.</p></div>
-                <div className="flex gap-2 min-w-0 sm:w-[28rem]"><Input readOnly value={shareUrl} className="h-9 min-w-0 text-xs" onFocus={e => e.currentTarget.select()} /><Button size="sm" className="h-9 shrink-0 gap-1" onClick={copyShare}><Copy className="w-4 h-4" /><span className="hidden sm:inline">Copiar</span></Button><Button size="sm" variant="ghost" className="h-9 shrink-0 px-2" onClick={() => window.open(shareUrl, '_blank', 'noopener,noreferrer')} title="Abrir como jogador"><ExternalLink className="w-4 h-4" /></Button></div>
-              </CardContent>
-            </Card>
-          )}
 
           {tool === 'fog' && (
             <p className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
@@ -419,7 +399,7 @@ const Tabletop = () => {
           <div className="flex gap-3 items-start">
             <div
               ref={stageRef}
-              className={`relative flex-1 min-w-0 overflow-auto rounded-xl border border-border/50 bg-background min-h-[58dvh] ${full ? 'flex items-center' : 'max-h-[calc(100dvh-13rem)] sm:max-h-[75dvh]'} ${tool === 'pan' ? 'cursor-grab active:cursor-grabbing' : ''} ${tool === 'fog' ? 'cursor-crosshair' : ''}`}
+              className={`relative flex-1 min-w-0 overflow-auto rounded-xl border border-border/50 bg-background ${full ? 'flex items-center' : 'max-h-[75dvh]'} ${tool === 'pan' ? 'cursor-grab active:cursor-grabbing' : ''} ${tool === 'fog' ? 'cursor-crosshair' : ''}`}
             >
               <div
                 ref={mapRef}

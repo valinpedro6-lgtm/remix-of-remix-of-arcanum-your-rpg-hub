@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Map as MapIcon, Loader2, Share2, Info } from 'lucide-react';
+import { Map as MapIcon, Loader2 } from 'lucide-react';
 import { useStageZoom } from '@/hooks/useStageZoom';
 import { DiceBar, DiceAnimation, Roll } from '@/components/DiceBar';
 
@@ -27,7 +27,6 @@ const SharedTabletop = () => {
   const lastRollAt = useRef(0);
   const stageRef = useRef<HTMLDivElement>(null);
   const [myZoom, setMyZoom] = useState<number | null>(null);
-  const [showHelp, setShowHelp] = useState(false);
   const zoom = myZoom ?? board?.zoom ?? 1;
   const zoomCtl = useStageZoom(stageRef, zoom, setMyZoom, () => { drag.current = null; setDragId(null); });
 
@@ -69,13 +68,6 @@ const SharedTabletop = () => {
     supabase.functions.invoke('shared-tabletop', { body: { action: 'shared-update', shareId, last_roll: r } }).catch(() => {});
   };
 
-  const shareTable = async () => {
-    try {
-      if (navigator.share) await navigator.share({ title: `Mesa — ${board?.name ?? 'Arcanum'}`, text: 'Entre na mesa ao vivo.', url: window.location.href });
-      else await navigator.clipboard.writeText(window.location.href);
-    } catch { /* compartilhamento cancelado pelo usuário */ }
-  };
-
   const pct = (e: React.PointerEvent) => {
     const r = mapRef.current!.getBoundingClientRect();
     return { x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 };
@@ -115,21 +107,19 @@ const SharedTabletop = () => {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col">
-      <header className="sticky top-0 z-30 flex items-center gap-2 px-3 sm:px-4 py-2.5 border-b border-border/50 bg-background/95 backdrop-blur-md">
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="flex items-center gap-2 px-4 py-2 border-b border-border/40">
         <MapIcon className="w-4 h-4 text-primary" />
-        <div className="min-w-0"><h1 className="font-display font-bold truncate text-sm sm:text-base">{board.name}</h1><p className="text-[10px] text-muted-foreground">Mesa ao vivo</p></div>
+        <h1 className="font-display font-bold truncate">{board.name}</h1>
         <div className="ml-auto flex items-center gap-1">
           <button type="button" aria-label="Diminuir zoom" onClick={() => zoomCtl.zoomOut()} className="w-8 h-8 rounded-md border border-border/60 text-lg leading-none">−</button>
           <button type="button" onClick={() => setMyZoom(null)} className="h-8 px-2 rounded-md border border-border/60 text-[10px] tabular-nums" title="Voltar ao zoom do mestre">{myZoom === null ? 'Mestre' : `${Math.round(zoom * 100)}%`}</button>
           <button type="button" aria-label="Aumentar zoom" onClick={() => zoomCtl.zoomIn()} className="w-8 h-8 rounded-md border border-border/60 text-lg leading-none">+</button>
         </div>
-        <button type="button" aria-label="Compartilhar mesa" onClick={shareTable} className="w-8 h-8 rounded-md border border-border/60 grid place-items-center hover:border-primary"><Share2 className="w-4 h-4" /></button>
-        <button type="button" aria-label="Como usar" onClick={() => setShowHelp(v => !v)} className="w-8 h-8 rounded-md border border-border/60 grid place-items-center hover:border-primary"><Info className="w-4 h-4" /></button>
+        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Ao vivo</span>
         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
       </header>
-      {showHelp && <div className="mx-3 mt-3 rounded-lg border border-primary/25 bg-card/90 p-3 text-xs text-muted-foreground sm:mx-4"><strong className="text-foreground">Como jogar:</strong> arraste seu personagem pelo mapa. Use os dados na barra inferior. O zoom é só seu e não muda o mapa dos outros jogadores.</div>}
-      <div ref={stageRef} className="relative flex-1 overflow-auto pb-24 overscroll-contain">
+      <div ref={stageRef} className="relative flex-1 overflow-auto pb-20 overscroll-contain">
         <div
           ref={mapRef}
           className="relative mx-auto select-none touch-pan-x touch-pan-y"
