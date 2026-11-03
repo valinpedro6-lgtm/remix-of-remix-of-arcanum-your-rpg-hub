@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Map as MapIcon, Loader2 } from 'lucide-react';
+import { useStageZoom } from '@/hooks/useStageZoom';
 import { DiceBar, DiceAnimation, Roll } from '@/components/DiceBar';
 
 interface Token { id: string; name: string; image: string; x: number; y: number; size: number }
@@ -24,6 +25,10 @@ const SharedTabletop = () => {
   const [dragId, setDragId] = useState<string | null>(null);
   const saveT = useRef<ReturnType<typeof setTimeout>>();
   const lastRollAt = useRef(0);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [myZoom, setMyZoom] = useState<number | null>(null);
+  const zoom = myZoom ?? board?.zoom ?? 1;
+  const zoomCtl = useStageZoom(stageRef, zoom, setMyZoom, () => { drag.current = null; setDragId(null); });
 
   useEffect(() => {
     let stop = false;
@@ -106,14 +111,19 @@ const SharedTabletop = () => {
       <header className="flex items-center gap-2 px-4 py-2 border-b border-border/40">
         <MapIcon className="w-4 h-4 text-primary" />
         <h1 className="font-display font-bold truncate">{board.name}</h1>
-        <span className="ml-auto text-[10px] uppercase tracking-widest text-muted-foreground">Ao vivo</span>
+        <div className="ml-auto flex items-center gap-1">
+          <button type="button" aria-label="Diminuir zoom" onClick={() => zoomCtl.zoomOut()} className="w-8 h-8 rounded-md border border-border/60 text-lg leading-none">−</button>
+          <button type="button" onClick={() => setMyZoom(null)} className="h-8 px-2 rounded-md border border-border/60 text-[10px] tabular-nums" title="Voltar ao zoom do mestre">{myZoom === null ? 'Mestre' : `${Math.round(zoom * 100)}%`}</button>
+          <button type="button" aria-label="Aumentar zoom" onClick={() => zoomCtl.zoomIn()} className="w-8 h-8 rounded-md border border-border/60 text-lg leading-none">+</button>
+        </div>
+        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Ao vivo</span>
         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
       </header>
-      <div className="flex-1 overflow-auto pb-20">
+      <div ref={stageRef} className="relative flex-1 overflow-auto pb-20 overscroll-contain">
         <div
           ref={mapRef}
-          className="relative mx-auto select-none touch-none"
-          style={{ width: `${(board.zoom ?? 1) * 100}%`, minWidth: (board.zoom ?? 1) * 320, transition: 'width 300ms ease-out' }}
+          className="relative mx-auto select-none touch-pan-x touch-pan-y"
+          style={{ width: `${zoom * 100}%`, transition: myZoom === null ? 'width 300ms ease-out' : undefined }}
           onPointerMove={onMove}
           onPointerUp={onUp}
           onPointerCancel={onUp}
@@ -136,7 +146,7 @@ const SharedTabletop = () => {
           {board.tokens.map(t => (
             <div key={t.id}
               onPointerDown={e => onTokenDown(e, t)}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing ${dragId === t.id ? '' : 'transition-[left,top] duration-300 ease-out'}`}
+              className={`absolute touch-none -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing ${dragId === t.id ? '' : 'transition-[left,top] duration-300 ease-out'}`}
               style={{ left: `${t.x}%`, top: `${t.y}%`, width: `${t.size}%` }}>
               <img src={t.image} alt={t.name} draggable={false}
                 className="w-full object-contain pointer-events-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]" />
