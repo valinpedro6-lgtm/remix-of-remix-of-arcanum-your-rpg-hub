@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Users, Skull, Plus, Trash2, Link2, Copy, Maximize2, Minimize2,
+  Users, Skull, Plus, Trash2, Link2, Copy, Maximize2, Minimize2, ArrowUp, ArrowDown,
   PanelsTopLeft, Save, ArrowLeft, Send, Loader2, ImagePlus, BookOpen, Palette,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -193,6 +193,27 @@ const Cast = () => {
     const setSkills = (list: SheetSkill[]) => patch(s.id, { skills: list });
     const setRes = (list: SheetResource[]) => patch(s.id, { resources: list });
     const setAb = (list: SheetAbility[]) => patch(s.id, { abilities: list });
+    const reorderAttributes = (fromId: string, toId: string) => {
+      const next = [...s.attributes];
+      const from = next.findIndex(attribute => attribute.id === fromId);
+      const to = next.findIndex(attribute => attribute.id === toId);
+      if (from < 0 || to < 0) return;
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      setAttr(next);
+    };
+    const blockLabels: Record<string, string> = {
+      abilities: 'Habilidades', skills: 'Perícias', inventory: 'Inventário', notes: 'Anotações',
+    };
+    const blockOrder = s.style.blockOrder ?? ['abilities', 'skills', 'inventory', 'notes'];
+    const moveBlock = (id: string, direction: -1 | 1) => {
+      const from = blockOrder.indexOf(id);
+      const to = from + direction;
+      if (from < 0 || to < 0 || to >= blockOrder.length) return;
+      const next = [...blockOrder];
+      [next[from], next[to]] = [next[to], next[from]];
+      patch(s.id, { style: { ...s.style, blockOrder: next } });
+    };
 
     return (
       <div className="space-y-5">
@@ -225,7 +246,12 @@ const Cast = () => {
 
         <div ref={stageRef} className={full ? 'bg-black p-4 flex items-center overflow-auto' : ''}>
           <div className="w-full">
-            <SheetPoster sheet={s} editable onPatch={p => patch(s.id, p)} />
+            <SheetPoster
+              sheet={s}
+              editable
+              onPatch={p => patch(s.id, p)}
+              onReorderAttributes={reorderAttributes}
+            />
           </div>
         </div>
 
@@ -271,6 +297,25 @@ const Cast = () => {
                 <div className="flex flex-wrap gap-2">
                   {([['player', 'Jogador da mesa'], ['story', 'Personagem da história'], ['monster', 'Monstro']] as [SheetKind, string][]).map(([k, l]) => (
                     <Button key={k} size="sm" variant={s.kind === k ? 'default' : 'outline'} onClick={() => patch(s.id, { kind: k })}>{l}</Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Layout */}
+              <div className="space-y-2 rounded-lg border border-primary/25 bg-primary/5 p-3">
+                <div>
+                  <Label>Ordem dos blocos da ficha</Label>
+                  <p className="text-xs text-muted-foreground">Monte a ficha do seu jeito: use as setas para reorganizar as seções.</p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {blockOrder.map((id, index) => (
+                    <div key={id} className="flex items-center justify-between gap-2 rounded-md border border-border/60 bg-background/50 px-2 py-1.5">
+                      <span className="text-sm font-medium">{index + 1}. {blockLabels[id]}</span>
+                      <div className="flex gap-1">
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" disabled={index === 0} onClick={() => moveBlock(id, -1)} aria-label="Mover para cima"><ArrowUp className="h-3.5 w-3.5" /></Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" disabled={index === blockOrder.length - 1} onClick={() => moveBlock(id, 1)} aria-label="Mover para baixo"><ArrowDown className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>

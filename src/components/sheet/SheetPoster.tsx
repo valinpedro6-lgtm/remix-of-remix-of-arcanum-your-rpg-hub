@@ -37,6 +37,7 @@ interface Props {
   sheet: Sheet;
   editable?: boolean;
   onPatch?: (patch: Partial<Sheet>) => void;
+  onReorderAttributes?: (fromId: string, toId: string) => void;
   compact?: boolean;
 }
 
@@ -48,7 +49,7 @@ const toneClass: Record<SheetResource['tone'], string> = {
 };
 
 /** Ficha em formato "pôster": arte do personagem ao fundo, roda de atributos e perícias. */
-export const SheetPoster = ({ sheet, editable, onPatch, compact }: Props) => {
+export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, compact }: Props) => {
   const patchResource = (id: string, delta: number) => {
     if (!onPatch) return;
     onPatch({
@@ -69,6 +70,8 @@ export const SheetPoster = ({ sheet, editable, onPatch, compact }: Props) => {
   const st = sheet.style ?? {};
   const sys = getSystem(st.system);
   const fr = FRAMES[sys.frame];
+  const blockOrder = st.blockOrder ?? ['abilities', 'skills', 'inventory', 'notes'];
+  const blockIndex = (id: string) => blockOrder.indexOf(id) < 0 ? blockOrder.length : blockOrder.indexOf(id);
   const fontClass = { display: 'font-display', serif: 'font-serif', sans: 'font-sans', mono: 'font-mono' }[st.font ?? sys.font];
   const layout = st.layout ?? 'right';
   const imgPos = layout === 'full' ? 'inset-0 w-full' : layout === 'left' ? 'left-0 top-0 w-full sm:w-[58%]' : 'right-0 top-0 w-full sm:w-[58%]';
@@ -124,7 +127,11 @@ export const SheetPoster = ({ sheet, editable, onPatch, compact }: Props) => {
         <div className={`mt-5 grid gap-5 ${compact ? '' : 'md:grid-cols-[minmax(0,340px)_minmax(0,1fr)]'}`}>
           {/* Roda + recursos */}
           <div className="space-y-4">
-            <AttributeWheel attributes={sheet.attributes} onChange={editable ? patchAttribute : undefined} />
+            <AttributeWheel
+              attributes={sheet.attributes}
+              onChange={editable ? patchAttribute : undefined}
+              onReorder={editable ? onReorderAttributes : undefined}
+            />
 
             <div className="space-y-2">
               {sheet.resources.map(r => {
@@ -171,9 +178,9 @@ export const SheetPoster = ({ sheet, editable, onPatch, compact }: Props) => {
           </div>
 
           {/* Habilidades + perícias */}
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {sheet.abilities.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-2" style={{ order: blockIndex('abilities') }}>
                 {sheet.abilities.map(ab => (
                   <div key={ab.id} className="bg-black/70 backdrop-blur-sm border-l-2 border-primary rounded-r-md overflow-hidden">
                     <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-white/10 to-transparent px-3 py-1.5">
@@ -191,7 +198,7 @@ export const SheetPoster = ({ sheet, editable, onPatch, compact }: Props) => {
             )}
 
             {trained.length > 0 && (
-              <div className={`backdrop-blur-sm p-3 ${fr.box}`}>
+              <div className={`backdrop-blur-sm p-3 ${fr.box}`} style={{ order: blockIndex('skills') }}>
                 <p className="font-display font-bold text-primary text-[11px] tracking-widest uppercase mb-2">{sys.id === 'cthulhu' ? 'Perícias (%)' : 'Perícias'}</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1">
                   {trained.map(s => (
@@ -207,7 +214,7 @@ export const SheetPoster = ({ sheet, editable, onPatch, compact }: Props) => {
             )}
 
             {(sheet.style?.inventory?.length ?? 0) > 0 && (
-              <div className={`backdrop-blur-sm p-3 ${fr.box}`}>
+              <div className={`backdrop-blur-sm p-3 ${fr.box}`} style={{ order: blockIndex('inventory') }}>
                 <p className="font-display font-bold text-primary text-[11px] tracking-widest uppercase mb-2">Inventário</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1">
                   {sheet.style!.inventory!.map(it => (
@@ -221,7 +228,7 @@ export const SheetPoster = ({ sheet, editable, onPatch, compact }: Props) => {
             )}
 
             {sheet.notes && (
-              <div className="bg-black/60 backdrop-blur-sm border border-white/10 rounded-lg p-3">
+              <div className="bg-black/60 backdrop-blur-sm border border-white/10 rounded-lg p-3" style={{ order: blockIndex('notes') }}>
                 <p className="text-xs text-white/70 whitespace-pre-wrap leading-relaxed">{sheet.notes}</p>
               </div>
             )}

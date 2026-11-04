@@ -42,6 +42,7 @@ export interface SheetStyle {
   uppercase?: boolean;
   inventory?: InventoryItem[];
   system?: string;      // id em SHEET_SYSTEMS
+  blockOrder?: string[]; // ordem visual dos blocos da ficha
 }
 
 export interface InventoryItem { id: string; name: string; qty: number; weight?: number; note?: string; }
