@@ -473,10 +473,10 @@ const Cast = () => {
       <Tabs value={tab} onValueChange={setTab}>
         <div className="w-full overflow-x-auto no-scrollbar"><TabsList className="w-max min-w-full flex justify-start h-auto p-1 bg-card/60 backdrop-blur-md border border-border/50">
           <TabsTrigger value="player" className="flex-1 gap-2 py-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
-            <Users className="w-4 h-4" /> Jogadores da mesa
+            <Users className="w-4 h-4" /> <span className="sm:hidden">Jogadores</span><span className="hidden sm:inline">Jogadores da mesa</span>
           </TabsTrigger>
           <TabsTrigger value="story" className="flex-1 gap-2 py-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
-            <BookOpen className="w-4 h-4" /> Personagens da história
+            <BookOpen className="w-4 h-4" /> <span className="sm:hidden">História</span><span className="hidden sm:inline">Personagens da história</span>
           </TabsTrigger>
           <TabsTrigger value="monster" className="flex-1 gap-2 py-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
             <Skull className="w-4 h-4" /> Monstros
