@@ -54,19 +54,22 @@ const Cast = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  // Busca de novo a cada 4s para mostrar as mudanças feitas pelos jogadores no link
+  // Atualização rápida para refletir alterações feitas na ficha compartilhada.
   const pending = useRef<Record<string, number>>({});
+  const syncing = useRef(false);
   useEffect(() => {
-    const t = setInterval(() => {
-      if (document.hidden) return;
+    const sync = () => {
+      if (document.hidden || syncing.current) return;
+      syncing.current = true;
       listSheets().then(fresh => setSheets(prev => {
         const now = Date.now();
         return fresh.map(f => {
           const local = prev.find(p => p.id === f.id);
           return local && (pending.current[f.id] ?? 0) > now ? local : f;
         });
-      })).catch(() => {});
-    }, 4000);
+      })).catch(() => {}).finally(() => { syncing.current = false; });
+    };
+    const t = setInterval(sync, 1500);
     return () => clearInterval(t);
   }, []);
 

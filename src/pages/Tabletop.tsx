@@ -82,6 +82,7 @@ const Tabletop = () => {
   const pan = useRef<{ sx: number; sy: number; sl: number; st: number } | null>(null);
   const fogStart = useRef<{ x: number; y: number } | null>(null);
   const saveT = useRef<ReturnType<typeof setTimeout>>();
+  const syncing = useRef(false);
 
   useEffect(() => {
     listRows<Board>('tabletops')
@@ -98,7 +99,8 @@ const Tabletop = () => {
   useEffect(() => {
     if (!activeId) return;
     const t = setInterval(() => {
-      if (document.hidden || drag.current || Date.now() < busyUntil.current) return;
+      if (document.hidden || drag.current || syncing.current || Date.now() < busyUntil.current) return;
+      syncing.current = true;
       listRows<Board>('tabletops').then(list => {
         if (drag.current || Date.now() < busyUntil.current) return;
         const f = list.find(b => b.id === activeId);
@@ -106,8 +108,8 @@ const Tabletop = () => {
         setBoards(prev => prev.map(b => b.id === f.id ? { ...b, tokens: f.tokens, last_roll: (f as any).last_roll } as Board : b));
         const lr = (f as any).last_roll as Roll | null;
         if (lr && lr.at > lastSeenRoll.current) { lastSeenRoll.current = lr.at; if (lr.by !== 'Mestre') setAnimRoll(lr); }
-      }).catch(() => {});
-    }, 1500);
+      }).catch(() => {}).finally(() => { syncing.current = false; });
+    }, 1000);
     return () => clearInterval(t);
   }, [activeId]);
   const lastSeenRoll = useRef(Date.now());

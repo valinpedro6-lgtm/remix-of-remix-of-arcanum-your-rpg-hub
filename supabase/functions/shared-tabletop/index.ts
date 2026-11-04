@@ -56,6 +56,14 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // Sincronização incremental: o cliente informa a versão que já possui.
+    // Assim, movimentos frequentes não retransmitem imagens e tokens inteiros.
+    const since = String(body.since ?? "");
+    if (since) {
+      const { data: version } = await admin.from("tabletops").select("id, updated_at").eq("share_id", shareId).maybeSingle();
+      if (!version) return json({ board: null });
+      if (version.updated_at === since) return json({ unchanged: true, updated_at: version.updated_at });
+    }
     const { data } = await admin.from("tabletops").select(SELECT).eq("share_id", shareId).maybeSingle();
     return json({ board: data ?? null });
   } catch (e) {

@@ -25,6 +25,8 @@ const SharedTabletop = () => {
   const [dragId, setDragId] = useState<string | null>(null);
   const saveT = useRef<ReturnType<typeof setTimeout>>();
   const lastRollAt = useRef(0);
+  const lastUpdatedAt = useRef('');
+  const loadingRef = useRef(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const [myZoom, setMyZoom] = useState<number | null>(null);
   const zoom = myZoom ?? board?.zoom ?? 1;
@@ -33,19 +35,29 @@ const SharedTabletop = () => {
   useEffect(() => {
     let stop = false;
     const load = async () => {
-      const { data } = await supabase.functions.invoke('shared-tabletop', { body: { shareId } }).catch(() => ({ data: null }));
-      if (stop) return;
-      if (data?.board) {
-        const b = data.board as SharedBoard;
-        if (b.last_roll && b.last_roll.at > lastRollAt.current) {
-          lastRollAt.current = b.last_roll.at;
-          setAnimRoll(b.last_roll);
-        }
-        if (!dirty.current) setBoard(b);
-      } else if (!board) setMissing(true);
+      if (loadingRef.current || document.hidden) return;
+      loadingRef.current = true;
+      const { data } = await supabase.functions.invoke('shared-tabletop', {
+        body: { shareId, since: lastUpdatedAt.current || undefined },
+      }).catch(() => ({ data: null }));
+      try {
+        if (stop) return;
+        if (data?.unchanged) return;
+        if (data?.board) {
+          const b = data.board as SharedBoard;
+          lastUpdatedAt.current = b.updated_at ?? lastUpdatedAt.current;
+          if (b.last_roll && b.last_roll.at > lastRollAt.current) {
+            lastRollAt.current = b.last_roll.at;
+            setAnimRoll(b.last_roll);
+          }
+          if (!dirty.current) setBoard(b);
+        } else if (!board) setMissing(true);
+      } finally {
+        loadingRef.current = false;
+      }
     };
     load();
-    const id = setInterval(load, 800);
+    const id = setInterval(load, 650);
     return () => { stop = true; clearInterval(id); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shareId]);

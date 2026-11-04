@@ -38,7 +38,7 @@ const Index = () => {
         <img
           src={heroBanner}
           alt="Dragão ancestral sobre ruínas vulcânicas — Arcanum"
-          className="w-full h-[21rem] md:h-[32rem] object-cover object-center transition-transform duration-[2000ms] group-hover:scale-[1.025]"
+          className="w-full h-[21rem] md:h-[32rem] object-cover object-center transition-transform duration-1000 group-hover:scale-[1.025]"
           loading="eager"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/65 to-transparent" />

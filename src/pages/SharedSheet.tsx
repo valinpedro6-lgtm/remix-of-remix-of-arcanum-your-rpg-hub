@@ -13,18 +13,26 @@ const SharedSheet = () => {
   const [editing, setEditing] = useState(false);
   const dirty = useRef(false);
   const saveT = useRef<ReturnType<typeof setTimeout>>();
+  const loadingRef = useRef(false);
 
   useEffect(() => {
     if (!shareId) return;
     let alive = true;
-    const load = () =>
-      getSheetByShareId(shareId)
-        .then(s => { if (alive && !dirty.current) setSheet(s); })
-        .catch(() => {})
-        .finally(() => { if (alive) setLoading(false); });
+    const load = async () => {
+      if (loadingRef.current || document.hidden) return;
+      loadingRef.current = true;
+      try {
+        const s = await getSheetByShareId(shareId);
+        if (alive && !dirty.current) setSheet(s);
+      } catch { /* mantém a última versão visível durante uma falha breve */ }
+      finally {
+        loadingRef.current = false;
+        if (alive) setLoading(false);
+      }
+    };
 
     load();
-    const poll = setInterval(load, 5000);
+    const poll = setInterval(load, 2000);
     return () => { alive = false; clearInterval(poll); };
   }, [shareId]);
 
