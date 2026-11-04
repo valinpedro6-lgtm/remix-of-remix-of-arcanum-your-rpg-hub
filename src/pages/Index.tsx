@@ -2,9 +2,9 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Dices, Clock, Swords, Users, Skull, FlaskConical,
-  Gamepad2, UserPlus, StickyNote, CloudSun, Sword, Sparkles, Coins, Gauge
+  Gamepad2, UserPlus, StickyNote, CloudSun, Sword, Sparkles, Coins, Gauge, ArrowRight, Drama
 } from 'lucide-react';
-import heroBanner from '@/assets/hero-banner.jpg';
+import heroBanner from '@/assets/hero-banner-v2.jpg';
 import { motion } from 'framer-motion';
 
 const features = [
@@ -33,28 +33,38 @@ const Index = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative rounded-2xl overflow-hidden glow-border"
+        className="relative rounded-3xl overflow-hidden border border-primary/30 shadow-[0_0_70px_hsl(var(--primary)/0.16)] group"
       >
         <img
           src={heroBanner}
-          alt="Arcanum — Ferramentas para Mestres de RPG"
-          className="w-full h-60 md:h-80 object-cover"
+          alt="Dragão ancestral sobre ruínas vulcânicas — Arcanum"
+          className="w-full h-[21rem] md:h-[32rem] object-cover object-center transition-transform duration-[2000ms] group-hover:scale-[1.025]"
           loading="eager"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/60 to-transparent" />
-        <div className="absolute inset-0 flex items-end p-6 md:p-10">
-          <div>
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="flex items-center gap-2 mb-2">
-              <div className="h-px w-8 bg-primary/60" />
-              <span className="text-xs uppercase tracking-[0.2em] text-primary/80 font-semibold">Ferramentas para Mestres</span>
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/65 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_35%,hsl(var(--primary)/0.16),transparent_35%)] mix-blend-screen" />
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent opacity-80" />
+        <div className="absolute inset-0 flex items-end p-6 md:p-12">
+          <div className="max-w-xl">
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }} className="flex items-center gap-3 mb-3">
+              <div className="h-px w-12 bg-primary shadow-[0_0_12px_hsl(var(--primary))]" />
+              <span className="text-[11px] uppercase tracking-[0.28em] text-primary font-bold">O grimório digital do mestre</span>
             </motion.div>
-            <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="text-5xl md:text-7xl font-display font-bold gradient-text dice-glow tracking-wide">
+            <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="text-6xl md:text-8xl font-display font-black gradient-text dice-glow tracking-[0.08em] leading-none">
               Arcanum
             </motion.h1>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-foreground/70 mt-3 text-lg max-w-lg leading-relaxed">
-              Tudo que você precisa para criar sessões épicas de RPG de mesa.
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-foreground/80 mt-4 text-base md:text-xl max-w-lg leading-relaxed drop-shadow-lg">
+              Transforme ideias em mundos vivos. Fichas, elenco, geradores e mesa em um só lugar.
             </motion.p>
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }} className="flex flex-wrap gap-3 mt-6">
+              <Link to="/elenco" className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-[0_0_22px_hsl(var(--primary)/0.35)] transition-transform hover:scale-105">
+                <Drama className="h-4 w-4" /> Abrir elenco <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link to="/geradores" className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-black/25 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:border-primary hover:text-primary">
+                Explorar geradores
+              </Link>
+            </motion.div>
           </div>
         </div>
       </motion.div>
