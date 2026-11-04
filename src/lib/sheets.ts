@@ -1,3 +1,4 @@
+import { systemTemplate } from './sheetSystems';
 import { supabase } from '@/integrations/supabase/client';
 import { listRows, createRow, updateRow, deleteRow } from '@/lib/userData';
 
@@ -40,6 +41,7 @@ export interface SheetStyle {
   overlay?: number;     // 0-100 escurecimento
   uppercase?: boolean;
   inventory?: InventoryItem[];
+  system?: string;      // id em SHEET_SYSTEMS
 }
 
 export interface InventoryItem { id: string; name: string; qty: number; weight?: number; note?: string; }
@@ -101,21 +103,24 @@ export const OP_SKILLS = [
 export const DEFAULT_SKILLS = (): SheetSkill[] =>
   OP_SKILLS.map(name => ({ id: uid(), name, value: 0, trained: false }));
 
-export const emptySheet = (kind: SheetKind): Omit<Sheet, 'id' | 'share_id' | 'created_at' | 'updated_at'> => ({
+export const emptySheet = (kind: SheetKind, system = 'ordemparanormal'): Omit<Sheet, 'id' | 'share_id' | 'created_at' | 'updated_at'> => {
+  const t = systemTemplate(system);
+  return {
   kind,
-  style: {},
+  style: { system },
   name: kind === 'monster' ? 'Nova Criatura' : 'Novo Personagem',
   subtitle: '',
   origin: '',
   image_url: '',
   accent: 'red',
-  attributes: DEFAULT_ATTRIBUTES(),
-  skills: kind === 'monster' ? [] : DEFAULT_SKILLS(),
-  resources: DEFAULT_RESOURCES(),
+  attributes: t.attributes,
+  skills: kind === 'monster' ? [] : t.skills,
+  resources: t.resources,
   abilities: [],
   notes: '',
   in_list: false,
-});
+  };
+};
 
 const parse = (row: any): Sheet => ({
   ...row,
@@ -142,8 +147,8 @@ export async function updateSharedSheet(shareId: string, patch: Partial<Sheet>):
   if (error) throw error;
 }
 
-export async function createSheet(kind: SheetKind): Promise<Sheet> {
-  return parse(await createRow<any>('sheets', emptySheet(kind) as any));
+export async function createSheet(kind: SheetKind, system?: string): Promise<Sheet> {
+  return parse(await createRow<any>('sheets', emptySheet(kind, system) as any));
 }
 
 export async function updateSheet(id: string, patch: Partial<Sheet>): Promise<void> {
