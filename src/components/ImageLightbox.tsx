@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Download, ZoomIn, ZoomOut, RotateCw, X } from 'lucide-react';
 
@@ -25,6 +25,7 @@ export const ImageLightbox = ({ src, alt, open, onOpenChange }: LightboxProps) =
       <DialogContent
         className="max-w-[100vw] w-[100vw] h-[100dvh] sm:max-w-[95vw] sm:w-[95vw] sm:h-[92dvh] p-0 overflow-hidden bg-background/95 backdrop-blur-xl border-border/40"
       >
+        <DialogTitle className="sr-only">Imagem</DialogTitle>
         <div className="relative w-full h-full flex items-center justify-center overflow-auto">
           <img
             src={src}
