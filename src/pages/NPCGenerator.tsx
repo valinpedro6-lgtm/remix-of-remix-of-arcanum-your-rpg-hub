@@ -144,6 +144,26 @@ const NAMES_BY_REGION: Record<RegionType, string[]> = {
   personalizado: ['Alaric', 'Bruna', 'Cedric', 'Dahlia', 'Eldric', 'Fiona', 'Gareth', 'Helena', 'Igor', 'Jasmine'],
 };
 
+/** Nomes temáticos por sistema: o gerador combina identidade do sistema e região. */
+const NAMES_BY_SYSTEM: Record<string, string[]> = {
+  dnd5e: ['Aelar', 'Mialee', 'Drizzt', 'Kethra', 'Bram', 'Isolde', 'Riven', 'Thalia', 'Vondal', 'Seraphine', 'Kael', 'Nym', 'Eldrin', 'Mara', 'Garrick', 'Luthien', 'Orik', 'Vesper', 'Rowan', 'Calder'],
+  tormenta20: ['Aharadak', 'Arsenal', 'Kallyadranoch', 'Khalmyr', 'Lena', 'Nimb', 'Paladino', 'Tibar', 'Valkaria', 'Wynna', 'Ayla', 'Balin', 'Cássia', 'Darian', 'Elyra', 'Jandir', 'Lorian', 'Mestre Arsenal', 'Nália', 'Rond'],
+  cthulhu: ['Agnes Whitlock', 'Arthur Pembroke', 'Beatrice Ward', 'Caleb Marsh', 'Clara Hargrove', 'Edwin Blackwood', 'Eleanor Price', 'Harold Finch', 'Irene Bell', 'Jonathan Graves', 'Lucille Crane', 'Malcolm Reed', 'Nora Ashcroft', 'Oliver Wren', 'Percival Shaw', 'Rose Abernathy', 'Silas Crowe', 'Theodore Vale', 'Violet Hart', 'William Morrow'],
+  ordemparanormal: ['Agatha Volkomenn', 'Arthur Cervero', 'Balu', 'Carina Leone', 'Dante', 'Elizabeth Webber', 'Erin Parker', 'Fernando', 'Gal', 'Guizo', 'Jorel Lagos', 'Kaiser', 'Lírio', 'Mia', 'Nina', 'Orpheu', 'Rafael', 'Samuel Norte', 'Tristan', 'Valentina'],
+  pf2e: ['Amiri', 'Ezren', 'Harsk', 'Kyra', 'Lini', 'Merisiel', 'Seelah', 'Valeros', 'Alcaydian', 'Anastasia', 'Bryn', 'Dorrin', 'Elira', 'Fenwick', 'Gorum', 'Ilyra', 'Jorren', 'Kestrel', 'Mavren', 'Sajan'],
+  vtm5: ['Ariadne', 'Beckett', 'Carmilla', 'Dorian', 'Elysia', 'Gabrielle', 'Helena', 'Isaac', 'Jocelyn', 'Lucita', 'Marcus', 'Mithras', 'Nines', 'Octavio', 'Pisha', 'Quintin', 'Rafael', 'Sascha', 'Theo Bell', 'Victoria'],
+  savageworlds: ['Ace', 'Bramble', 'Dusty', 'Hawk', 'Jinx', 'Maddox', 'Maeve', 'Rook', 'Sable', 'Tex', 'Vera', 'Wade', 'Buck', 'Clover', 'Gideon', 'Juno', 'Marshal Kane', 'Nova', 'Ranger Cole', 'Sparks'],
+  gurps: ['Akira Tanaka', 'Beatriz Moura', 'Chen Wei', 'Diego Alvarez', 'Fatima Noor', 'Greta Weiss', 'Hassan Rahman', 'Iris Kovacs', 'João Vidal', 'Katarina Volkov', 'Luis Costa', 'Mina Park', 'Nadia Petrov', 'Omar Haddad', 'Priya Shah', 'Rafael Lima', 'Sofia Mendes', 'Tomas Novak', 'Valéria Cruz', 'Yuki Sato'],
+  shadowrun5: ['Apex', 'Byte', 'Chrome', 'Frost', 'Ghost', 'Glitch', 'Haze', 'Jackpoint', 'Kitsune', 'Locke', 'Mox', 'Neon', 'Nyx', 'Proxy', 'Razor', 'Slick', 'Switch', 'Torque', 'Vex', 'Zero'],
+  cpred: ['Aki Tanaka', 'Bishop', 'Dante Cruz', 'Echo', 'Ghostline', 'Jax', 'Kira', 'Mara Voss', 'Nico', 'Razorback', 'Santiago', 'Sera', 'T-Bone', 'Vega', 'Wraith', 'Yuki', 'Zane', 'Arasaka', 'Byte', 'Chrome'],
+  morkborg: ['Basilisk', 'Bitter', 'Coffin', 'Dreg', 'Fester', 'Grim', 'Hag', 'Ichor', 'Krank', 'Murk', 'Rot', 'Sallow', 'Scab', 'Skull', 'Soot', 'Vermin', 'Wretch', 'Yarrow', 'Zorn', 'Ash'],
+};
+
+const getCharacterName = (region: RegionType, system: string) => {
+  const systemNames = NAMES_BY_SYSTEM[system];
+  return pick(systemNames?.length ? systemNames : NAMES_BY_REGION[region]);
+};
+
 const RACES_BY_REGION: Record<RegionType, string[]> = {
   floresta: ['Elfo da Floresta', 'Meio-Elfo', 'Firbolg', 'Gnomo das Florestas', 'Humano', 'Sátiro'],
   montanha: ['Anão da Montanha', 'Goliath', 'Humano', 'Anão da Colina', 'Meio-Orc', 'Gnomo das Rochas'],
@@ -499,7 +519,7 @@ function generateNPC(region: RegionType, preset: PlayerPreset): NPC {
 
   return {
     id: crypto.randomUUID(),
-    name: pick(NAMES_BY_REGION[region]),
+    name: getCharacterName(region, preset.system),
     race: pick(flavor.origins),
     npcClass: pick(flavor.classes),
     originLabel: flavor.originLabel,
@@ -556,7 +576,7 @@ function generateVillain(region: RegionType, preset: PlayerPreset): Villain {
 
   return {
     id: crypto.randomUUID(),
-    name: pick(NAMES_BY_REGION[region]),
+    name: getCharacterName(region, preset.system),
     race: pick(flavor.origins),
     npcClass: pick(flavor.classes),
     originLabel: flavor.originLabel,

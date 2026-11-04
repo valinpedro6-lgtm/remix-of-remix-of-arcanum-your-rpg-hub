@@ -211,6 +211,45 @@ const SYSTEM_ITEM_CATALOGS: Partial<Record<LootSystemId, Partial<Record<LootType
   },
 };
 
+const EXTRA_LOOT_NAMES: Partial<Record<LootSystemId, Partial<Record<LootType, string[]>>>> = {
+  dnd5e: {
+    arma: ['Lança do Vigia', 'Martelo de Guerra Rúnico', 'Cimitarra Lunar', 'Arco da Brisa', 'Espada do Juramento', 'Adaga do Passo Sombrio'],
+    armadura: ['Manto do Viajante', 'Escudo do Brasão Antigo', 'Couraça do Guardião', 'Botas do Caminho Livre', 'Elmo da Sentinela', 'Luvas do Duelista'],
+    pocao: ['Poção de Respiração Aquática', 'Poção de Invisibilidade', 'Poção de Resistência', 'Elixir de Heroísmo', 'Tônico de Visão Noturna', 'Poção de Escalada'],
+    misc: ['Mapa de uma masmorra esquecida', 'Chave de portal', 'Bússola planar', 'Capa de viagem élfica', 'Saco de componentes', 'Diário de um aventureiro'],
+  },
+  tormenta20: {
+    arma: ['Montante do Cavaleiro', 'Arco de madeira tollon', 'Espada solar', 'Martelo de guerra anão', 'Lâmina de lefeu', 'Pistola arcana'],
+    armadura: ['Manto de Wynna', 'Escudo de Khalmyr', 'Armadura de placas', 'Couraça de aventureiro', 'Elmo de honra', 'Botas de Valkaria'],
+    pocao: ['Poção de mana maior', 'Elixir de coragem', 'Bálsamo de cura', 'Poção de visão', 'Tônico antiveneno', 'Essência elemental'],
+    misc: ['Mapa de Arton', 'Medalha de ordem', 'Kit de aventureiro', 'Carta de nobreza', 'Tibar de ouro antigo', 'Relíquia de Khalmyr'],
+  },
+  ordemparanormal: {
+    arma: ['Revólver de serviço', 'Fuzil de contenção', 'Lâmina de aço frio', 'Arma de choque', 'Besta improvisada', 'Pistola com selo'],
+    armadura: ['Capacete tático', 'Colete de contenção', 'Luvas de isolamento', 'Máscara de gás', 'Placa balística', 'Traje de proteção'],
+    pocao: ['Injetor de adrenalina', 'Soro estabilizador', 'Dose de antídoto', 'Kit médico avançado', 'Comprimido de foco', 'Ampola de sangue'],
+    misc: ['Pendrive criptografado', 'Chave de cela', 'Foto com manifestação', 'Fita de interrogatório', 'Cartão da Ordem', 'Relatório de desaparecimento'],
+  },
+  cthulhu: {
+    arma: ['Pistola Webley', 'Rifle de expedição', 'Canivete de marfim', 'Martelo de geólogo', 'Arma de guarda-costas', 'Revólver enferrujado'],
+    armadura: ['Sobretudo de investigador', 'Botas de campo', 'Capacete de mineração', 'Colete de expedição', 'Luvas de couro', 'Máscara de mergulho'],
+    pocao: ['Sedativo de hospital', 'Tônico para os nervos', 'Frasco de éter', 'Remédio experimental', 'Kit cirúrgico', 'Poção de origem duvidosa'],
+    misc: ['Chave de biblioteca', 'Caderno de símbolos', 'Carta de Arkham', 'Lanterna de querosene', 'Cilindro fonográfico', 'Manuscrito blasfemo'],
+  },
+  vtm5: {
+    arma: ['Pistola de bolso', 'Lâmina de prata', 'Besta de caçador', 'Espada de família', 'Arma escondida', 'Faca de ritual'],
+    armadura: ['Terno reforçado', 'Casaco de couro', 'Colete de proteção', 'Máscara de baile', 'Luvas de seda', 'Proteção de guarda-costas'],
+    pocao: ['Sangue de mortal raro', 'Vitae adulterada', 'Bolsa de sangue O-', 'Dose de sangue de ancião', 'Soro de fome', 'Frasco de vitae'],
+    misc: ['Convite da Torre', 'Segredo de um primigênie', 'Chave de refúgio', 'Documento de influência', 'Favor não cobrado', 'Mapa do domínio'],
+  },
+  pf2e: {
+    arma: ['Rapieira +1', 'Machado rúnico', 'Arco de caça', 'Maça sagrada', 'Lança de energia', 'Adaga venenosa'],
+    armadura: ['Armadura de escamas', 'Escudo de aço', 'Manto de resistência', 'Botas de mobilidade', 'Elmo de percepção', 'Luvas de escalada'],
+    pocao: ['Poção de cura maior', 'Elixir de agilidade', 'Antídoto forte', 'Poção de voo', 'Elixir de resistência', 'Bálsamo alquímico'],
+    misc: ['Mapa de ruínas', 'Ferramentas de artesão', 'Kit de cura', 'Chave de masmorra', 'Foco mágico', 'Corda de seda'],
+  },
+};
+
 function getRarityForEncounter(encounter: string, level: string, boost: number): Rarity {
   const rarities: Rarity[] = ['comum', 'incomum', 'raro', 'muito_raro', 'lendario'];
   const levelIdx = LEVELS.indexOf(level);
@@ -234,7 +273,9 @@ function makeItem(types: LootType[], encounter: string, level: string, boost: nu
   const type = pick(types.length ? types : ALL_TYPES);
   const rarity = getRarityForEncounter(encounter, level, boost);
   const systemCatalog = SYSTEM_ITEM_CATALOGS[systemId]?.[type];
-  const name = pick(systemCatalog?.length ? systemCatalog : LOOT_TABLES[type][rarity]);
+  const extraNames = EXTRA_LOOT_NAMES[systemId]?.[type] ?? [];
+  const namePool = [...(systemCatalog ?? []), ...extraNames];
+  const name = pick(namePool.length ? namePool : LOOT_TABLES[type][rarity]);
   const system = getLootSystem(systemId);
   const values: Record<Rarity, string> = {
     comum: `${rollDice(1, 6) * 10} ${system.currency}`,
