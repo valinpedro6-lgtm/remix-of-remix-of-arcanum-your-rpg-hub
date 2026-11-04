@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Users, Skull, Plus, Trash2, Link2, Copy, Maximize2, Minimize2, ArrowUp, ArrowDown,
@@ -36,11 +37,12 @@ const readImage = (file: File): Promise<string> =>
   });
 
 const Cast = () => {
+  const [searchParams] = useSearchParams();
   const [newSystem, setNewSystem] = useState(() => localStorage.getItem('arcanum-sheet-system') ?? 'ordemparanormal');
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [tab, setTab] = useState('player');
+  const [tab, setTab] = useState(() => searchParams.get('t') === 'monstros' ? 'monster' : searchParams.get('t') === 'projetar' ? 'table' : 'player');
   const [full, setFull] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -537,8 +539,8 @@ const Cast = () => {
   return (
     <div className="space-y-5">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="page-title">Elenco</h1>
-        <p className="text-sm text-muted-foreground mt-1">Fichas em estilo pôster para projetar na mesa</p>
+        <h1 className="page-title">Elenco & Fichas</h1>
+        <p className="text-sm text-muted-foreground mt-1">O centro completo de personagens da ARCANUM: fichas, edição, compartilhamento e projeção.</p>
       </motion.div>
 
       <Tabs value={tab} onValueChange={setTab}>

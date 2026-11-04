@@ -1,17 +1,9 @@
-import { Users, Skull } from 'lucide-react';
-import { HubTabs } from '@/components/HubTabs';
-import Players from './Players';
-import Monsters from './Monsters';
+import Cast from './Cast';
 
-const SheetsHub = () => (
-  <HubTabs
-    title="Fichas"
-    subtitle="Jogadores e criaturas em um só lugar"
-    tabs={[
-      { value: 'jogadores', label: 'Jogadores', icon: Users, element: <Players /> },
-      { value: 'monstros', label: 'Monstros', icon: Skull, element: <Monsters /> },
-    ]}
-  />
-);
+/**
+ * Compatibilidade: a antiga rota /fichas agora abre o Elenco, que é a fonte
+ * única para fichas completas, personagens, monstros, compartilhamento e mesa.
+ */
+const SheetsHub = () => <Cast />;
 
 export default SheetsHub;
