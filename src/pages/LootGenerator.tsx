@@ -13,7 +13,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/hooks/use-toast';
 
-const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const rollD = (sides: number) => Math.floor(Math.random() * sides) + 1;
 const rollDice = (count: number, sides: number) => {
   let total = 0;
@@ -35,6 +35,7 @@ interface LootItem {
 
 interface LootDrop {
   id: string;
+  systemId: LootSystemId;
   level: string;
   encounter: string;
   items: LootItem[];
@@ -236,22 +237,22 @@ function makeItem(types: LootType[], encounter: string, level: string, boost: nu
   const name = pick(systemCatalog?.length ? systemCatalog : LOOT_TABLES[type][rarity]);
   const system = getLootSystem(systemId);
   const values: Record<Rarity, string> = {
-    comum: `${rollDice(1, 6) * 10} PO`,
-    incomum: `${rollDice(2, 6) * 50} PO`,
-    raro: `${rollDice(2, 6) * 500} PO`,
-    muito_raro: `${rollDice(2, 4) * 5000} PO`,
-    lendario: `${rollDice(2, 6) * 25000} PO`,
+    comum: `${rollDice(1, 6) * 10} ${system.currency}`,
+    incomum: `${rollDice(2, 6) * 50} ${system.currency}`,
+    raro: `${rollDice(2, 6) * 500} ${system.currency}`,
+    muito_raro: `${rollDice(2, 4) * 5000} ${system.currency}`,
+    lendario: `${rollDice(2, 6) * 25000} ${system.currency}`,
   };
   return {
     id: crypto.randomUUID(),
     name, type, rarity,
-    description: pick(FLAVORS),
+    description: pick(system.themes),
     value: values[rarity],
   };
 }
 
 function generateLoot(
-  encounter: string, level: string, types: LootType[], boost: number, count: number | null, withGold: boolean,
+  systemId: LootSystemId, encounter: string, level: string, types: LootType[], boost: number, count: number | null, withGold: boolean,
 ): LootDrop {
   const itemCount = count ?? (
     encounter === 'facil' ? rollD(2)
@@ -259,9 +260,10 @@ function generateLoot(
     : encounter === 'boss' ? rollD(4) + 2
     : rollD(3) + 1
   );
-  const items = Array.from({ length: itemCount }, () => makeItem(types, encounter, level, boost));
+  const items = Array.from({ length: itemCount }, () => makeItem(types, encounter, level, boost, systemId));
   return {
     id: crypto.randomUUID(),
+    systemId,
     level, encounter, items,
     gold: withGold ? generateGold(encounter, level) : 0,
     timestamp: Date.now(),
@@ -270,9 +272,10 @@ function generateLoot(
 
 const dropToText = (drop: LootDrop) => {
   const enc = ENCOUNTER_TYPES.find(e => e.value === drop.encounter)?.label ?? drop.encounter;
+  const system = getLootSystem(drop.systemId);
   const lines = [
-    `${enc} — Nível ${drop.level}`,
-    drop.gold ? `Moedas: ${drop.gold} PO` : null,
+    `${system.label} · ${enc} — Nível ${drop.level}`,
+    drop.gold ? `Moedas: ${drop.gold} ${system.currency}` : null,
     ...drop.items.map(i => `• ${i.name} [${RARITY_INFO[i.rarity].label}] — ${i.value} (${i.description})`),
   ].filter(Boolean);
   return lines.join('\n');
@@ -288,6 +291,7 @@ const copy = async (text: string, title = 'Copiado!') => {
 };
 
 const LootGenerator = () => {
+  const [systemId, setSystemId] = useState<LootSystemId>('generic');
   const [level, setLevel] = useState('1-4');
   const [encounter, setEncounter] = useState('medio');
   const [types, setTypes] = useState<LootType[]>(ALL_TYPES);
@@ -302,7 +306,7 @@ const LootGenerator = () => {
   const [currentDrop, setCurrentDrop] = useState<LootDrop | null>(null);
 
   const generate = () => {
-    const drop = generateLoot(encounter, level, types, boost, autoCount ? null : count, withGold);
+    const drop = generateLoot(systemId, encounter, level, types, boost, autoCount ? null : count, withGold);
     setCurrentDrop(drop);
     setHistory(prev => [drop, ...prev.slice(0, 19)]);
   };
@@ -310,7 +314,7 @@ const LootGenerator = () => {
   const rerollItem = (id: string) => {
     setCurrentDrop(prev => prev && ({
       ...prev,
-      items: prev.items.map(i => (i.id === id ? makeItem(types, encounter, level, boost) : i)),
+      items: prev.items.map(i => (i.id === id ? makeItem(types, encounter, level, boost, systemId) : i)),
     }));
   };
 
@@ -350,7 +354,16 @@ const LootGenerator = () => {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <Card className="card-hover glow-border">
           <CardContent className="p-5 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm text-muted-foreground mb-1.5 block">Sistema</label>
+                <Select value={systemId} onValueChange={value => setSystemId(value as LootSystemId)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {LOOT_SYSTEMS.map(system => <SelectItem key={system.id} value={system.id}>{system.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <label className="text-sm text-muted-foreground mb-1.5 block">Nível do Grupo</label>
                 <Select value={level} onValueChange={setLevel}>
