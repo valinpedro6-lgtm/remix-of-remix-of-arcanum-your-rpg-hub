@@ -1,6 +1,37 @@
 import { Sheet, SheetResource } from '@/lib/sheets';
 import { AttributeWheel } from './AttributeWheel';
 import { Minus, Plus, UserRound } from 'lucide-react';
+import { getSystem, SheetFrame } from '@/lib/sheetSystems';
+
+/** Visual de cada sistema: moldura, caixas e efeitos. */
+const FRAMES: Record<SheetFrame, { wrap: string; box: string; tag: string; bg?: React.CSSProperties; fx?: React.CSSProperties; rounded: string }> = {
+  paranormal: { wrap: 'border border-primary/25 rounded-2xl', box: 'bg-black/70 border border-primary/20 rounded-lg', tag: 'Ordem', rounded: 'rounded-2xl' },
+  parchment: {
+    wrap: 'border-4 border-double border-primary/50 rounded-md', box: 'bg-[hsl(30_25%_10%/0.85)] border border-primary/40 rounded-sm shadow-[inset_0_0_12px_hsl(var(--primary)/0.15)]', tag: 'Grimório', rounded: 'rounded-md',
+    bg: { background: 'radial-gradient(120% 80% at 30% 20%, hsl(32 35% 16%), hsl(25 30% 6%))' },
+    fx: { backgroundImage: 'repeating-linear-gradient(45deg, hsl(40 40% 60% / 0.035) 0 2px, transparent 2px 6px)' },
+  },
+  gothic: {
+    wrap: 'border-2 border-primary/50 rounded-t-[2.5rem] rounded-b-md', box: 'bg-black/75 border-y border-primary/40 rounded-none', tag: 'Linhagem', rounded: 'rounded-t-[2.5rem] rounded-b-md',
+    bg: { background: 'radial-gradient(90% 70% at 50% 0%, hsl(var(--primary)/0.35), black 70%)' },
+  },
+  neon: {
+    wrap: 'border border-primary/60 rounded-none [clip-path:polygon(0_0,calc(100%-24px)_0,100%_24px,100%_100%,24px_100%,0_calc(100%-24px))]', box: 'bg-black/80 border border-primary/50 rounded-none [clip-path:polygon(0_0,calc(100%-10px)_0,100%_10px,100%_100%,0_100%)]', tag: 'NET//ID', rounded: '',
+    fx: { backgroundImage: 'repeating-linear-gradient(0deg, hsl(var(--primary)/0.06) 0 1px, transparent 1px 3px)' },
+  },
+  horror: {
+    wrap: 'border border-primary/30 rounded-sm', box: 'bg-[hsl(60_10%_6%/0.85)] border border-dashed border-primary/40 rounded-sm', tag: 'Dossiê', rounded: 'rounded-sm',
+    bg: { background: 'radial-gradient(100% 80% at 20% 10%, hsl(80 15% 12%), hsl(0 0% 3%))' },
+    fx: { backgroundImage: 'radial-gradient(hsl(0 0% 100% / 0.04) 1px, transparent 1px)', backgroundSize: '4px 4px' },
+  },
+  punk: {
+    wrap: 'border-4 border-primary rounded-none', box: 'bg-black border-2 border-primary rounded-none -skew-x-2', tag: 'MALDITO', rounded: '',
+  },
+  heroic: {
+    wrap: 'border-2 border-primary/50 rounded-xl', box: 'bg-black/70 border border-primary/30 rounded-lg shadow-[0_0_14px_hsl(var(--primary)/0.15)]', tag: 'Herói', rounded: 'rounded-xl',
+    fx: { background: 'linear-gradient(180deg, hsl(var(--primary)/0.18), transparent 30%)' },
+  },
+};
 
 interface Props {
   sheet: Sheet;
@@ -36,14 +67,17 @@ export const SheetPoster = ({ sheet, editable, onPatch, compact }: Props) => {
 
   const trained = sheet.skills.filter(s => s.trained || s.value > 0);
   const st = sheet.style ?? {};
-  const fontClass = { display: 'font-display', serif: 'font-serif', sans: 'font-sans', mono: 'font-mono' }[st.font ?? 'display'];
+  const sys = getSystem(st.system);
+  const fr = FRAMES[sys.frame];
+  const fontClass = { display: 'font-display', serif: 'font-serif', sans: 'font-sans', mono: 'font-mono' }[st.font ?? sys.font];
   const layout = st.layout ?? 'right';
   const imgPos = layout === 'full' ? 'inset-0 w-full' : layout === 'left' ? 'left-0 top-0 w-full sm:w-[58%]' : 'right-0 top-0 w-full sm:w-[58%]';
   const overlay = (st.overlay ?? 50) / 100;
-  const vars = st.color ? ({ '--primary': st.color } as React.CSSProperties) : undefined;
+  const vars = { '--primary': st.color ?? sys.color, ...(fr.bg ?? {}) } as React.CSSProperties;
 
   return (
-    <div style={vars} className="relative w-full overflow-hidden rounded-2xl border border-primary/25 bg-black shadow-[0_0_40px_hsl(var(--primary)/0.15)]">
+    <div style={vars} className={`relative w-full overflow-hidden bg-black shadow-[0_0_40px_hsl(var(--primary)/0.15)] ${fr.wrap}`}>
+      {fr.fx && <div className="absolute inset-0 pointer-events-none z-0" style={fr.fx} />}
       {/* Arte de fundo */}
       {sheet.image_url ? (
         <img
@@ -63,9 +97,10 @@ export const SheetPoster = ({ sheet, editable, onPatch, compact }: Props) => {
         style={{ background: 'radial-gradient(60% 50% at 20% 40%, hsl(var(--primary)/0.25), transparent 70%)' }}
       />
 
-      <div className={`relative ${compact ? 'p-4' : 'p-5 md:p-8'}`}>
+      <div className={`relative z-10 ${compact ? 'p-4' : 'p-5 md:p-8'}`}>
         {/* Cabeçalho */}
         <div className={layout === 'left' ? 'max-w-[60%] sm:max-w-[55%] ml-auto text-right' : 'max-w-[60%] sm:max-w-[55%]'}>
+          <p className={`${fontClass} text-[10px] tracking-[0.3em] uppercase text-primary/70 mb-1`}>{fr.tag} · {sys.name}</p>
           <h2
             className={`${fontClass} font-black ${st.uppercase === false ? '' : 'uppercase'} tracking-tight text-primary leading-none ${
               compact ? 'text-2xl' : 'text-4xl md:text-6xl'
@@ -95,7 +130,7 @@ export const SheetPoster = ({ sheet, editable, onPatch, compact }: Props) => {
               {sheet.resources.map(r => {
                 const pct = r.max > 0 ? Math.round((r.current / r.max) * 100) : 0;
                 return (
-                  <div key={r.id} className="bg-black/70 border border-primary/20 rounded-lg px-3 py-2 backdrop-blur-sm">
+                  <div key={r.id} className={` px-3 py-2 backdrop-blur-sm ${fr.box}`}>
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="font-display font-bold text-[11px] tracking-widest uppercase text-white/80">
                         {r.label}
@@ -156,8 +191,8 @@ export const SheetPoster = ({ sheet, editable, onPatch, compact }: Props) => {
             )}
 
             {trained.length > 0 && (
-              <div className="bg-black/60 backdrop-blur-sm border border-primary/20 rounded-lg p-3">
-                <p className="font-display font-bold text-primary text-[11px] tracking-widest uppercase mb-2">Perícias</p>
+              <div className={`backdrop-blur-sm p-3 ${fr.box}`}>
+                <p className="font-display font-bold text-primary text-[11px] tracking-widest uppercase mb-2">{sys.id === 'cthulhu' ? 'Perícias (%)' : 'Perícias'}</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1">
                   {trained.map(s => (
                     <div key={s.id} className="flex items-center justify-between text-xs border-b border-white/5 py-0.5">
@@ -172,7 +207,7 @@ export const SheetPoster = ({ sheet, editable, onPatch, compact }: Props) => {
             )}
 
             {(sheet.style?.inventory?.length ?? 0) > 0 && (
-              <div className="bg-black/60 backdrop-blur-sm border border-primary/20 rounded-lg p-3">
+              <div className={`backdrop-blur-sm p-3 ${fr.box}`}>
                 <p className="font-display font-bold text-primary text-[11px] tracking-widest uppercase mb-2">Inventário</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1">
                   {sheet.style!.inventory!.map(it => (
