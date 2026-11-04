@@ -6,7 +6,6 @@ export const MASTER_KEY = 'arcanum-master-key';
 export const LOCK_KEY = 'arcanum-access-lock';
 export const DEVICE_KEY = 'arcanum-device-id';
 export const EMAIL_KEY = 'arcanum-access-email';
-export const PHONE_KEY = 'arcanum-access-phone';
 export const TEST_UNTIL_KEY = 'arcanum-test-until';
 
 /** Acesso temporário (código teste): expira sozinho e volta pra tela do código. */
@@ -57,7 +56,7 @@ export const leaveMaster = () => {
 
 /** Sai da conta neste aparelho: volta para a tela do código. */
 export const logout = () => {
-  [GRANT_KEY, MASTER_KEY, EMAIL_KEY, PHONE_KEY].forEach(k => localStorage.removeItem(k));
+  [GRANT_KEY, MASTER_KEY, EMAIL_KEY].forEach(k => localStorage.removeItem(k));
   clearOwnerToken();
   window.location.hash = '#/';
   window.location.reload();

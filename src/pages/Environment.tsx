@@ -570,9 +570,7 @@ const Environment = () => {
   useEffect(() => {
     try {
       localStorage.setItem('arcanum-current-region', JSON.stringify(env.region));
-    } catch (error) {
-      console.warn('Não foi possível sincronizar a região atual:', error);
-    }
+    } catch {}
   }, [env.region]);
 
   // Sync weather to localStorage for NPC generator
@@ -584,9 +582,7 @@ const Environment = () => {
         label: WEATHER_INFO[env.weather.type].label,
         effects: env.weather.effects,
       }));
-    } catch (error) {
-      console.warn('Não foi possível sincronizar o clima atual:', error);
-    }
+    } catch {}
   }, [env.weather]);
 
   // Sync time of day to localStorage
@@ -602,9 +598,7 @@ const Environment = () => {
         minutes: gameMinutes % 60,
         day: Math.floor(gameMinutes / 1440) + 1,
       }));
-    } catch (error) {
-      console.warn('Não foi possível sincronizar o horário atual:', error);
-    }
+    } catch {}
   }, [liveGameMinutes, env.manualTimeOverride, env.manualHour, env.manualMinute, env.manualDay]);
 
   // Compute live game minutes from timer
@@ -623,9 +617,7 @@ const Environment = () => {
         } else {
           setLiveGameMinutes(Math.floor(t.gameMinutesElapsed));
         }
-      } catch (error) {
-        console.warn('Não foi possível ler o timer do ambiente:', error);
-      }
+      } catch {}
     };
     computeMinutes();
     const interval = setInterval(computeMinutes, 1000);

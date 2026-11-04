@@ -39,7 +39,7 @@ export const DiceAnimation = ({ roll }: { roll: Roll | null }) => {
     timer.current = setTimeout(() => setPhase('done'), 900);
     const hide = setTimeout(() => setShown(null), 3500);
     return () => { clearTimeout(timer.current); clearTimeout(hide); };
-  }, [roll]);
+  }, [roll?.at]);
 
   return (
     <AnimatePresence>

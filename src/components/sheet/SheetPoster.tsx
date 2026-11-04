@@ -6,7 +6,6 @@ interface Props {
   sheet: Sheet;
   editable?: boolean;
   onPatch?: (patch: Partial<Sheet>) => void;
-  onReorderAttributes?: (fromId: string, toId: string) => void;
   compact?: boolean;
 }
 
@@ -18,7 +17,7 @@ const toneClass: Record<SheetResource['tone'], string> = {
 };
 
 /** Ficha em formato "pôster": arte do personagem ao fundo, roda de atributos e perícias. */
-export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, compact }: Props) => {
+export const SheetPoster = ({ sheet, editable, onPatch, compact }: Props) => {
   const patchResource = (id: string, delta: number) => {
     if (!onPatch) return;
     onPatch({
@@ -90,11 +89,7 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, com
         <div className={`mt-5 grid gap-5 ${compact ? '' : 'md:grid-cols-[minmax(0,340px)_minmax(0,1fr)]'}`}>
           {/* Roda + recursos */}
           <div className="space-y-4">
-            <AttributeWheel
-              attributes={sheet.attributes}
-              onChange={editable ? patchAttribute : undefined}
-              onReorder={editable ? onReorderAttributes : undefined}
-            />
+            <AttributeWheel attributes={sheet.attributes} onChange={editable ? patchAttribute : undefined} />
 
             <div className="space-y-2">
               {sheet.resources.map(r => {

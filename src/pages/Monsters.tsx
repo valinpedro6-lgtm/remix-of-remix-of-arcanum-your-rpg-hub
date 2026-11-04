@@ -14,7 +14,6 @@ import { Plus, Trash2, Edit, Skull, Shield, Heart, Zap, Swords, BookOpen, X, Che
 import { NumberInput } from '@/components/NumberInput';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MONSTER_SYSTEM_PRESETS } from '@/data/rpgSystemPresets';
-import { getSystemIdentity } from '@/data/systemIdentity';
 import { ImageUploader } from '@/components/ImageUploader';
 import { ZoomImage } from '@/components/ImageLightbox';
 import { AttachmentGallery, type Attachment } from '@/components/AttachmentGallery';
@@ -422,13 +421,13 @@ const Monsters = () => {
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground flex items-center gap-1"><Gamepad2 className="w-3 h-3" />Sistemas de RPG</p>
             {MONSTER_SYSTEM_PRESETS.map(preset => (
-              <Button key={preset.id} variant="outline" style={{ borderColor: `${getSystemIdentity(preset.system).accent}55`, background: getSystemIdentity(preset.system).surface }} className="w-full justify-start gap-2 h-auto py-2.5" onClick={() => openNewWithTemplate({
+              <Button key={preset.id} variant="outline" className="w-full justify-start gap-2" onClick={() => openNewWithTemplate({
                 id: preset.id, name: preset.name,
                 attributes: preset.attributes.map(a => ({ ...a })),
                 combatFields: { ...preset.combatFields },
                 sections: { ...preset.sections },
               })}>
-                <span className="w-8 h-8 rounded-md grid place-items-center text-[10px] font-black tracking-tight" style={{ color: getSystemIdentity(preset.system).accent, background: `${getSystemIdentity(preset.system).accent}18` }}>{getSystemIdentity(preset.system).mark}</span><span className="text-left"><span className="block font-semibold">{preset.name}</span><span className="block text-[10px] text-muted-foreground">{getSystemIdentity(preset.system).tagline}</span></span>
+                <Gamepad2 className="w-4 h-4 text-primary" />{preset.name}
                 <span className="text-xs text-muted-foreground ml-auto">{preset.attributes.length} atr</span>
               </Button>
             ))}

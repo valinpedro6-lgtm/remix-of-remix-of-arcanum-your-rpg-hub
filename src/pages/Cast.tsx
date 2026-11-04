@@ -20,7 +20,6 @@ import {
   createSheet, deleteSheet, listSheets, updateSheet, uid, shareUrl,
   DEFAULT_SKILLS, OP_SKILLS, SheetKind, STYLE_COLORS,
 } from '@/lib/sheets';
-import { PLAYER_SYSTEM_PRESETS } from '@/data/rpgSystemPresets';
 
 const TONES: SheetResource['tone'][] = ['life', 'sanity', 'effort', 'neutral'];
 const TONE_LABEL: Record<SheetResource['tone'], string> = {
@@ -185,39 +184,6 @@ const Cast = () => {
     const setSkills = (list: SheetSkill[]) => patch(s.id, { skills: list });
     const setRes = (list: SheetResource[]) => patch(s.id, { resources: list });
     const setAb = (list: SheetAbility[]) => patch(s.id, { abilities: list });
-    const reorderAttributes = (fromId: string, toId: string) => {
-      const next = [...s.attributes];
-      const fromIndex = next.findIndex(a => a.id === fromId);
-      const toIndex = next.findIndex(a => a.id === toId);
-      if (fromIndex < 0 || toIndex < 0) return;
-      const [moved] = next.splice(fromIndex, 1);
-      next.splice(toIndex, 0, moved);
-      setAttr(next);
-    };
-    const applySystemPreset = (presetId: string) => {
-      const preset = PLAYER_SYSTEM_PRESETS.find(item => item.id === presetId);
-      if (!preset) return;
-      const attrs = preset.attributes.map((attr, index) => {
-        const existing = s.attributes.find(item => item.label.toLowerCase() === attr.name.toLowerCase());
-        return existing ?? { id: uid(), label: attr.name, short: attr.name.replace(/[^A-Za-zÀ-ÿ]/g, '').slice(0, 3).toUpperCase(), value: index < 2 ? 2 : 1 };
-      });
-      const skills = preset.skills.map(skill => {
-        const existing = s.skills.find(item => item.name.toLowerCase() === skill.name.toLowerCase());
-        return existing ?? { id: uid(), name: skill.name, value: 0, trained: false };
-      });
-      const resourceSpecs = [
-        preset.combatFields.hp ? { label: 'Vida', short: 'PV', tone: 'life' as const } : null,
-        preset.combatFields.mana ? { label: 'Mana', short: 'PM', tone: 'sanity' as const } : null,
-        preset.combatFields.energy ? { label: 'Esforço', short: 'PE', tone: 'effort' as const } : null,
-        preset.combatFields.ca ? { label: 'Defesa', short: 'DEF', tone: 'neutral' as const } : null,
-      ].filter(Boolean) as { label: string; short: string; tone: SheetResource['tone'] }[];
-      const resources = resourceSpecs.map(spec => {
-        const existing = s.resources.find(item => item.label.toLowerCase() === spec.label.toLowerCase());
-        return existing ?? { id: uid(), ...spec, current: spec.label === 'Vida' ? 12 : 0, max: spec.label === 'Vida' ? 12 : 0 };
-      });
-      patch(s.id, { systemId: preset.id, systemName: preset.name, attributes: attrs, skills, resources });
-      toast.success(`Preset de ${preset.name} aplicado.`);
-    };
 
     return (
       <div className="space-y-5">
@@ -250,12 +216,7 @@ const Cast = () => {
 
         <div ref={stageRef} className={full ? 'bg-black p-4 flex items-center overflow-auto' : ''}>
           <div className="w-full">
-            <SheetPoster
-              sheet={s}
-              editable
-              onPatch={p => patch(s.id, p)}
-              onReorderAttributes={reorderAttributes}
-            />
+            <SheetPoster sheet={s} editable onPatch={p => patch(s.id, p)} />
           </div>
         </div>
 
@@ -286,25 +247,6 @@ const Cast = () => {
                     <Button key={k} size="sm" variant={s.kind === k ? 'default' : 'outline'} onClick={() => patch(s.id, { kind: k })}>{l}</Button>
                   ))}
                 </div>
-              </div>
-
-              {/* Sistema */}
-              <div className="space-y-2 rounded-lg border border-primary/25 bg-primary/5 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <Label>Sistema da ficha</Label>
-                    <p className="text-xs text-muted-foreground">Aplicar preset troca atributos, perícias e recursos compatíveis.</p>
-                  </div>
-                  <select
-                    className="h-9 min-w-[190px] rounded-md border border-border bg-background px-2 text-sm"
-                    value={s.systemId ?? ''}
-                    onChange={e => applySystemPreset(e.target.value)}
-                  >
-                    <option value="" disabled>Escolha um sistema</option>
-                    {PLAYER_SYSTEM_PRESETS.map(preset => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
-                  </select>
-                </div>
-                {s.systemName && <Badge variant="outline" className="border-primary/30 text-primary">Ativo: {s.systemName}</Badge>}
               </div>
 
               {/* Personalizar */}
@@ -524,17 +466,17 @@ const Cast = () => {
   return (
     <div className="space-y-5">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="page-title">Personagens da Campanha</h1>
-        <p className="text-sm text-muted-foreground mt-1">Fichas, elenco narrativo e criaturas em um só lugar</p>
+        <h1 className="page-title">Elenco</h1>
+        <p className="text-sm text-muted-foreground mt-1">Fichas em estilo pôster para projetar na mesa</p>
       </motion.div>
 
       <Tabs value={tab} onValueChange={setTab}>
         <div className="w-full overflow-x-auto no-scrollbar"><TabsList className="w-max min-w-full flex justify-start h-auto p-1 bg-card/60 backdrop-blur-md border border-border/50">
           <TabsTrigger value="player" className="flex-1 gap-2 py-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
-            <Users className="w-4 h-4" /> Jogadores da mesa
+            <Users className="w-4 h-4" /> <span className="sm:hidden">Jogadores</span><span className="hidden sm:inline">Jogadores da mesa</span>
           </TabsTrigger>
           <TabsTrigger value="story" className="flex-1 gap-2 py-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
-            <BookOpen className="w-4 h-4" /> Personagens da história
+            <BookOpen className="w-4 h-4" /> <span className="sm:hidden">História</span><span className="hidden sm:inline">Personagens da história</span>
           </TabsTrigger>
           <TabsTrigger value="monster" className="flex-1 gap-2 py-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
             <Skull className="w-4 h-4" /> Monstros

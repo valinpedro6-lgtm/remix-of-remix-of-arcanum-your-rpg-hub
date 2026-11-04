@@ -67,7 +67,7 @@ export function worldDate(c: WorldCalendar, daysElapsed: number): WorldDate {
   for (let i = 0; i < Math.min(c.startMonth, months.length); i++) offset += Math.max(1, months[i].days);
   offset += Math.max(1, c.startDay) - 1;
 
-  const total = offset + Math.max(0, Math.floor(daysElapsed));
+  let total = offset + Math.max(0, Math.floor(daysElapsed));
   const year = c.startYear + Math.floor(total / len);
   let rest = ((total % len) + len) % len;
   const dayOfYear = rest + 1;

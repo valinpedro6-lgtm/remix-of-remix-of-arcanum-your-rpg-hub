@@ -110,16 +110,16 @@ async function registerFail(ip: string) {
   };
 }
 
-async function touchSession(device: string, label = "", phone = "") {
+async function touchSession(device: string, label = "") {
   if (!device) return;
   const now = new Date().toISOString();
   const { data } = await admin.from("access_sessions").select("device_id").eq("device_id", device).maybeSingle();
   if (data) {
     await admin.from("access_sessions")
-      .update(label ? { last_seen: now, label, ...(phone ? { phone } : {}) } : { last_seen: now, ...(phone ? { phone } : {}) })
+      .update(label ? { last_seen: now, label } : { last_seen: now })
       .eq("device_id", device);
   } else {
-    await admin.from("access_sessions").insert({ device_id: device, label, phone, first_seen: now, last_seen: now });
+    await admin.from("access_sessions").insert({ device_id: device, label, first_seen: now, last_seen: now });
   }
 }
 
@@ -137,14 +137,14 @@ async function consumeUse(row: { code_uses_left: number; code_max_uses: number }
 
 async function stats() {
   const since = new Date(Date.now() - 2 * 60_000).toISOString();
-  const { data, count } = await admin
+  const { data } = await admin
     .from("access_sessions")
-    .select("device_id, label, phone, first_seen, last_seen", { count: "exact" })
+    .select("device_id, label, first_seen, last_seen")
     .order("last_seen", { ascending: false })
-    .limit(5000);
+    .limit(100);
   const rows = data ?? [];
   return {
-    total: count ?? rows.length,
+    total: rows.length,
     active: rows.filter((r) => r.last_seen > since).length,
     sessions: rows,
   };
@@ -220,14 +220,13 @@ Deno.serve(async (req) => {
     if (action === "register") {
       const device = String(body.device ?? "").slice(0, 64);
       const email = String(body.email ?? "").trim().slice(0, 120);
-      const phone = String(body.phone ?? "").trim().slice(0, 32);
-      if (!device || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !/^[+\d][\d\s().-]{7,19}$/.test(phone)) {
-        return json({ ok: false, error: "E-mail ou telefone inválido" });
+      if (!device || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        return json({ ok: false, error: "E-mail inválido" });
       }
       if (!(await checkTicket(device, String(body.ticket ?? "")))) {
         return json({ ok: false, error: "Digite o código de acesso de novo." });
       }
-      await touchSession(device, email, phone);
+      await touchSession(device, email);
       const token = await ownerTokenFor("email:" + email.toLowerCase());
       await adoptRows(String(body.oldToken ?? ""), token);
       return json({ ok: true, token });

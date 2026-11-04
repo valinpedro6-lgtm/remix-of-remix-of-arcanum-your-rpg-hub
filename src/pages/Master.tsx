@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Shield, Copy, RefreshCw, Mail, Phone, Users, Radio, Loader2, LogOut, KeyRound, Trash2, Search, Send,
+  Shield, Copy, RefreshCw, Mail, Users, Radio, Loader2, LogOut, KeyRound, Trash2, Search, Send,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { MASTER_KEY, callGate, becomeMaster, leaveMaster } from '@/lib/access';
 import { currentOwnerToken } from '@/lib/userData';
 
-interface Session { device_id: string; label: string; phone?: string; first_seen: string; last_seen: string }
+interface Session { device_id: string; label: string; first_seen: string; last_seen: string }
 
 const isEmail = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 const fmtDate = (iso: string) =>
@@ -272,7 +272,7 @@ const Master = () => {
                       <span className="font-medium truncate block text-muted-foreground">{sn.label || 'sem e-mail'}</span>
                     )}
                     <span className="text-[11px] text-muted-foreground">
-                      {sn.phone ? <><Phone className="inline w-3 h-3 mr-1" />{sn.phone} · </> : ''}{online ? 'Online agora' : `Visto ${fmtDate(sn.last_seen)}`} · entrou {fmtDate(sn.first_seen)}
+                      {online ? 'Online agora' : `Visto ${fmtDate(sn.last_seen)}`} · entrou {fmtDate(sn.first_seen)}
                     </span>
                   </div>
                   {email && (

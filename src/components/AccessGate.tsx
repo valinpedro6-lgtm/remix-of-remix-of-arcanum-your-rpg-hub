@@ -3,11 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { KeyRound, Shield, Loader2, Lock, AlertTriangle, Mail, Phone } from 'lucide-react';
+import { KeyRound, Shield, Loader2, Lock, AlertTriangle, Mail } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
-import { GRANT_KEY, LOCK_KEY, EMAIL_KEY, PHONE_KEY, deviceId, callGate, becomeMaster, grantTestAccess, testAccessLeft, expireTestAccess } from '@/lib/access';
+import { GRANT_KEY, LOCK_KEY, EMAIL_KEY, deviceId, callGate, becomeMaster, grantTestAccess, testAccessLeft, expireTestAccess } from '@/lib/access';
 import { currentOwnerToken, setOwnerToken } from '@/lib/userData';
 
 /** avisa o servidor, de tempos em tempos, que este aparelho continua na mesa */
@@ -74,7 +74,6 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
   const [needEmail, setNeedEmail] = useState(false);
   const [ticket, setTicket] = useState('');
   const [email, setEmail] = useState(() => localStorage.getItem(EMAIL_KEY) ?? '');
-  const [phone, setPhone] = useState(() => localStorage.getItem(PHONE_KEY) ?? '');
   const [remaining, setRemaining] = useState<number | null>(null);
   const [lockUntil, setLockUntil] = useState<number | null>(() => {
     const v = Number(localStorage.getItem(LOCK_KEY) ?? 0);
@@ -157,14 +156,9 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
       toast({ title: 'E-mail inválido', description: 'Digite um e-mail válido para continuar.', variant: 'destructive' });
       return;
     }
-    const phoneValue = phone.trim();
-    if (!/^[+\d][\d\s().-]{7,19}$/.test(phoneValue)) {
-      toast({ title: 'Telefone inválido', description: 'Digite um telefone válido para continuar.', variant: 'destructive' });
-      return;
-    }
     setLoading(true);
     try {
-      const res = await call({ action: 'register', device: deviceId(), email: value, phone: phoneValue, ticket, oldToken: currentOwnerToken() });
+      const res = await call({ action: 'register', device: deviceId(), email: value, ticket, oldToken: currentOwnerToken() });
       if (!res?.ok) {
         toast({ title: 'Não deu para registrar', description: res?.error ?? 'Confira o e-mail e tente de novo.', variant: 'destructive' });
         if (res?.error?.includes('código')) { setNeedEmail(false); setCode(''); }
@@ -172,7 +166,6 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
       }
       setOwnerToken(res.token);
       localStorage.setItem(EMAIL_KEY, value);
-      localStorage.setItem(PHONE_KEY, phoneValue);
       localStorage.setItem(GRANT_KEY, 'true');
       setGranted(true);
     } catch {
@@ -195,7 +188,7 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
                   <Mail className="w-6 h-6" />
                 </div>
                 <h1 className="text-3xl font-display font-bold gradient-text">Quase lá</h1>
-                <p className="text-sm text-muted-foreground">Informe seu e-mail e telefone para o mestre identificar sua entrada.</p>
+                <p className="text-sm text-muted-foreground">Use sempre o mesmo e-mail: suas fichas e mapas aparecem em qualquer aparelho</p>
               </div>
               <form onSubmit={sendEmail} className="space-y-3">
                 <Input
@@ -206,15 +199,6 @@ export const AccessGate = ({ children }: { children: ReactNode }) => {
                   onChange={e => setEmail(e.target.value)}
                   placeholder="seu@email.com"
                   maxLength={120}
-                  className="text-center"
-                />
-                <Input
-                  type="tel"
-                  inputMode="tel"
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  placeholder="(00) 00000-0000"
-                  maxLength={20}
                   className="text-center"
                 />
                 <Button type="submit" className="w-full" disabled={loading}>

@@ -372,7 +372,7 @@ const Tabletop = () => {
 
           {showCast && (
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-              {sheets.filter(s => s.image_url).length === 0 && <p className="text-xs text-muted-foreground">Nenhuma ficha com imagem em Personagens.</p>}
+              {sheets.filter(s => s.image_url).length === 0 && <p className="text-xs text-muted-foreground">Nenhuma ficha com imagem no Elenco.</p>}
               {sheets.filter(s => s.image_url).map(s => (
                 <button key={s.id} className="shrink-0 w-16 text-center" onClick={async () => addTokenImg(s.name, await shrink(s.image_url, 300, true))}>
                   <img src={s.image_url} alt={s.name} className="w-14 h-14 mx-auto rounded-full object-cover object-top ring-2 ring-primary/40" />
@@ -458,7 +458,7 @@ const Tabletop = () => {
               <Card className="w-56 shrink-0 hidden md:block glass-card">
                 <CardContent className="p-3 space-y-3 max-h-[75dvh] overflow-y-auto">
                   <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Fichas na mesa</p>
-                  {tableSheets.length === 0 && <p className="text-xs text-muted-foreground">Nenhuma ficha na mesa. Use "Mandar pra mesa" em Personagens.</p>}
+                  {tableSheets.length === 0 && <p className="text-xs text-muted-foreground">Nenhuma ficha na mesa. Use "Mandar pra mesa" no Elenco.</p>}
                   {tableSheets.map(s => (
                     <div key={s.id} className="space-y-1">
                       <p className="text-xs font-bold truncate">{s.name}</p>

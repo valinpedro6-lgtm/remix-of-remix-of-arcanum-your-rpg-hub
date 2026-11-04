@@ -12,8 +12,6 @@ import {
 } from 'lucide-react';
 import { PLAYER_SYSTEM_PRESETS, type PlayerPreset } from '@/data/rpgSystemPresets';
 import { getFlavor, rollAttribute, rollVitals } from '@/data/systemFlavor';
-import { getSystemIdentity } from '@/data/systemIdentity';
-import { getActiveSystemId, getLiveSystem } from '@/lib/systemMode';
 import { ImageUploader } from '@/components/ImageUploader';
 import { ZoomImage } from '@/components/ImageLightbox';
 import { AttachmentGallery, type Attachment } from '@/components/AttachmentGallery';
@@ -458,21 +456,14 @@ const HIDDEN_WEAKNESSES = [
 
 function getCurrentRegion(): RegionType {
   try {
-    const currentRegion = localStorage.getItem('arcanum-current-region');
-    if (currentRegion) {
-      const region = JSON.parse(currentRegion) as RegionType;
-      if (REGION_LABELS[region]) return region;
-    }
-    const environment = localStorage.getItem('arcanum-environment');
-    if (environment) {
-      const env = JSON.parse(environment) as { region?: RegionType };
-      if (env.region && REGION_LABELS[env.region]) {
-        return env.region;
+    const stored = localStorage.getItem('arcanum-environment');
+    if (stored) {
+      const env = JSON.parse(stored);
+      if (env.region && REGION_LABELS[env.region as RegionType]) {
+        return env.region as RegionType;
       }
     }
-  } catch (error) {
-    console.warn('Não foi possível recuperar a região atual:', error);
-  }
+  } catch {}
   return 'cidade';
 }
 
@@ -605,12 +596,11 @@ const NPCGenerator = () => {
   const [current, setCurrent] = useState<Character | null>(null);
   const [saved, setSaved] = useLocalStorage<Character[]>('arcanum-npcs', []);
   const [region, setRegion] = useState<RegionType>(getCurrentRegion);
-  const [selectedSystem, setSelectedSystem] = useState<string>(() => getLiveSystem(getActiveSystemId()).generatorIds.player);
+  const [selectedSystem, setSelectedSystem] = useState<string>(PLAYER_SYSTEM_PRESETS[0].id);
   const [revealedSecrets, setRevealedSecrets] = useState<Set<string>>(new Set());
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
   const getPreset = () => PLAYER_SYSTEM_PRESETS.find(p => p.id === selectedSystem) || PLAYER_SYSTEM_PRESETS[0];
-  const selectedIdentity = getSystemIdentity(getPreset().system);
 
   // Sync region from environment
   useEffect(() => {
@@ -618,11 +608,6 @@ const NPCGenerator = () => {
     sync();
     const interval = setInterval(sync, 5000);
     return () => clearInterval(interval);
-  }, []);
-  useEffect(() => {
-    const sync = () => setSelectedSystem(getLiveSystem(getActiveSystemId()).generatorIds.player);
-    window.addEventListener('arcanum-system-change', sync);
-    return () => window.removeEventListener('arcanum-system-change', sync);
   }, []);
 
   const generate = (villain: boolean) => setCurrent(villain ? generateVillain(region, getPreset()) : generateNPC(region, getPreset()));
@@ -642,8 +627,7 @@ const NPCGenerator = () => {
   const toggleSecret = (id: string) => {
     setRevealedSecrets(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   };
@@ -651,8 +635,7 @@ const NPCGenerator = () => {
   const toggleExpand = (id: string) => {
     setExpandedCards(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   };
@@ -909,10 +892,6 @@ const NPCGenerator = () => {
               ))}
             </SelectContent>
           </Select>
-          <div className="hidden sm:flex items-center gap-2 rounded-lg border px-3 py-2" style={{ borderColor: `${selectedIdentity.accent}55`, background: selectedIdentity.surface }}>
-            <span className="text-[10px] font-black" style={{ color: selectedIdentity.accent }}>{selectedIdentity.mark}</span>
-            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{selectedIdentity.tagline}</span>
-          </div>
         </div>
       </div>
 

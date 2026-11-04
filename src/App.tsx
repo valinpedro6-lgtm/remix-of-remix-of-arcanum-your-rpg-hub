@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Notes from "./pages/Notes";
 import Dashboard from "./pages/Dashboard";
 import TableHub from "./pages/TableHub";
+import SheetsHub from "./pages/SheetsHub";
 import GeneratorsHub from "./pages/GeneratorsHub";
 import CompendiumHub from "./pages/CompendiumHub";
 import MindMap from "./pages/MindMap";
@@ -37,12 +38,11 @@ const App = () => (
               <Layout>
                 <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/personagens" element={<Cast />} />
+            <Route path="/elenco" element={<Cast />} />
             <Route path="/tabletop" element={<Tabletop />} />
             <Route path="/painel" element={<Dashboard />} />
             <Route path="/mesa" element={<TableHub />} />
-            <Route path="/elenco" element={<Navigate to="/personagens" replace />} />
-            <Route path="/fichas" element={<Navigate to="/personagens" replace />} />
+            <Route path="/fichas" element={<SheetsHub />} />
             <Route path="/geradores" element={<GeneratorsHub />} />
             <Route path="/compendio" element={<CompendiumHub />} />
             <Route path="/notas" element={<Notes />} />
@@ -54,8 +54,8 @@ const App = () => (
             <Route path="/iniciativa" element={<Navigate to="/mesa?t=iniciativa" replace />} />
             <Route path="/timer" element={<Navigate to="/mesa?t=timer" replace />} />
             <Route path="/taverna" element={<Navigate to="/mesa?t=taverna" replace />} />
-            <Route path="/jogadores" element={<Navigate to="/personagens" replace />} />
-            <Route path="/monstros" element={<Navigate to="/personagens" replace />} />
+            <Route path="/jogadores" element={<Navigate to="/fichas" replace />} />
+            <Route path="/monstros" element={<Navigate to="/fichas?t=monstros" replace />} />
             <Route path="/npc" element={<Navigate to="/geradores" replace />} />
             <Route path="/loot" element={<Navigate to="/geradores?t=loot" replace />} />
             <Route path="/ambiente" element={<Navigate to="/geradores?t=ambiente" replace />} />

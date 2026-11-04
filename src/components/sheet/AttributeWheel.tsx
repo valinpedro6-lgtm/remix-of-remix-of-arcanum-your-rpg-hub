@@ -1,17 +1,16 @@
 import { SheetAttribute } from '@/lib/sheets';
-import { GripVertical, Minus, Plus } from 'lucide-react';
+import { Minus, Plus } from 'lucide-react';
 
 interface Props {
   attributes: SheetAttribute[];
   onChange?: (id: string, value: number) => void;
-  onReorder?: (fromId: string, toId: string) => void;
   className?: string;
 }
 
 const HEX = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
 
 /** Roda de atributos no estilo Ordem Paranormal: hexágonos ao redor de um núcleo. */
-export const AttributeWheel = ({ attributes, onChange, onReorder, className }: Props) => {
+export const AttributeWheel = ({ attributes, onChange, className }: Props) => {
   const n = Math.max(attributes.length, 1);
   const radius = n <= 3 ? 32 : n <= 6 ? 36 : 39;
   const hexSize = n <= 5 ? 30 : n <= 8 ? 25 : 21;
@@ -43,19 +42,8 @@ export const AttributeWheel = ({ attributes, onChange, onReorder, className }: P
             key={a.id}
             className="absolute -translate-x-1/2 -translate-y-1/2 group"
             style={{ left: `${left}%`, top: `${top}%`, width: `${hexSize}%` }}
-            draggable={!!onReorder}
-            onDragStart={event => {
-              event.dataTransfer.effectAllowed = 'move';
-              event.dataTransfer.setData('text/plain', a.id);
-            }}
-            onDragOver={event => { if (onReorder) event.preventDefault(); }}
-            onDrop={event => {
-              event.preventDefault();
-              const fromId = event.dataTransfer.getData('text/plain');
-              if (fromId && fromId !== a.id) onReorder?.(fromId, a.id);
-            }}
           >
-            <div className={`relative aspect-square ${onReorder ? 'cursor-grab active:cursor-grabbing' : ''}`}>
+            <div className="relative aspect-square">
               <div
                 className="absolute inset-0 bg-primary/90 shadow-[0_0_18px_hsl(var(--primary)/0.55)]"
                 style={{ clipPath: HEX }}
@@ -70,7 +58,6 @@ export const AttributeWheel = ({ attributes, onChange, onReorder, className }: P
                 <span className="font-display font-bold leading-none text-primary text-[clamp(0.45rem,1.7vw,0.65rem)] tracking-wider mt-0.5">
                   {a.short}
                 </span>
-                {onReorder && <GripVertical className="absolute -right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-white/50" />}
               </div>
             </div>
             {onChange && (
