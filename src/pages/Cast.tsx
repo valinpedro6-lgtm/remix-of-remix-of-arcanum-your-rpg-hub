@@ -20,6 +20,7 @@ import {
   createSheet, deleteSheet, listSheets, updateSheet, uid, shareUrl,
   DEFAULT_SKILLS, OP_SKILLS, SheetKind, STYLE_COLORS,
 } from '@/lib/sheets';
+import { SHEET_SYSTEMS, getSystem, systemTemplate } from '@/lib/sheetSystems';
 
 const TONES: SheetResource['tone'][] = ['life', 'sanity', 'effort', 'neutral'];
 const TONE_LABEL: Record<SheetResource['tone'], string> = {
@@ -35,6 +36,7 @@ const readImage = (file: File): Promise<string> =>
   });
 
 const Cast = () => {
+  const [newSystem, setNewSystem] = useState(() => localStorage.getItem('arcanum-sheet-system') ?? 'ordemparanormal');
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -84,7 +86,8 @@ const Cast = () => {
 
   const add = async (kind: SheetKind) => {
     try {
-      const s = await createSheet(kind);
+      localStorage.setItem('arcanum-sheet-system', newSystem);
+      const s = await createSheet(kind, newSystem);
       setSheets(prev => [...prev, s]);
       setSelectedId(s.id);
       toast.success(kind === 'monster' ? 'Criatura criada!' : 'Personagem criado!');
@@ -130,10 +133,16 @@ const Cast = () => {
   /* ---------- Lista ---------- */
   const grid = (items: Sheet[], kind: SheetKind) => (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+      <select value={newSystem} onChange={e => setNewSystem(e.target.value)} aria-label="Sistema da ficha"
+        className="h-10 rounded-md border border-input bg-background px-3 text-sm max-w-full">
+        {SHEET_SYSTEMS.map(sys => <option key={sys.id} value={sys.id}>{sys.name}</option>)}
+      </select>
       <Button onClick={() => add(kind)} className="gap-2">
         <Plus className="w-4 h-4" />
         {kind === 'monster' ? 'Nova criatura' : kind === 'story' ? 'Novo personagem da história' : 'Novo jogador'}
       </Button>
+      </div>
 
       {loading ? (
         <div className="flex items-center gap-2 text-muted-foreground text-sm py-8">
@@ -237,6 +246,23 @@ const Cast = () => {
                   <Label>Frase de efeito</Label>
                   <Input value={s.subtitle} onChange={e => patch(s.id, { subtitle: e.target.value })} placeholder="O sangue podia até pagar bem, mas..." />
                 </div>
+              </div>
+
+              {/* Sistema */}
+              <div className="space-y-1.5">
+                <Label>Sistema de RPG</Label>
+                <select value={s.style.system ?? 'ordemparanormal'} aria-label="Sistema de RPG"
+                  onChange={e => {
+                    const sys = e.target.value;
+                    if (confirm(`Trocar para ${getSystem(sys).name}? Os atributos, recursos e perícias serão trocados pelos desse sistema.`)) {
+                      const t = systemTemplate(sys);
+                      patch(s.id, { style: { ...s.style, system: sys, color: undefined, font: undefined }, attributes: t.attributes, resources: t.resources, skills: s.kind === 'monster' ? s.skills : t.skills });
+                    }
+                  }}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                  {SHEET_SYSTEMS.map(sys => <option key={sys.id} value={sys.id}>{sys.name}</option>)}
+                </select>
+                <p className="text-xs text-muted-foreground">O visual da ficha muda de acordo com o sistema.</p>
               </div>
 
               {/* Tipo */}
