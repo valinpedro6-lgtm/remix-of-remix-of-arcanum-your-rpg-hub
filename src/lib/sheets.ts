@@ -62,6 +62,10 @@ export interface Sheet {
   name: string;
   subtitle: string;
   origin: string;
+  age?: string;
+  occupation?: string;
+  profile?: string;
+  background?: string;
   image_url: string;
   accent: string;
   attributes: SheetAttribute[];
@@ -112,6 +116,10 @@ export const emptySheet = (kind: SheetKind, system = 'ordemparanormal'): Omit<Sh
   name: kind === 'monster' ? 'Nova Criatura' : 'Novo Personagem',
   subtitle: '',
   origin: '',
+  age: '',
+  occupation: '',
+  profile: '',
+  background: '',
   image_url: '',
   accent: 'red',
   attributes: t.attributes,

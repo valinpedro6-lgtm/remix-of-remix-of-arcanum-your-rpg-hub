@@ -277,6 +277,15 @@ const Cast = () => {
                   <Label>Frase de efeito</Label>
                   <Input value={s.subtitle} onChange={e => patch(s.id, { subtitle: e.target.value })} placeholder="O sangue podia até pagar bem, mas..." />
                 </div>
+                {s.style.system === 'ordemparanormal2-alpha' && <>
+                  <div className="md:col-span-2 rounded-lg border border-primary/25 bg-primary/5 p-3 text-xs text-muted-foreground">
+                    <strong className="text-primary">Ordem Paranormal II — Playtest Alpha.</strong> Esta ficha usa Físico, Mente, Emoção, Vida, PD e os campos do material de teste. Ela não converte automaticamente uma ficha da edição anterior.
+                  </div>
+                  <div className="space-y-1.5"><Label>Idade</Label><Input value={s.age ?? ''} onChange={e => patch(s.id, { age: e.target.value })} placeholder="Ex: 27" /></div>
+                  <div className="space-y-1.5"><Label>Ocupação</Label><Input value={s.occupation ?? ''} onChange={e => patch(s.id, { occupation: e.target.value })} placeholder="Ex: Perita criminal" /></div>
+                  <div className="space-y-1.5 md:col-span-2"><Label>Perfil</Label><Input value={s.profile ?? ''} onChange={e => patch(s.id, { profile: e.target.value })} placeholder="Executor, Analista ou Vigilante" /></div>
+                  <div className="space-y-1.5 md:col-span-2"><Label>Histórico e conceito</Label><Textarea value={s.background ?? ''} onChange={e => patch(s.id, { background: e.target.value })} placeholder="Quem era essa pessoa antes do caso? O que ela teme perder?" /></div>
+                </>}
               </div>
 
               {/* Sistema */}

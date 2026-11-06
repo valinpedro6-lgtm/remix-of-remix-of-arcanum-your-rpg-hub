@@ -25,6 +25,12 @@ export const SHEET_SYSTEMS: SheetSystem[] = [
     skills: ['Acrobacia', 'Adestramento', 'Artes', 'Atletismo', 'Atualidades', 'Ciências', 'Crime', 'Diplomacia', 'Enganação', 'Fortitude', 'Furtividade', 'Iniciativa', 'Intimidação', 'Intuição', 'Investigação', 'Luta', 'Medicina', 'Ocultismo', 'Percepção', 'Pilotagem', 'Pontaria', 'Profissão', 'Reflexos', 'Religião', 'Sobrevivência', 'Tática', 'Tecnologia', 'Vontade'],
   },
   {
+    id: 'ordemparanormal2-alpha', name: 'Ordem Paranormal II — Playtest Alpha', color: '350 82% 58%', font: 'display', frame: 'paranormal',
+    attrs: [['Físico', 'FIS', 6], ['Mente', 'MEN', 6], ['Emoção', 'EMO', 6]],
+    resources: [['Vida', 'VIDA', 10, 'life'], ['Pontos de Determinação', 'PD', 3, 'effort']],
+    skills: ['Acrobacia', 'Aptidão', 'Atletismo', 'Crime', 'Disciplina', 'Enganação', 'Furtividade', 'Intimidar', 'Intuição', 'Luta', 'Máquinas', 'Medicina', 'Ocultismo', 'Percepção', 'Persuasão', 'Pesquisar', 'Pontaria', 'Sobrevivência', 'Tecnologia', 'Vigor'],
+  },
+  {
     id: 'dnd5e', name: 'D&D 5e', color: '0 65% 42%', font: 'serif', frame: 'parchment',
     attrs: [['Força', 'FOR', 10], ['Destreza', 'DES', 10], ['Constituição', 'CON', 10], ['Inteligência', 'INT', 10], ['Sabedoria', 'SAB', 10], ['Carisma', 'CAR', 10]],
     resources: [['Pontos de Vida', 'PV', 10, 'life'], ['Classe de Armadura', 'CA', 10, 'neutral'], ['Dados de Vida', 'DV', 1, 'effort']],

@@ -122,6 +122,13 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, com
               {sheet.origin}
             </p>
           )}
+          {sys.id === 'ordemparanormal2-alpha' && (sheet.age || sheet.occupation || sheet.profile) && (
+            <div className="mt-3 flex flex-wrap gap-1.5 text-[10px] uppercase tracking-widest text-white/75">
+              {sheet.age && <span className="rounded border border-white/15 bg-black/40 px-2 py-1">{sheet.age} anos</span>}
+              {sheet.occupation && <span className="rounded border border-white/15 bg-black/40 px-2 py-1">{sheet.occupation}</span>}
+              {sheet.profile && <span className="rounded border border-primary/40 bg-primary/10 px-2 py-1 text-primary">{sheet.profile}</span>}
+            </div>
+          )}
         </div>
 
         <div className={`mt-5 grid gap-5 ${compact ? '' : 'md:grid-cols-[minmax(0,340px)_minmax(0,1fr)]'}`}>

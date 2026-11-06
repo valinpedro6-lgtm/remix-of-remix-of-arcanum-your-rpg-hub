@@ -12,6 +12,7 @@
     { "path": "/mapa", "title": "Mapa mental" },
     { "path": "/mestre", "title": "Mestre" },
     { "path": "/historias", "title": "Estúdio de História" },
+    { "path": "/comunidade", "title": "Comunidade" },
     { "path": "/ficha/:shareId", "title": "Ficha compartilhada" },
     { "path": "/mapa-ao-vivo/:shareId", "title": "Mapa ao vivo" }
   ]
