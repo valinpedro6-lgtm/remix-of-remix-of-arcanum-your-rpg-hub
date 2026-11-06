@@ -2,12 +2,13 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Dices, Clock, Swords, Users, Skull, FlaskConical,
-  Gamepad2, UserPlus, StickyNote, CloudSun, Sword, Sparkles, Coins, Gauge, ArrowRight, Drama
+  Gamepad2, UserPlus, StickyNote, CloudSun, Sword, Sparkles, Coins, Gauge, ArrowRight, Drama, ScrollText
 } from 'lucide-react';
 import heroBanner from '@/assets/hero-banner-v2.jpg';
 import { motion } from 'framer-motion';
 
 const features = [
+  { path: '/historias', label: 'Estúdio de História', desc: 'Crie campanhas por capítulos', icon: ScrollText, accent: 'from-primary/25 to-amber-500/10' },
   { path: '/painel', label: 'Painel do Mestre', desc: 'Dashboard com tudo resumido', icon: Gauge, accent: 'from-amber-500/20 to-yellow-500/10' },
   { path: '/mesa?t=dados', label: 'Rolagem de Dados', desc: 'D2 ao D1000 com modificadores', icon: Dices, accent: 'from-red-500/20 to-orange-500/10' },
   { path: '/mesa?t=iniciativa', label: 'Iniciativa', desc: 'Combate com HP e condições', icon: Swords, accent: 'from-red-500/20 to-rose-500/10' },
@@ -58,11 +59,11 @@ const Index = () => {
               Transforme ideias em mundos vivos. Fichas, elenco, geradores e mesa em um só lugar.
             </motion.p>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }} className="flex flex-wrap gap-3 mt-6">
-              <Link to="/elenco" className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-[0_0_22px_hsl(var(--primary)/0.35)] transition-transform hover:scale-105">
-                <Drama className="h-4 w-4" /> Abrir elenco <ArrowRight className="h-4 w-4" />
+              <Link to="/historias" className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-[0_0_22px_hsl(var(--primary)/0.35)] transition-transform hover:scale-105">
+                <ScrollText className="h-4 w-4" /> Criar uma história <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link to="/geradores" className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-black/25 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:border-primary hover:text-primary">
-                Explorar geradores
+              <Link to="/elenco" className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-black/25 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:border-primary hover:text-primary">
+                <Drama className="h-4 w-4" /> Abrir elenco
               </Link>
             </motion.div>
           </div>

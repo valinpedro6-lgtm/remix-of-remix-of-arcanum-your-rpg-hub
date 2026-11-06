@@ -1,0 +1,18 @@
+{
+  "routes": [
+    { "path": "/", "title": "Início" },
+    { "path": "/elenco", "title": "Elenco" },
+    { "path": "/tabletop", "title": "Tabletop" },
+    { "path": "/painel", "title": "Painel" },
+    { "path": "/mesa", "title": "Mesa" },
+    { "path": "/fichas", "title": "Fichas" },
+    { "path": "/geradores", "title": "Geradores" },
+    { "path": "/compendio", "title": "Compêndio" },
+    { "path": "/notas", "title": "Notas" },
+    { "path": "/mapa", "title": "Mapa mental" },
+    { "path": "/mestre", "title": "Mestre" },
+    { "path": "/historias", "title": "Estúdio de História" },
+    { "path": "/ficha/:shareId", "title": "Ficha compartilhada" },
+    { "path": "/mapa-ao-vivo/:shareId", "title": "Mapa ao vivo" }
+  ]
+}

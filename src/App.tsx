@@ -18,6 +18,7 @@ import Tabletop from "./pages/Tabletop";
 import SharedSheet from "./pages/SharedSheet";
 import SharedTabletop from "./pages/SharedTabletop";
 import Master from "./pages/Master";
+import StoryStudio from "./pages/StoryStudio";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/notas" element={<Notes />} />
             <Route path="/mapa" element={<MindMap />} />
             <Route path="/mestre" element={<Master />} />
+            <Route path="/historias" element={<StoryStudio />} />
 
             {/* Rotas antigas → novos hubs */}
             <Route path="/dados" element={<Navigate to="/mesa?t=dados" replace />} />
