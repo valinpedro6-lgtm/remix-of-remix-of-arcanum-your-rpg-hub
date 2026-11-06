@@ -64,6 +64,7 @@ const Dashboard = () => {
 
   const sorted = [...combatants].sort((a, b) => b.initiative - a.initiative);
   const activeCombatant = sorted.length > 0 ? sorted[currentTurn % sorted.length] : null;
+  const nextCombatant = sorted.length > 1 ? sorted[(currentTurn + 1) % sorted.length] : null;
 
   const recentNotes = notes.filter(n => n.pinned).slice(0, 3);
   const hasNotes = recentNotes.length > 0;
@@ -79,9 +80,48 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="page-title">
-        Painel do Mestre
-      </motion.h1>
+      <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="page-title">Painel do Mestre</h1>
+          <p className="text-sm text-muted-foreground mt-1">O pulso da sua sessão em uma única visão.</p>
+        </div>
+        <Link to="/mesa?t=iniciativa" className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors">
+          <Swords className="w-4 h-4" /> Abrir combate <ChevronRight className="w-3.5 h-3.5" />
+        </Link>
+      </motion.div>
+
+      {/* Command strip: informação de combate em primeiro plano. */}
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+        <Card className={`overflow-hidden ${activeCombatant ? 'border-primary/35 bg-gradient-to-r from-primary/10 via-card/70 to-card/40' : 'border-border/40'}`}>
+          <CardContent className="p-4 md:p-5">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
+                <span className={`w-2 h-2 rounded-full ${activeCombatant ? 'bg-primary animate-pulse' : 'bg-muted-foreground/50'}`} />
+                {activeCombatant ? `Round ${round}` : 'Mesa pronta'}
+              </div>
+              {activeCombatant ? (
+                <>
+                  <div className="h-8 w-px bg-border/60 hidden sm:block" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] uppercase tracking-widest text-primary">Turno atual</p>
+                    <p className="font-display text-xl font-bold truncate">{activeCombatant.name}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Próximo</p>
+                    <p className="font-semibold truncate max-w-32">{nextCombatant?.name ?? '—'}</p>
+                  </div>
+                  <div className="rounded-lg border border-primary/30 bg-background/30 px-3 py-2 text-center">
+                    <p className="text-[10px] text-muted-foreground">Iniciativa</p>
+                    <p className="font-display text-2xl font-bold text-primary">{activeCombatant.initiative}</p>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Adicione combatentes para acompanhar o turno atual aqui.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Quick Access */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-3 sm:grid-cols-6 gap-2">

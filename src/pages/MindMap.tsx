@@ -210,6 +210,11 @@ const MindMap = () => {
   const [histTick, setHistTick] = useState(0);
 
   const nodeById = useMemo(() => Object.fromEntries(data.nodes.map(n => [n.id, n])), [data.nodes]);
+  const mapStats = useMemo(() => ({
+    nodes: data.nodes.length,
+    links: data.edges.length,
+    kinds: new Set(data.nodes.map(n => n.kind ?? 'ideia')).size,
+  }), [data.nodes, data.edges]);
 
   /** muda o mapa registrando histórico (use para ações discretas) */
   const commit = useCallback((updater: (prev: MindMapData) => MindMapData) => {
@@ -676,7 +681,7 @@ const MindMap = () => {
   );
 
   const toolbar = (
-    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mb-1 scrollbar-none">
+    <div className="flex items-center gap-1.5 overflow-x-auto rounded-xl border border-border/50 bg-card/55 p-1.5 shadow-sm backdrop-blur-md pb-1 -mb-1 scrollbar-none">
       <Button onClick={addNodeCenter} className="gap-2 shrink-0 h-11 md:h-9 px-4"><Plus className="w-4 h-4" />Bloco</Button>
       <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Desfazer"
         disabled={!history.current.past.length} onClick={undo}><Undo2 className="w-4 h-4" /></Button>
@@ -1062,15 +1067,22 @@ const MindMap = () => {
 
   return (
     <div className="space-y-4" data-hist={histTick}>
-      <div>
-        <h1 className="page-title flex items-center gap-2"><Network className="w-7 h-7" />Mapa Mental</h1>
-        <p className="text-sm text-muted-foreground">Conecte ideias, NPCs e tramas numa grade infinita</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="page-title flex items-center gap-2"><span className="grid place-items-center w-9 h-9 rounded-xl bg-primary/15 border border-primary/25"><Network className="w-5 h-5 text-primary" /></span>Mapa Mental</h1>
+          <p className="text-sm text-muted-foreground mt-1">O quadro de conspirações da campanha — conecte ideias, NPCs e tramas sem limite.</p>
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+          <Badge variant="outline" className="gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-primary" />{mapStats.nodes} blocos</Badge>
+          <Badge variant="outline">{mapStats.links} conexões</Badge>
+          <Badge variant="outline">{mapStats.kinds} tipos</Badge>
+        </div>
       </div>
       {mapsBar}
       {toolbar}
       {canvas}
-      <p className="text-xs text-muted-foreground">
-        Toque duplo cria bloco · toque na bolinha ao lado do bloco e depois no destino para ligar · pinça para zoom · toque na linha para rotular
+      <p className="text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
+        <span>Duplo toque cria bloco</span><span>Arraste para organizar</span><span>Alça <Link2 className="w-3 h-3 inline" /> conecta pistas</span><span>Pinça ou scroll controla o zoom</span>
       </p>
       {dialogs}
     </div>

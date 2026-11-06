@@ -78,6 +78,8 @@ const Initiative = () => {
   };
 
   const sorted = [...combatants].sort((a, b) => b.initiative - a.initiative);
+  const activeCombatant = sorted.length > 0 ? sorted[currentTurn % sorted.length] : null;
+  const nextCombatant = sorted.length > 1 ? sorted[(currentTurn + 1) % sorted.length] : null;
 
   const add = () => {
     if (!name.trim()) return;
@@ -183,7 +185,7 @@ const Initiative = () => {
         Iniciativa
       </motion.h1>
 
-      <div className="max-w-lg mx-auto space-y-4">
+      <div className="max-w-4xl mx-auto space-y-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="card-hover glow-border">
             <CardContent className="p-4 space-y-3">
@@ -314,6 +316,24 @@ const Initiative = () => {
                 <ChevronRight className="w-4 h-4" />Próximo Turno
               </Button>
             </div>
+
+            {/* Visão rápida para o mestre não perder o ritmo do combate. */}
+            {activeCombatant && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className={`rounded-xl border p-3 ${activeCombatant.type === 'monster' ? 'border-destructive/40 bg-destructive/10' : 'border-primary/40 bg-primary/10'}`}>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Agora joga</p>
+                  <div className="flex items-center justify-between gap-2 mt-1">
+                    <p className={`font-display text-lg font-bold truncate ${activeCombatant.type === 'monster' ? 'text-destructive' : 'text-primary'}`}>{activeCombatant.name}</p>
+                    <Badge variant="outline" className="font-display text-base">{activeCombatant.initiative}</Badge>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border/50 bg-secondary/30 p-3">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Na sequência</p>
+                  <p className="font-semibold truncate mt-1">{nextCombatant?.name ?? 'Fim da rodada'}</p>
+                  {nextCombatant && <p className="text-xs text-muted-foreground mt-0.5">Iniciativa {nextCombatant.initiative}</p>}
+                </div>
+              </div>
+            )}
 
             {/* Combatant list */}
             <div className="space-y-2">
