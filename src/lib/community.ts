@@ -14,6 +14,15 @@ export interface CommunityPost {
   updated_at: string;
 }
 
+export interface PrivateMessage {
+  id: string;
+  sender_email: string;
+  recipient_email: string;
+  body: string;
+  created_at: string;
+  read_at: string | null;
+}
+
 const identity = () => ({
   email: localStorage.getItem(EMAIL_KEY) ?? '',
   token: currentOwnerToken(),
@@ -26,8 +35,8 @@ const call = async <T,>(payload: Record<string, unknown>) => {
   return data as T;
 };
 
-export const listCommunityPosts = async (topic = 'all') =>
-  (await call<{ posts: CommunityPost[] }>({ action: 'list', topic })).posts;
+export const listCommunityPosts = async () =>
+  (await call<{ posts: CommunityPost[] }>({ action: 'list' })).posts;
 
 export const createCommunityPost = async (body: string, topic: CommunityTopic, parentId?: string) =>
   (await call<{ post: CommunityPost }>({ action: 'create', body, topic, parentId })).post;
@@ -35,3 +44,12 @@ export const createCommunityPost = async (body: string, topic: CommunityTopic, p
 export const deleteCommunityPost = async (id: string) => {
   await call({ action: 'delete', id });
 };
+
+export const listCommunityContacts = async () =>
+  (await call<{ contacts: string[] }>({ action: 'contacts' })).contacts;
+
+export const listPrivateMessages = async (withEmail: string) =>
+  (await call<{ messages: PrivateMessage[] }>({ action: 'private-list', withEmail })).messages;
+
+export const sendPrivateMessage = async (recipientEmail: string, body: string) =>
+  (await call<{ message: PrivateMessage }>({ action: 'private-send', recipientEmail, body })).message;
