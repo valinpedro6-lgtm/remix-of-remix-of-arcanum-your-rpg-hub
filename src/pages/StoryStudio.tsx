@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import {
-  createStoryProject, downloadStoryProject, newId,
+  createStoryProject, defaultStoryChecklist, downloadStoryProject, newId,
   type ChapterStatus, type StoryEntity, type StoryProject,
 } from '@/lib/storyStudio';
 
@@ -77,6 +77,20 @@ const StoryStudio = () => {
 
   const updateProject = (patch: Partial<StoryProject>) => {
     setProject(previous => ({ ...previous, ...patch, updatedAt: new Date().toISOString() }));
+  };
+
+  const checklist = project.checklist ?? defaultStoryChecklist();
+
+  const updateChecklistItem = (id: string, patch: { label?: string; done?: boolean }) => {
+    updateProject({ checklist: checklist.map(item => item.id === id ? { ...item, ...patch } : item) });
+  };
+
+  const addChecklistItem = () => {
+    updateProject({ checklist: [...checklist, { id: newId(), label: 'Nova tarefa', done: false }] });
+  };
+
+  const removeChecklistItem = (id: string) => {
+    updateProject({ checklist: checklist.filter(item => item.id !== id) });
   };
 
   const updateChapter = (patch: Partial<NonNullable<typeof selectedChapter>>) => {
@@ -165,7 +179,7 @@ const StoryStudio = () => {
             <CardHeader><CardTitle className="flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary" /> Próximo passo</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm leading-relaxed text-muted-foreground">Comece pelo conflito. Uma boa primeira cena dá aos jogadores uma decisão clara, uma ameaça próxima e um motivo para agir agora.</p>
-              <div className="rounded-xl border border-border/40 bg-background/30 p-4"><p className="text-xs uppercase tracking-widest text-muted-foreground">Checklist rápido</p><div className="mt-3 space-y-3">{[['Premissa definida', Boolean(project.premise.trim())], ['Primeiro capítulo criado', project.chapters.length > 0], ['Um personagem central', project.characters.length > 0], ['Um lugar memorável', project.places.length > 0]].map(([label, done]) => <div key={String(label)} className="flex items-center gap-2 text-sm"><span className={`grid h-5 w-5 place-items-center rounded-full text-xs ${done ? 'bg-emerald-500/20 text-emerald-300' : 'bg-secondary text-muted-foreground'}`}>{done ? '✓' : '·'}</span>{String(label)}</div>)}</div></div>
+              <div className="rounded-xl border border-border/40 bg-background/30 p-4"><div className="flex items-center justify-between gap-2"><p className="text-xs uppercase tracking-widest text-muted-foreground">Checklist da campanha</p><Button variant="ghost" size="icon" className="h-8 w-8" onClick={addChecklistItem} aria-label="Adicionar tarefa"><Plus className="h-4 w-4" /></Button></div><div className="mt-3 space-y-2">{checklist.map(item => <div key={item.id} className="group flex items-center gap-2"><button type="button" onClick={() => updateChecklistItem(item.id, { done: !item.done })} className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs transition-colors ${item.done ? 'bg-emerald-500/20 text-emerald-300' : 'bg-secondary text-muted-foreground hover:bg-primary/15'}`} aria-label={item.done ? `Desmarcar ${item.label}` : `Marcar ${item.label}`}>{item.done ? '✓' : '·'}</button><Input value={item.label} onChange={event => updateChecklistItem(item.id, { label: event.target.value })} className={`h-9 border-0 bg-transparent px-1 text-sm shadow-none focus-visible:ring-0 ${item.done ? 'text-muted-foreground line-through' : ''}`} aria-label="Nome da tarefa" /><Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 opacity-60 hover:opacity-100" onClick={() => removeChecklistItem(item.id)} aria-label={`Excluir ${item.label}`}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></div>)}</div>{checklist.length === 0 && <p className="mt-3 text-xs text-muted-foreground">Nenhuma tarefa. Use + para criar a primeira.</p>}</div>
               <Button variant="outline" className="min-h-11 w-full" onClick={() => setActiveTab('capitulos')}>Escrever a primeira cena <BookOpen className="h-4 w-4" /></Button>
             </CardContent>
           </Card>

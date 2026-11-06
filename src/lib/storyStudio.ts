@@ -22,6 +22,12 @@ export interface StoryEvent {
   description: string;
 }
 
+export interface StoryChecklistItem {
+  id: string;
+  label: string;
+  done: boolean;
+}
+
 export interface StoryProject {
   title: string;
   system: string;
@@ -35,6 +41,7 @@ export interface StoryProject {
   places: StoryEntity[];
   items: StoryEntity[];
   timeline: StoryEvent[];
+  checklist: StoryChecklistItem[];
 }
 
 const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -58,9 +65,17 @@ export const createStoryProject = (): StoryProject => ({
   places: [],
   items: [],
   timeline: [],
+  checklist: defaultStoryChecklist(),
 });
 
 export const newId = makeId;
+
+export const defaultStoryChecklist = (): StoryChecklistItem[] => [
+  { id: makeId(), label: 'Definir a premissa', done: false },
+  { id: makeId(), label: 'Escrever a primeira cena', done: false },
+  { id: makeId(), label: 'Criar um personagem central', done: false },
+  { id: makeId(), label: 'Criar um lugar memorável', done: false },
+];
 
 export const downloadStoryProject = (project: StoryProject) => {
   const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
