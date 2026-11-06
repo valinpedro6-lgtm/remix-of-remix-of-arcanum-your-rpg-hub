@@ -44,7 +44,7 @@ const formatSavedAt = (date: string) => {
 };
 
 const StoryStudio = () => {
-  const [project, setProject] = useLocalStorage<StoryProject>('arcanum-story-project', createStoryProject());
+  const [project, setProject] = useLocalStorage<StoryProject>('arcanum-story-project-v3', createStoryProject());
   const [activeTab, setActiveTab] = useState<TabId>('visao');
   const [selectedChapterId, setSelectedChapterId] = useState(project.chapters[0]?.id ?? '');
   const [entityDraft, setEntityDraft] = useState({ name: '', role: '', description: '' });

@@ -6,7 +6,9 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(error => {
+    navigator.serviceWorker.register('/sw.js?v=3', { updateViaCache: 'none' }).then(registration => {
+      registration.update();
+    }).catch(error => {
       console.warn('Não foi possível ativar o modo offline da ARCANUM.', error);
     });
   });

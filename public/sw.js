@@ -1,4 +1,4 @@
-const CACHE_NAME = 'arcanum-shell-v1';
+const CACHE_NAME = 'arcanum-shell-v3';
 const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/arcanum-icon.svg', '/favicon.ico'];
 
 self.addEventListener('install', event => {
