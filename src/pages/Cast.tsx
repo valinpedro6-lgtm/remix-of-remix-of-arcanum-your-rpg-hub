@@ -21,7 +21,7 @@ import {
   createSheet, deleteSheet, listSheets, updateSheet, uid, shareUrl,
   DEFAULT_SKILLS, OP_SKILLS, SheetKind, STYLE_COLORS,
 } from '@/lib/sheets';
-import { SHEET_SYSTEMS, getSystem, systemTemplate } from '@/lib/sheetSystems';
+import { SHEET_SYSTEMS, getSystem, getSystemOptions, systemTemplate } from '@/lib/sheetSystems';
 
 const TONES: SheetResource['tone'][] = ['life', 'sanity', 'effort', 'neutral'];
 const TONE_LABEL: Record<SheetResource['tone'], string> = {
@@ -35,6 +35,13 @@ const readImage = (file: File): Promise<string> =>
     r.onerror = reject;
     r.readAsDataURL(file);
   });
+
+const splitIdentity = (value: string) => {
+  const [className = '', ...originParts] = value.split(' — ');
+  return { className, originName: originParts.join(' — ') };
+};
+
+const joinIdentity = (className: string, originName: string) => [className, originName].filter(Boolean).join(' — ');
 
 const Cast = () => {
   const [searchParams] = useSearchParams();
@@ -194,6 +201,10 @@ const Cast = () => {
   /* ---------- Editor ---------- */
   if (selected) {
     const s = selected;
+    const identity = splitIdentity(s.origin);
+    const systemOptions = getSystemOptions(s.style.system);
+    const classChoices = systemOptions.classes.includes(identity.className) || !identity.className ? systemOptions.classes : [identity.className, ...systemOptions.classes];
+    const originChoices = systemOptions.origins.includes(identity.originName) || !identity.originName ? systemOptions.origins : [identity.originName, ...systemOptions.origins];
     const setAttr = (list: SheetAttribute[]) => patch(s.id, { attributes: list });
     const setSkills = (list: SheetSkill[]) => patch(s.id, { skills: list });
     const setRes = (list: SheetResource[]) => patch(s.id, { resources: list });
@@ -270,8 +281,23 @@ const Cast = () => {
                   <Input value={s.name} onChange={e => patch(s.id, { name: e.target.value })} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Origem / classe</Label>
-                  <Input value={s.origin} onChange={e => patch(s.id, { origin: e.target.value })} placeholder="Ex: Combatente — Militar" />
+                  <Label>Classe / perfil</Label>
+                  <select value={identity.className} onChange={e => patch(s.id, { origin: joinIdentity(e.target.value, identity.originName) })} aria-label="Classe ou perfil" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                    <option value="">Escolha a classe / perfil</option>
+                    {classChoices.map(option => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Origem / antecedente</Label>
+                  <select value={identity.originName} onChange={e => patch(s.id, { origin: joinIdentity(identity.className, e.target.value) })} aria-label="Origem ou antecedente" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                    <option value="">Escolha a origem / antecedente</option>
+                    {originChoices.map(option => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label>Combinação personalizada</Label>
+                  <Input value={s.origin} onChange={e => patch(s.id, { origin: e.target.value })} placeholder="Ex.: Combatente — Herdeiro de uma família amaldiçoada" />
+                  <p className="text-[11px] text-muted-foreground">As seleções acima preenchem este campo. Você pode editar livremente para homebrew.</p>
                 </div>
                 <div className="space-y-1.5 md:col-span-2">
                   <Label>Frase de efeito</Label>
@@ -302,7 +328,7 @@ const Cast = () => {
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
                   {SHEET_SYSTEMS.map(sys => <option key={sys.id} value={sys.id}>{sys.name}</option>)}
                 </select>
-                <p className="text-xs text-muted-foreground">O visual da ficha muda de acordo com o sistema.</p>
+                <p className="text-xs text-muted-foreground">O visual e as opções de classe/origem mudam de acordo com o sistema. Escolha “Livre” para criar algo personalizado.</p>
               </div>
 
               {/* Tipo */}

@@ -17,6 +17,11 @@ export interface SheetSystem {
   resLabel?: string;       // nome da caixa de perícias
 }
 
+export interface SheetOptions {
+  classes: string[];
+  origins: string[];
+}
+
 export const SHEET_SYSTEMS: SheetSystem[] = [
   {
     id: 'ordemparanormal', name: 'Ordem Paranormal', color: '0 78% 55%', font: 'display', frame: 'paranormal',
@@ -98,7 +103,64 @@ export const SHEET_SYSTEMS: SheetSystem[] = [
   },
 ];
 
+/** Catálogos rápidos para acelerar a criação sem impedir personagens homebrew. */
+export const SHEET_OPTIONS: Record<string, SheetOptions> = {
+  ordemparanormal: {
+    classes: ['Combatente', 'Especialista', 'Ocultista'],
+    origins: ['Acadêmico', 'Agente de saúde', 'Artista', 'Atleta', 'Criminoso', 'Cultista arrependido', 'Desgarrado', 'Engenheiro', 'Escritor', 'Executivo', 'Investigador', 'Lutador', 'Magnata', 'Militar', 'Operário', 'Policial', 'Religioso', 'Servidor público', 'Teórico da conspiração', 'T.I.'],
+  },
+  'ordemparanormal2-alpha': {
+    classes: ['Executor', 'Analista', 'Vigilante'],
+    origins: ['Acadêmico', 'Agente de campo', 'Artista', 'Atleta', 'Criminoso', 'Detetive', 'Engenheiro', 'Jornalista', 'Militar', 'Médico', 'Policial', 'Profissional liberal', 'Religioso', 'Sobrevivente', 'Técnico'],
+  },
+  dnd5e: {
+    classes: ['Artífice', 'Bárbaro', 'Bardo', 'Bruxo', 'Clérigo', 'Druida', 'Feiticeiro', 'Guerreiro', 'Ladino', 'Mago', 'Monge', 'Paladino', 'Patrulheiro'],
+    origins: ['Acólito', 'Artesão de guilda', 'Artista', 'Charlatão', 'Criminoso', 'Eremita', 'Herói do povo', 'Marinheiro', 'Nobre', 'Órfão', 'Sábio', 'Soldado', 'Forasteiro', 'Mercador'],
+  },
+  tormenta20: {
+    classes: ['Arcanista', 'Bárbaro', 'Bardo', 'Bucaneiro', 'Caçador', 'Cavaleiro', 'Clérigo', 'Druida', 'Guerreiro', 'Inventor', 'Ladino', 'Lutador', 'Nobre', 'Paladino', 'Samurai'],
+    origins: ['Acólito', 'Aristocrata', 'Artista', 'Criminoso', 'Eremita', 'Gladiador', 'Mercador', 'Militar', 'Nômade', 'Pivete', 'Sábio', 'Soldado', 'Trabalhador rural', 'Viajante'],
+  },
+  pf2e: {
+    classes: ['Alquimista', 'Bárbaro', 'Bardo', 'Campeão', 'Clérigo', 'Druida', 'Feiticeiro', 'Guerreiro', 'Ladino', 'Mago', 'Monge', 'Patrulheiro', 'Bruxo', 'Investigador', 'Mecânico', 'Oráculo', 'Bruxa'],
+    origins: ['Acólito', 'Acrobata', 'Aristocrata', 'Artista', 'Artesão', 'Camponês', 'Caçador', 'Criminoso', 'Emissário', 'Gladiador', 'Marinheiro', 'Mercador', 'Nômade', 'Soldado', 'Estudioso'],
+  },
+  cthulhu: {
+    classes: ['Detetive particular', 'Diletante', 'Jornalista', 'Médico', 'Professor', 'Policial', 'Sacerdote', 'Soldado', 'Bibliotecário', 'Antiquário', 'Investigador', 'Criminologista'],
+    origins: ['Acadêmico', 'Alta sociedade', 'Exército', 'Imprensa', 'Medicina', 'Polícia', 'Universidade', 'Arqueologia', 'Direito', 'Engenharia', 'Artes', 'Submundo'],
+  },
+  vtm5: {
+    classes: ['Brujah', 'Gangrel', 'Malkaviano', 'Nosferatu', 'Toreador', 'Tremere', 'Ventrue', 'Banu Haqim', 'Lasombra', 'Ministério', 'Ravnos', 'Salubri', 'Thin-blood'],
+    origins: ['Anarquista', 'Camarilla', 'Errante', 'Herdeiro', 'Intelectual', 'Militante', 'Ocultista', 'Profissional', 'Artista', 'Político', 'Religioso', 'Sobrevivente'],
+  },
+  cpred: {
+    classes: ['Rockerboy', 'Solo', 'Netrunner', 'Tech', 'Medtech', 'Media', 'Exec', 'Lawman', 'Fixer', 'Nomad', 'Civilian'],
+    origins: ['Centro corporativo', 'Subúrbio', 'Zona de guerra', 'Colônia nômade', 'Cidade industrial', 'Distrito de entretenimento', 'Comunidade periférica', 'Família corporativa', 'Rua'],
+  },
+  morkborg: {
+    classes: ['Fanged Deserter', 'Gutterborn Scum', 'Esoteric Hermit', 'Occult Herbmaster', 'Heretical Priest', 'Wretched Royalty', 'Dead God’s Prophet', 'Doomsayer'],
+    origins: ['Cemitério', 'Cidade em ruínas', 'Mosteiro', 'Pântano', 'Corte decadente', 'Estrada', 'Mina', 'Costa amaldiçoada'],
+  },
+  '3det': {
+    classes: ['Combatente', 'Atirador', 'Mago', 'Lutador', 'Espadachim', 'Inventor', 'Líder', 'Monstro', 'Especialista'],
+    origins: ['Humano', 'Androide', 'Construto', 'Elfo', 'Anão', 'Youkai', 'Alienígena', 'Mutante', 'Máquina', 'Divino'],
+  },
+  savageworlds: {
+    classes: ['Combatente', 'Atirador', 'Líder', 'Especialista', 'Conjurador', 'Explorador', 'Curandeiro', 'Batedor'],
+    origins: ['Humano', 'Elfo', 'Anão', 'Orc', 'Halfling', 'Veterano de guerra', 'Nobre', 'Forasteiro', 'Criminoso', 'Acadêmico', 'Artesão'],
+  },
+  shadowrun5: {
+    classes: ['Street Samurai', 'Decker', 'Rigger', 'Face', 'Mage', 'Shaman', 'Adept', 'Technomancer', 'Coordenador'],
+    origins: ['Humano', 'Elfo', 'Anão', 'Ork', 'Troll', 'Corporação', 'Gangue', 'Nação tribal', 'Submundo', 'Comunidade', 'Exército'],
+  },
+  custom: {
+    classes: ['Personalizado'],
+    origins: ['Personalizado'],
+  },
+};
+
 export const getSystem = (id?: string) => SHEET_SYSTEMS.find(s => s.id === id) ?? SHEET_SYSTEMS[0];
+export const getSystemOptions = (id?: string) => SHEET_OPTIONS[id ?? ''] ?? SHEET_OPTIONS.custom;
 
 export const systemTemplate = (id: string): { attributes: SheetAttribute[]; resources: SheetResource[]; skills: SheetSkill[] } => {
   const s = getSystem(id);
