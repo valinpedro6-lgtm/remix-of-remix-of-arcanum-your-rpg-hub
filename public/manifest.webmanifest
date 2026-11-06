@@ -1,0 +1,15 @@
+{
+  "name": "ARCANUM — Ferramentas do Mestre",
+  "short_name": "ARCANUM",
+  "description": "Ferramentas do Mestre para suas campanhas de RPG.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b0a0f",
+  "theme_color": "#b91c1c",
+  "orientation": "any",
+  "icons": [
+    { "src": "/arcanum-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

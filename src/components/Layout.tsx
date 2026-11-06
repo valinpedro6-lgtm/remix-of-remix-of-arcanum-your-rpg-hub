@@ -8,6 +8,7 @@ import {
 , Drama, Map as MapIcon, Shield, LogOut } from 'lucide-react';
 import { GlobalTimerBar } from '@/components/GlobalTimerBar';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+import { CampaignBackup } from '@/components/CampaignBackup';
 
 const navItems = [
   { path: '/', label: 'Início', icon: LayoutDashboard },
@@ -70,6 +71,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
         </nav>
         <div className="p-3 border-t border-border/50 space-y-2">
           <ThemeSwitcher />
+          <CampaignBackup />
           <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={() => confirm('Sair da conta neste aparelho?') && logout()}>
             <LogOut className="w-4 h-4 mr-2" /> Sair da conta
           </Button>
@@ -95,6 +97,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
             </nav>
             <div className="p-3 border-t border-border/50 space-y-2">
               <ThemeSwitcher />
+              <CampaignBackup />
               <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={() => confirm('Sair da conta neste aparelho?') && logout()}>
                 <LogOut className="w-4 h-4 mr-2" /> Sair da conta
               </Button>
