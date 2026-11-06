@@ -2,14 +2,13 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Dices, Clock, Swords, Users, Skull, FlaskConical,
-  Gamepad2, UserPlus, StickyNote, CloudSun, Sword, Sparkles, Coins, Gauge, ArrowRight, Drama, ScrollText, Lightbulb
+  Gamepad2, UserPlus, StickyNote, CloudSun, Sword, Sparkles, Coins, Gauge, ArrowRight, Drama, ScrollText
 } from 'lucide-react';
 import heroBanner from '@/assets/hero-banner-v2.jpg';
 import { motion } from 'framer-motion';
 
 const features = [
   { path: '/historias', label: 'Estúdio de História', desc: 'Crie campanhas por capítulos', icon: ScrollText, accent: 'from-primary/25 to-amber-500/10' },
-  { path: '/geradores?t=historia', label: 'Diretor Criativo', desc: 'Ideias com identidade e viradas', icon: Lightbulb, accent: 'from-fuchsia-500/20 to-primary/10' },
   { path: '/painel', label: 'Painel do Mestre', desc: 'Dashboard com tudo resumido', icon: Gauge, accent: 'from-amber-500/20 to-yellow-500/10' },
   { path: '/mesa?t=dados', label: 'Rolagem de Dados', desc: 'D2 ao D1000 com modificadores', icon: Dices, accent: 'from-red-500/20 to-orange-500/10' },
   { path: '/mesa?t=iniciativa', label: 'Iniciativa', desc: 'Combate com HP e condições', icon: Swords, accent: 'from-red-500/20 to-rose-500/10' },
