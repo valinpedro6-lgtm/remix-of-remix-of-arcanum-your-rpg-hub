@@ -64,7 +64,13 @@ const Weapons = () => {
     return ov ? { ...w, diceCount: ov.diceCount, diceSides: ov.diceSides, modifier: ov.modifier } : w;
   };
 
-  const allWeapons = [...DEFAULT_WEAPONS.map(getWeapon), ...customWeapons];
+  const allWeapons = useMemo(() => [
+    ...DEFAULT_WEAPONS.map(w => {
+      const ov = overrides[w.id];
+      return ov ? { ...w, diceCount: ov.diceCount, diceSides: ov.diceSides, modifier: ov.modifier } : w;
+    }),
+    ...customWeapons,
+  ], [overrides, customWeapons]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();

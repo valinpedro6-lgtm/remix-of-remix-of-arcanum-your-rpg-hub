@@ -8,6 +8,28 @@ export const DEVICE_KEY = 'arcanum-device-id';
 export const EMAIL_KEY = 'arcanum-access-email';
 export const TEST_UNTIL_KEY = 'arcanum-test-until';
 
+export interface GateResponse {
+  ok?: boolean;
+  locked?: boolean;
+  master?: boolean;
+  test?: boolean;
+  token?: string;
+  ticket?: string;
+  accessUntil?: number | string;
+  retryAfter?: number;
+  remaining?: number;
+  error?: string;
+  currentCode?: string;
+  testCode?: string;
+  testExpiresAt?: string | null;
+  usesLeft?: number;
+  maxUses?: number;
+  sessions?: Array<{ device_id: string; label: string; first_seen: string; last_seen: string }>;
+  total?: number;
+  active?: number;
+  [key: string]: unknown;
+}
+
 /** Acesso temporário (código teste): expira sozinho e volta pra tela do código. */
 export const grantTestAccess = (until: number, token: string) => {
   setOwnerToken(token);
@@ -35,7 +57,7 @@ export const deviceId = () => {
 export const callGate = async (payload: Record<string, unknown>) => {
   const { data, error } = await supabase.functions.invoke('access-gate', { body: payload });
   if (error) throw error;
-  return data as any;
+  return data as GateResponse;
 };
 
 export const isMaster = () => !!localStorage.getItem(MASTER_KEY);

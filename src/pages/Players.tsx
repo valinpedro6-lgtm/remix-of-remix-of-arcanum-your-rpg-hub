@@ -266,7 +266,7 @@ const Players = () => {
   };
 
   // Skill helpers
-  const setSkill = (index: number, field: string, val: any) => {
+  const setSkill = (index: number, field: keyof Skill, val: Skill[keyof Skill]) => {
     if (!editing) return;
     const arr = [...editing.skills];
     arr[index] = { ...arr[index], [field]: val };

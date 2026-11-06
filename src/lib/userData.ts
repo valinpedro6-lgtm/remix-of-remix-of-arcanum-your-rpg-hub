@@ -18,14 +18,17 @@ export const setOwnerToken = (t: string) => { if (t) localStorage.setItem(OWNER_
 export const currentOwnerToken = () => localStorage.getItem(OWNER_KEY) ?? '';
 export const clearOwnerToken = () => localStorage.removeItem(OWNER_KEY);
 
-export async function userData<T = any>(payload: Record<string, unknown>): Promise<T> {
+export async function userData<T = unknown>(payload: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke('user-data', {
     body: { ...payload, token: ownerToken() },
   });
   if (error) throw error;
-  if ((data as any)?.error) throw new Error((data as any).error);
+  if (isErrorResponse(data)) throw new Error(data.error);
   return data as T;
 }
+
+const isErrorResponse = (data: unknown): data is { error: string } =>
+  typeof data === 'object' && data !== null && 'error' in data && typeof data.error === 'string';
 
 export type Table = 'sheets' | 'tabletops';
 

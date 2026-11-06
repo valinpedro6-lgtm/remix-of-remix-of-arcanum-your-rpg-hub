@@ -347,7 +347,7 @@ const builtInGames: TavernGame[] = [
       const logs: GameLog[] = [];
       for (let i = 0; i < 5; i++) {
         const p = roll(20), o = roll(20);
-        let pWins = p.value === 20 ? 2 : p.value === 1 ? -1 : p.value >= o.value ? 1 : 0;
+        const pWins = p.value === 20 ? 2 : p.value === 1 ? -1 : p.value >= o.value ? 1 : 0;
         if (pWins > 0) pw += pWins; else ow++;
         let desc = `${p.value} vs ${o.value}`;
         desc += p.value === 20 ? ' — 💥 CRÍTICO!' : p.value === 1 ? ' — 🤦 Tropeçou!' : pWins > 0 ? ' — Acertou!' : ' — Levou!';

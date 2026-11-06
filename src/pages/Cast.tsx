@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import { NumberInput } from '@/components/NumberInput';
 import { SheetPoster } from '@/components/sheet/SheetPoster';
 import {
-  Sheet, SheetAbility, SheetAttribute, SheetResource, SheetSkill,
+  Sheet, SheetAbility, SheetAttribute, SheetResource, SheetSkill, SheetStyle,
   createSheet, deleteSheet, listSheets, updateSheet, uid, shareUrl,
   DEFAULT_SKILLS, OP_SKILLS, SheetKind, STYLE_COLORS,
 } from '@/lib/sheets';
@@ -345,7 +345,7 @@ const Cast = () => {
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Fonte do nome</p>
                     <select className="h-9 w-full rounded-md bg-background border border-border text-sm px-2" value={s.style.font ?? 'display'}
-                      onChange={e => patch(s.id, { style: { ...s.style, font: e.target.value as any } })}>
+                      onChange={e => patch(s.id, { style: { ...s.style, font: e.target.value as SheetStyle['font'] } })}>
                       <option value="display">Medieval</option><option value="serif">Clássica</option>
                       <option value="sans">Moderna</option><option value="mono">Máquina</option>
                     </select>
@@ -353,7 +353,7 @@ const Cast = () => {
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Posição da imagem</p>
                     <select className="h-9 w-full rounded-md bg-background border border-border text-sm px-2" value={s.style.layout ?? 'right'}
-                      onChange={e => patch(s.id, { style: { ...s.style, layout: e.target.value as any } })}>
+                      onChange={e => patch(s.id, { style: { ...s.style, layout: e.target.value as SheetStyle['layout'] } })}>
                       <option value="right">Direita</option><option value="left">Esquerda</option><option value="full">Fundo inteiro</option>
                     </select>
                   </div>

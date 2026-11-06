@@ -123,23 +123,27 @@ export const emptySheet = (kind: SheetKind, system = 'ordemparanormal'): Omit<Sh
   };
 };
 
-const parse = (row: any): Sheet => ({
-  ...row,
-  attributes: (row.attributes ?? []) as SheetAttribute[],
-  skills: (row.skills ?? []) as SheetSkill[],
-  resources: (row.resources ?? []) as SheetResource[],
-  abilities: (row.abilities ?? []) as SheetAbility[],
-  style: (row.style ?? {}) as SheetStyle,
-});
+const parse = (row: Record<string, unknown>): Sheet => {
+  const source = row as Partial<Sheet>;
+  return {
+    ...source,
+    attributes: (source.attributes ?? []) as SheetAttribute[],
+    skills: (source.skills ?? []) as SheetSkill[],
+    resources: (source.resources ?? []) as SheetResource[],
+    abilities: (source.abilities ?? []) as SheetAbility[],
+    style: (source.style ?? {}) as SheetStyle,
+  } as Sheet;
+};
 
 export async function listSheets(): Promise<Sheet[]> {
-  return (await listRows<any>('sheets')).map(parse);
+  return (await listRows<Record<string, unknown>>('sheets')).map(parse);
 }
 
 export async function getSheetByShareId(shareId: string): Promise<Sheet | null> {
   const { data, error } = await supabase.functions.invoke('user-data', { body: { action: 'shared', shareId } });
   if (error) throw error;
-  return (data as any)?.sheet ? parse((data as any).sheet) : null;
+  const response = data as { sheet?: Record<string, unknown> } | null;
+  return response?.sheet ? parse(response.sheet) : null;
 }
 
 /** Jogador salva a própria ficha pelo link compartilhado. */
@@ -149,11 +153,11 @@ export async function updateSharedSheet(shareId: string, patch: Partial<Sheet>):
 }
 
 export async function createSheet(kind: SheetKind, system?: string): Promise<Sheet> {
-  return parse(await createRow<any>('sheets', emptySheet(kind, system) as any));
+  return parse(await createRow<Record<string, unknown>>('sheets', emptySheet(kind, system)));
 }
 
 export async function updateSheet(id: string, patch: Partial<Sheet>): Promise<void> {
-  await updateRow('sheets', id, patch as any);
+  await updateRow('sheets', id, { ...patch });
 }
 
 export async function deleteSheet(id: string): Promise<void> {

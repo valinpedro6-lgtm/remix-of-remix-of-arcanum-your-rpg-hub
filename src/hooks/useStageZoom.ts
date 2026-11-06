@@ -74,10 +74,11 @@ export function useStageZoom(
     st.addEventListener('touchmove', onTM, { passive: false, capture: true });
     st.addEventListener('touchend', onTE);
     st.addEventListener('touchcancel', onTE);
+    const captureOptions: AddEventListenerOptions = { capture: true };
     return () => {
       st.removeEventListener('wheel', onWheel);
-      st.removeEventListener('touchstart', onTS, { capture: true } as any);
-      st.removeEventListener('touchmove', onTM, { capture: true } as any);
+      st.removeEventListener('touchstart', onTS, captureOptions);
+      st.removeEventListener('touchmove', onTM, captureOptions);
       st.removeEventListener('touchend', onTE);
       st.removeEventListener('touchcancel', onTE);
     };

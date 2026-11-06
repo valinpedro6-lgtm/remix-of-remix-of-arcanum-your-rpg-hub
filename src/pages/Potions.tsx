@@ -51,7 +51,13 @@ const Potions = () => {
     return ov ? { ...p, diceCount: ov.diceCount, diceSides: ov.diceSides, modifier: ov.modifier } : p;
   };
 
-  const allPotions = [...DEFAULT_POTIONS.map(getPotion), ...customPotions];
+  const allPotions = useMemo(() => [
+    ...DEFAULT_POTIONS.map(p => {
+      const ov = overrides[p.id];
+      return ov ? { ...p, diceCount: ov.diceCount, diceSides: ov.diceSides, modifier: ov.modifier } : p;
+    }),
+    ...customPotions,
+  ], [overrides, customPotions]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();

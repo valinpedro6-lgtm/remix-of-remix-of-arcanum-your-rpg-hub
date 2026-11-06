@@ -483,7 +483,9 @@ function getCurrentRegion(): RegionType {
         return env.region as RegionType;
       }
     }
-  } catch {}
+  } catch (error) {
+    console.warn('Não foi possível ler a região do ambiente.', error);
+  }
   return 'cidade';
 }
 
@@ -647,7 +649,7 @@ const NPCGenerator = () => {
   const toggleSecret = (id: string) => {
     setRevealedSecrets(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   };
@@ -655,7 +657,7 @@ const NPCGenerator = () => {
   const toggleExpand = (id: string) => {
     setExpandedCards(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   };

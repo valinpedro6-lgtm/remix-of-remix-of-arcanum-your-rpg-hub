@@ -105,8 +105,8 @@ const Tabletop = () => {
         if (drag.current || Date.now() < busyUntil.current) return;
         const f = list.find(b => b.id === activeId);
         if (!f) return;
-        setBoards(prev => prev.map(b => b.id === f.id ? { ...b, tokens: f.tokens, last_roll: (f as any).last_roll } as Board : b));
-        const lr = (f as any).last_roll as Roll | null;
+        setBoards(prev => prev.map(b => b.id === f.id ? { ...b, tokens: f.tokens, last_roll: f.last_roll } : b));
+        const lr = f.last_roll;
         if (lr && lr.at > lastSeenRoll.current) { lastSeenRoll.current = lr.at; if (lr.by !== 'Mestre') setAnimRoll(lr); }
       }).catch(() => {}).finally(() => { syncing.current = false; });
     }, 1000);
@@ -124,7 +124,7 @@ const Tabletop = () => {
     busyUntil.current = Date.now() + 2500;
     setBoards(prev => prev.map(b => (b.id === id ? { ...b, ...p } : b)));
     clearTimeout(saveT.current);
-    const run = () => updateRow('tabletops', id, p as any).catch(() => toast.error('Não consegui salvar.'));
+    const run = () => updateRow('tabletops', id, { ...p }).catch(() => toast.error('Não consegui salvar.'));
     if (now) run(); else saveT.current = setTimeout(run, 150);
   };
 

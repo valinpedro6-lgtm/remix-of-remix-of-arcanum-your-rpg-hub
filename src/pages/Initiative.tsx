@@ -133,7 +133,7 @@ const Initiative = () => {
 
   const resetCombat = () => { setCombatants([]); setCurrentTurn(0); setRound(1); };
 
-  const updateField = (id: string, field: string, value: any) => {
+  const updateField = (id: string, field: keyof Combatant, value: Combatant[keyof Combatant]) => {
     setCombatants(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
   };
 
