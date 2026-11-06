@@ -120,9 +120,10 @@ export const Layout = ({ children }: { children: ReactNode }) => {
 
       {/* Ações principais sempre ao alcance do polegar no celular. */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 grid grid-cols-4 gap-1 border-t border-border/60 bg-background/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl">
-        {[items[0], items[1], items[2], items.find(item => item.path === '/historias') ?? items[0]].map((item, index) => {
+        {['/', '/painel', '/mesa', '/historias'].map(path => {
+          const item = items.find(candidate => candidate.path === path) ?? items[0];
           const active = location.pathname === item.path;
-          return <Link key={`${item.path}-${index}`} to={item.path} className={`flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg text-[10px] font-semibold ${active ? 'bg-primary/15 text-primary' : 'text-muted-foreground'}`}><item.icon className="h-4 w-4" /><span>{item.label}</span></Link>;
+          return <Link key={item.path} to={item.path} className={`flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg text-[10px] font-semibold ${active ? 'bg-primary/15 text-primary' : 'text-muted-foreground'}`}><item.icon className="h-4 w-4" /><span>{item.label}</span></Link>;
         })}
       </nav>
     </div>

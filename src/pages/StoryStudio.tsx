@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   BookOpen, Download, FilePlus2, Flag, Globe2, GripVertical, History,
@@ -49,6 +49,25 @@ const StoryStudio = () => {
   const [selectedChapterId, setSelectedChapterId] = useState(project.chapters[0]?.id ?? '');
   const [entityDraft, setEntityDraft] = useState({ name: '', role: '', description: '' });
   const [eventDraft, setEventDraft] = useState({ date: '', title: '', description: '' });
+
+  // Remove o conteúdo de exemplo da primeira versão sem apagar uma campanha que o mestre já começou.
+  useEffect(() => {
+    const firstChapter = project.chapters[0];
+    const isUnusedStarter = project.title === 'Minha nova crônica'
+      && project.system === 'Sistema próprio'
+      && project.premise === 'Uma ideia forte que dá vontade de reunir a mesa.'
+      && project.goal === 'O que os personagens precisam conquistar ou impedir?'
+      && project.chapters.length === 1
+      && firstChapter?.title === 'Prólogo'
+      && !firstChapter.content
+      && project.characters.length === 0
+      && project.places.length === 0;
+    if (isUnusedStarter) {
+      const emptyProject = createStoryProject();
+      setProject(emptyProject);
+      setSelectedChapterId(emptyProject.chapters[0].id);
+    }
+  }, [project, setProject]);
 
   const selectedChapter = project.chapters.find(chapter => chapter.id === selectedChapterId) ?? project.chapters[0];
   const completion = useMemo(() => {

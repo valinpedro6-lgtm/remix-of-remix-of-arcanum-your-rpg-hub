@@ -40,17 +40,17 @@ export interface StoryProject {
 const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 export const createStoryProject = (): StoryProject => ({
-  title: 'Minha nova crônica',
-  system: 'Sistema próprio',
-  genre: 'Fantasia',
-  tone: 'Aventura e mistério',
-  premise: 'Uma ideia forte que dá vontade de reunir a mesa.',
-  goal: 'O que os personagens precisam conquistar ou impedir?',
+  title: '',
+  system: '',
+  genre: '',
+  tone: '',
+  premise: '',
+  goal: '',
   updatedAt: new Date().toISOString(),
   chapters: [{
     id: makeId(),
-    title: 'Prólogo',
-    summary: 'A primeira cena que apresenta o mundo e o conflito.',
+    title: '',
+    summary: '',
     content: '',
     status: 'ideia',
   }],
