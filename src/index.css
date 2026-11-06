@@ -408,13 +408,7 @@ body {
 
 @media (max-width: 767px) {
   input, textarea, select, button {
-    /* O Safari do iPhone aplica zoom ao focar controles menores que 16px. */
-    font-size: 16px !important;
-    -webkit-text-size-adjust: 100%;
-  }
-
-  input:focus, textarea:focus, select:focus {
-    font-size: 16px !important;
+    font-size: 16px;
   }
 
   .card-hover:hover {
