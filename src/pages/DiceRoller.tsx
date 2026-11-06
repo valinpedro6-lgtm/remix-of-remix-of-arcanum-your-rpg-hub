@@ -20,6 +20,11 @@ interface RollResult {
 }
 
 const QUICK_DICE = [4, 6, 8, 10, 12, 20];
+const PARTICLES = Array.from({ length: 18 }, (_, i) => ({
+  id: i,
+  angle: (i / 18) * Math.PI * 2,
+  distance: 72 + (i % 4) * 14,
+}));
 
 // Returns RPG-style label and color based on roll quality
 function getRollQuality(rolls: number[], sides: number, total: number, modifier: number): { label: string; color: string; emoji: string } | null {
@@ -95,6 +100,7 @@ const DiceRoller = () => {
   const [displayValue, setDisplayValue] = useState<number | null>(null);
   const [lastRolls, setLastRolls] = useState<number[]>([]);
   const [lastSides, setLastSides] = useState(20);
+  const [impactKey, setImpactKey] = useState(0);
   const [history, setHistory] = useLocalStorage<RollResult[]>('arcanum-dice-history', []);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -123,6 +129,7 @@ const DiceRoller = () => {
         const total = rolls.reduce((a, b) => a + b, 0) + modifier;
         setDisplayValue(total);
         setLastRolls(rolls);
+        setImpactKey(Date.now());
         setIsRolling(false);
         setHistory(prev => [{
           dice: `${qty}d${sides}${modifier >= 0 ? '+' : ''}${modifier !== 0 ? modifier : ''}`,
@@ -225,8 +232,30 @@ const DiceRoller = () => {
                   )}
                 </AnimatePresence>
 
-                {/* Animated dice */}
-                <div className="my-4">
+                {/* Animated dice: carga, lançamento e impacto */}
+                <motion.div
+                  key={impactKey}
+                  className="relative my-4 grid place-items-center w-52 h-52"
+                  animate={isRolling ? {
+                    x: [0, -5, 6, -4, 3, 0],
+                    rotate: [0, -4, 5, -3, 2, 0],
+                  } : impactKey ? { scale: [0.82, 1.12, 0.96, 1], rotate: [0, -2, 2, 0] } : { scale: 1 }}
+                  transition={isRolling ? { duration: 0.42, repeat: Infinity } : { duration: 0.48, ease: 'easeOut' }}
+                >
+                  <motion.div
+                    className={`absolute w-36 h-36 rounded-full border ${isNat20 ? 'border-yellow-400/80' : isNat1 ? 'border-red-500/80' : 'border-primary/50'}`}
+                    animate={isRolling ? { scale: [0.75, 1.35], opacity: [0.5, 0] } : { scale: [0.75, 1.55], opacity: [0.7, 0] }}
+                    transition={{ duration: isRolling ? 0.8 : 0.55, repeat: isRolling ? Infinity : 0 }}
+                  />
+                  {!isRolling && impactKey > 0 && PARTICLES.map(p => (
+                    <motion.span
+                      key={`${impactKey}-${p.id}`}
+                      className={`absolute w-1.5 h-1.5 rounded-full ${isNat20 ? 'bg-yellow-300' : isNat1 ? 'bg-red-400' : 'bg-primary'}`}
+                      initial={{ x: 0, y: 0, scale: 0, opacity: 1 }}
+                      animate={{ x: Math.cos(p.angle) * p.distance, y: Math.sin(p.angle) * p.distance, scale: [0, 1, 0], opacity: [1, 1, 0] }}
+                      transition={{ duration: 0.7, delay: (p.id % 5) * 0.015, ease: 'easeOut' }}
+                    />
+                  ))}
                   {displayValue !== null || isRolling ? (
                     <DiceFace value={displayValue ?? 0} isRolling={isRolling} />
                   ) : (
@@ -238,7 +267,7 @@ const DiceRoller = () => {
                       <DiceFace value={0} isRolling={false} />
                     </motion.div>
                   )}
-                </div>
+                </motion.div>
 
                 {!isRolling && displayValue !== null && (
                   <motion.div
