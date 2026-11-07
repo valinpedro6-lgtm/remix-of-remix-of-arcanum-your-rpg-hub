@@ -147,17 +147,18 @@ const Tabletop = () => {
   const patch = (p: Partial<Board>, now = false) => {
     if (!board) return;
     const id = board.id;
+    const current = boardsRef.current.find(b => b.id === id) ?? board;
     const viewportChanged = 'zoom' in p || 'camera_x' in p || 'camera_y' in p;
     const values = viewportChanged
       ? {
           ...p,
           last_roll: {
-            ...(board.last_roll ?? { expr: '', total: 0, by: 'Viewport', at: 0 }),
+            ...(current.last_roll ?? { expr: '', total: 0, by: 'Viewport', at: 0 }),
             viewport: {
-              zoom: p.zoom ?? board.zoom ?? 1,
-              camera_x: p.camera_x ?? board.camera_x ?? 50,
-              camera_y: p.camera_y ?? board.camera_y ?? 50,
-              viewportOnly: !board.last_roll,
+              zoom: p.zoom ?? current.zoom ?? 1,
+              camera_x: p.camera_x ?? current.camera_x ?? 50,
+              camera_y: p.camera_y ?? current.camera_y ?? 50,
+              viewportOnly: !current.last_roll,
             },
           },
         }
