@@ -13,6 +13,17 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  // O HTML de navegação nunca deve ficar preso a um bundle antigo: o Vite
+  // troca os nomes dos assets a cada deploy e um shell desatualizado causa
+  // tela vazia mesmo quando a API continua respondendo normalmente.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .then(response => response)
+        .catch(() => caches.match('/index.html')),
+    );
+    return;
+  }
   event.respondWith(
     fetch(event.request)
       .then(response => {

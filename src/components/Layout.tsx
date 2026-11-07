@@ -4,8 +4,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
-  StickyNote, LayoutDashboard, Menu, Gauge, Dices, Wand2, BookOpen, Network
- , Drama, Map as MapIcon, Shield, LogOut, ScrollText } from 'lucide-react';
+  StickyNote, LayoutDashboard, Menu, Gauge, Dices, Wand2, BookOpen, Network,
+  Drama, Map as MapIcon, Shield, LogOut, ScrollText, Play } from 'lucide-react';
 import { GlobalTimerBar } from '@/components/GlobalTimerBar';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { CampaignBackup } from '@/components/CampaignBackup';
@@ -15,6 +15,7 @@ const navItems = [
   { path: '/', label: 'Início', icon: LayoutDashboard },
   { path: '/historias', label: 'Histórias', icon: ScrollText },
   { path: '/painel', label: 'Painel', icon: Gauge },
+  { path: '/sessao', label: 'Modo Sessão', icon: Play },
   { path: '/mesa', label: 'Mesa', icon: Dices },
   { path: '/elenco', label: 'Elenco', icon: Drama },
   { path: '/tabletop', label: 'Tabletop', icon: MapIcon },
