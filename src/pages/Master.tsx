@@ -10,7 +10,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { MASTER_KEY, callGate, becomeMaster, leaveMaster } from '@/lib/access';
 import { currentOwnerToken } from '@/lib/userData';
-import { MasterLibrary } from '@/components/MasterLibrary';
 
 interface Session { device_id: string; label: string; first_seen: string; last_seen: string }
 
@@ -294,7 +293,6 @@ const Master = () => {
         </CardContent>
       </Card>
 
-      <MasterLibrary />
     </div>
   );
 };
