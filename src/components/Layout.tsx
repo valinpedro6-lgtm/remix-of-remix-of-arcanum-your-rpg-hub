@@ -9,6 +9,7 @@ import {
 import { GlobalTimerBar } from '@/components/GlobalTimerBar';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { CampaignBackup } from '@/components/CampaignBackup';
+import { FloatingDice } from '@/components/FloatingDice';
 
 const navItems = [
   { path: '/', label: 'Início', icon: LayoutDashboard },
@@ -117,6 +118,8 @@ export const Layout = ({ children }: { children: ReactNode }) => {
           {children}
         </div>
       </main>
+
+      <FloatingDice />
 
       {/* Ações principais sempre ao alcance do polegar no celular. */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 grid grid-cols-4 gap-1 border-t border-border/60 bg-background/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl">
