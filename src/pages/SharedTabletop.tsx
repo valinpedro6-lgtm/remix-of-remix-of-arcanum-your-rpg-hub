@@ -147,7 +147,7 @@ const SharedTabletop = () => {
         <div
           ref={mapRef}
           className="relative mx-auto select-none touch-pan-x touch-pan-y"
-          style={{ width: `${zoom * 100}%`, transition: myZoom === null ? 'width 300ms ease-out' : undefined }}
+          style={{ width: `${zoom * 100}%`, transition: 'width 300ms ease-out' }}
           onPointerMove={onMove}
           onPointerUp={onUp}
           onPointerCancel={onUp}
