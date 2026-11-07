@@ -166,7 +166,20 @@ const Tabletop = () => {
     busyUntil.current = Date.now() + 2500;
     setBoards(prev => prev.map(b => (b.id === id ? { ...b, ...values } : b)));
     clearTimeout(saveT.current);
-    const run = () => updateRow('tabletops', id, values).catch(() => toast.error('Não consegui salvar.'));
+    const run = () => {
+      if (!viewportChanged) {
+        updateRow('tabletops', id, values).catch(() => toast.error('Não consegui salvar.'));
+        return;
+      }
+      const viewportValues = {
+        zoom: values.zoom ?? current.zoom ?? 1,
+        camera_x: values.camera_x ?? current.camera_x ?? 50,
+        camera_y: values.camera_y ?? current.camera_y ?? 50,
+      };
+      updateRow('tabletops', id, viewportValues)
+        .then(() => updateRow('tabletops', id, { last_roll: values.last_roll }))
+        .catch(() => toast.error('Não consegui salvar o enquadramento.'));
+    };
     if (now) run(); else saveT.current = setTimeout(run, 150);
   };
 
