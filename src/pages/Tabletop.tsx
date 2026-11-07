@@ -180,7 +180,7 @@ const Tabletop = () => {
         .then(() => updateRow('tabletops', id, { last_roll: values.last_roll }))
         .catch(() => toast.error('Não consegui salvar o enquadramento.'));
     };
-    if (now) run(); else saveT.current = setTimeout(run, 150);
+    if (now || viewportChanged) run(); else saveT.current = setTimeout(run, 150);
   };
 
   const cameraValue = (value: number) => Math.max(0, Math.min(100, Number.isFinite(value) ? value : 50));
