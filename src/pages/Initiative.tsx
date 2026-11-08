@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, ChevronRight, RotateCcw, Dices, Swords, Heart, Shield, Skull, User, Zap, Minus, Copy, UserPlus, Users } from 'lucide-react';
 import { NumberInput } from '@/components/NumberInput';
 import { motion, AnimatePresence } from 'framer-motion';
+import { listSheets, Sheet } from '@/lib/sheets';
 
 interface SavedSheet {
   id: string;
@@ -28,6 +29,7 @@ interface Combatant {
   deathSaves?: { success: number; fail: number };
   tempHp?: number;
   notes?: string;
+  sourceSheetId?: string;
 }
 
 const CONDITION_OPTIONS = [
@@ -63,6 +65,11 @@ const Initiative = () => {
   const [bulkAdd, setBulkAdd] = useState(false);
   const [bulkCount, setBulkCount] = useState(3);
   const [showImport, setShowImport] = useState(false);
+  const [availableSheets, setAvailableSheets] = useState<Sheet[]>([]);
+
+  useEffect(() => {
+    listSheets().then(setAvailableSheets).catch(() => setAvailableSheets([]));
+  }, []);
 
   const importSheet = (sheet: SavedSheet, type: 'player' | 'monster') => {
     setCombatants(prev => [...prev, {
@@ -74,6 +81,23 @@ const Initiative = () => {
       ca: sheet.ca ?? 10,
       conditions: [],
       type,
+    }]);
+  };
+
+  const importLiveSheet = (sheet: Sheet) => {
+    if (combatants.some(c => c.sourceSheetId === sheet.id)) return;
+    const hp = sheet.resources.find(resource => /vida|pv|health|hp/i.test(resource.label) || resource.short.toLowerCase() === 'pv');
+    const defense = sheet.resources.find(resource => /defesa|armadura|ca|defense|armor/i.test(resource.label) || resource.short.toLowerCase() === 'ca');
+    setCombatants(prev => [...prev, {
+      id: crypto.randomUUID(),
+      sourceSheetId: sheet.id,
+      name: sheet.name || 'Sem nome',
+      initiative: 0,
+      hp: hp?.current ?? 0,
+      maxHp: hp?.max ?? 0,
+      ca: defense?.current ?? 10,
+      conditions: [],
+      type: sheet.kind === 'monster' ? 'monster' : 'player',
     }]);
   };
 
@@ -228,7 +252,7 @@ const Initiative = () => {
                   className="text-xs gap-1 ml-auto"
                 >
                   <UserPlus className="w-3 h-3" />
-                  Importar Fichas ({savedPlayers.length + savedMonsters.length})
+                  Importar Fichas ({availableSheets.length || savedPlayers.length + savedMonsters.length})
                 </Button>
               </div>
 
@@ -270,6 +294,23 @@ const Initiative = () => {
                               </Button>
                             ))}
                           </div>
+                        </div>
+                      )}
+                      {availableSheets.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-primary mb-1.5">
+                            <Swords className="w-3 h-3" /> Personagens da campanha
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {availableSheets.map(sheet => {
+                              const alreadyAdded = combatants.some(c => c.sourceSheetId === sheet.id);
+                              return <Button key={sheet.id} variant={alreadyAdded ? 'secondary' : 'outline'} size="sm" disabled={alreadyAdded} className="h-7 text-xs gap-1"
+                                onClick={() => importLiveSheet(sheet)}>
+                                <Plus className="w-3 h-3" />{sheet.name || 'Sem nome'}{alreadyAdded ? ' · adicionado' : ''}
+                              </Button>;
+                            })}
+                          </div>
+                          <p className="mt-1 text-[10px] text-muted-foreground">Ao adicionar, o Arcanum preenche nome, PV e Defesa. Digite a iniciativa na lista abaixo.</p>
                         </div>
                       )}
                       {savedPlayers.length === 0 && savedMonsters.length === 0 && (
