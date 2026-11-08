@@ -17,6 +17,9 @@ export default {
       fontFamily: {
         display: ['Cinzel', 'serif'],
         body: ['Rajdhani', 'sans-serif'],
+        gothic: ['UnifrakturCook', 'serif'],
+        elegant: ['Cormorant Garamond', 'serif'],
+        poster: ['Bebas Neue', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",

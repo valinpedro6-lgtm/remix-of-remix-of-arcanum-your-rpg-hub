@@ -209,35 +209,43 @@ const Cast = () => {
         <p className="text-sm text-muted-foreground py-8">Nenhuma ficha ainda. Crie a primeira!</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {items.map(s => (
+          {items.map(s => {
+            const cardSystem = getSystem(s.style.system);
+            return (
             <motion.div key={s.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <button className="text-left w-full" onClick={() => setSelectedId(s.id)}>
-                <div className="relative rounded-xl overflow-hidden border border-border/50 bg-black h-44 group">
+                <div className="relative h-56 overflow-hidden rounded-xl border-2 border-primary/25 bg-[#111] shadow-[0_10px_35px_-18px_hsl(var(--primary)/.9)] transition-all duration-300 group hover:-translate-y-1 hover:border-primary/70">
                   {s.image_url ? (
-                    <img src={s.image_url} alt={s.name} className="absolute inset-0 w-full h-full object-cover object-top opacity-80 group-hover:scale-105 transition-transform duration-500" />
+                    <img src={s.image_url} alt={s.name} className="absolute right-0 top-0 h-full w-[58%] object-cover object-top opacity-90 transition-transform duration-500 group-hover:scale-105" />
                   ) : (
-                    <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                      {kind !== 'monster' ? <Users className="w-12 h-12 text-primary" /> : <Skull className="w-12 h-12 text-primary" />}
+                    <div className="absolute right-0 top-0 flex h-full w-[58%] items-center justify-center opacity-20">
+                      {kind !== 'monster' ? <Users className="h-16 w-16 text-primary" /> : <Skull className="h-16 w-16 text-primary" />}
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <p className="font-display font-black uppercase text-primary text-lg leading-none drop-shadow-[0_0_12px_hsl(var(--primary)/0.7)]">
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#090909] via-[#090909]/85 via-45% to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+                  <div className="absolute left-0 top-0 h-full w-[56%] p-4">
+                    <p className="font-poster text-[10px] uppercase tracking-[0.25em] text-primary/80">{cardSystem.name}</p>
+                    <p className="mt-1 font-elegant text-2xl font-bold leading-[.9] text-white drop-shadow-[0_0_12px_hsl(var(--primary)/.7)]">
                       {s.name}
                     </p>
-                    <div className="flex flex-wrap items-center gap-1 mt-1.5">
-                      {s.resources.slice(0, 3).map(r => (
-                        <Badge key={r.id} variant="outline" className="text-[10px] border-primary/30 text-white/80">
-                          {r.short} {r.current}/{r.max}
-                        </Badge>
+                    <p className="mt-1 line-clamp-2 font-elegant text-xs italic text-white/70">{s.subtitle || s.origin || 'Ficha da campanha'}</p>
+                    <div className="mt-4 grid grid-cols-2 gap-1.5">
+                      {s.attributes.slice(0, 4).map(a => (
+                        <span key={a.id} className="border-l-2 border-primary bg-black/45 px-2 py-1 font-body text-[10px] uppercase tracking-wider text-white/80"><b className="text-primary">{a.short}</b> {a.value}</span>
                       ))}
-                      {s.in_list && <Badge className="text-[10px]">Na mesa</Badge>}
+                    </div>
+                    <div className="absolute bottom-3 left-4 right-2 flex flex-wrap gap-1">
+                      {s.resources.slice(0, 2).map(r => <span key={r.id} className="rounded-sm border border-primary/30 bg-black/55 px-1.5 py-0.5 font-body text-[10px] text-white/85">{r.short} {r.current}/{r.max}</span>)}
+                      {s.in_list && <span className="rounded-sm bg-primary px-1.5 py-0.5 font-body text-[10px] font-bold text-primary-foreground">NA MESA</span>}
                     </div>
                   </div>
+                  <div className="absolute bottom-3 right-3 flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-2 border-primary/70 bg-black/70 shadow-[0_0_18px_hsl(var(--primary)/.6)]">{s.image_url ? <img src={s.image_url} alt="" className="h-full w-full object-cover object-top" /> : <span className="font-gothic text-lg text-primary">✦</span>}</div>
                 </div>
               </button>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
