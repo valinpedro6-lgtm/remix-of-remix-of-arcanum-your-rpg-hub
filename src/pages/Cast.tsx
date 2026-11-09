@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Users, Skull, Plus, Trash2, Link2, Copy, Maximize2, Minimize2, ArrowUp, ArrowDown,
-  PanelsTopLeft, Save, ArrowLeft, Send, Loader2, ImagePlus, BookOpen, Palette, Download, Swords,
+  PanelsTopLeft, Save, ArrowLeft, Send, Loader2, ImagePlus, BookOpen, Palette, Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,31 +54,6 @@ const exportSheet = (sheet: Sheet) => {
   popup.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${escapeHtml(sheet.name)} — Arcanum</title><style>@page{size:A4;margin:14mm}*{box-sizing:border-box}body{margin:0;background:#121214;color:#f4f1ea;font:14px Arial,sans-serif}main{max-width:820px;margin:0 auto;border:1px solid #40332f;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,#171518,#211415)}header{min-height:210px;padding:34px;display:flex;align-items:flex-end;position:relative;background:${sheet.image_url ? `linear-gradient(90deg,rgba(12,9,10,.98),rgba(12,9,10,.45)),url('${sheet.image_url}') center/cover` : '#211719'}}header h1{margin:0;color:#ef272c;font:900 46px Georgia,serif;letter-spacing:1px;text-transform:uppercase}header p{margin:8px 0 0;color:#ddd;font-style:italic}header small{display:block;margin-top:10px;color:#ed7777;text-transform:uppercase;letter-spacing:2px}.content{padding:26px;display:grid;gap:22px}.section{break-inside:avoid}.section h2{font:700 12px Arial,sans-serif;text-transform:uppercase;letter-spacing:2px;color:#ed555b;border-bottom:1px solid #59363a;padding-bottom:8px;margin:0 0 12px}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.stat{padding:12px 8px;text-align:center;border:1px solid #4d3032;border-radius:10px;background:#1e1719}.stat b{display:block;font-size:20px;color:#fff}.stat small{display:block;margin-top:4px;color:#a99b9b;font-size:10px;text-transform:uppercase}.resource{padding:10px 0;border-bottom:1px solid #3c2c2e}.resource>div:first-child{display:flex;justify-content:space-between;color:#ddd}.resource span{color:#f29b9b}.bar{height:7px;background:#35292b;border-radius:8px;margin-top:7px;overflow:hidden}.bar i{display:block;height:100%;background:#e52b32;border-radius:8px}ul{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,1fr);gap:5px 18px}li{display:flex;justify-content:space-between;border-bottom:1px solid #32282a;padding:6px 0;color:#ddd}li b{color:#ee686d}article{border-left:3px solid #e52b32;background:#1c1719;padding:10px 12px;margin:8px 0}article b{color:#fff}article em{color:#ee686d;font-style:normal;float:right}article p{color:#c7bcbc;line-height:1.4;margin:6px 0 0}.notes{white-space:pre-wrap;color:#c7bcbc;line-height:1.5}.footer{padding:15px 26px;border-top:1px solid #3b292b;color:#887d7d;font-size:11px;display:flex;justify-content:space-between}@media print{body{background:#fff;color:#171717}main{border:1px solid #bbb;background:#fff;color:#171717}.footer{color:#666}.stat,.resource,article{background:#fafafa}.stat,article{border-color:#ccc}header{print-color-adjust:exact;-webkit-print-color-adjust:exact}.content{padding:20px}}@media(max-width:600px){.stats{grid-template-columns:repeat(3,1fr)}header h1{font-size:32px}.content{padding:18px}}</style></head><body><main><header><div><h1>${escapeHtml(sheet.name)}</h1><p>${escapeHtml(sheet.subtitle)}</p><small>${escapeHtml(sheet.origin)}${sheet.systemName ? ` · ${escapeHtml(sheet.systemName)}` : ''}</small></div></header><div class="content"><section class="section"><h2>Atributos</h2><div class="stats">${attrs || '<p>Sem atributos registrados.</p>'}</div></section><section class="section"><h2>Recursos</h2>${resources || '<p>Sem recursos registrados.</p>'}</section>${skills ? `<section class="section"><h2>Perícias</h2><ul>${skills}</ul></section>` : ''}${abilities ? `<section class="section"><h2>Habilidades</h2>${abilities}</section>` : ''}${inventory ? `<section class="section"><h2>Inventário</h2><ul>${inventory}</ul></section>` : ''}${sheet.notes ? `<section class="section"><h2>Anotações</h2><div class="notes">${escapeHtml(sheet.notes)}</div></section>` : ''}</div><div class="footer"><span>ARCANUM · Ficha de personagem</span><span>${new Date().toLocaleDateString('pt-BR')}</span></div></main><script>window.onload=()=>setTimeout(()=>window.print(),350)</script></body></html>`);
   popup.document.close();
   toast.success('Ficha preparada para impressão ou PDF.');
-};
-
-const sendToInitiative = (sheet: Sheet) => {
-  const key = 'arcanum-initiative';
-  const current = JSON.parse(localStorage.getItem(key) ?? '[]') as Array<Record<string, any>>;
-  const existingIndex = current.findIndex(item => item.sourceSheetId === sheet.id);
-  const hp = sheet.resources.find(resource => /vida|pv|health|hp/i.test(resource.label) || resource.short.toLowerCase() === 'pv');
-  const defense = sheet.resources.find(resource => /defesa|armadura|ca|defense|armor/i.test(resource.label) || resource.short.toLowerCase() === 'ca');
-  const combatant = {
-    id: existingIndex >= 0 ? current[existingIndex].id : crypto.randomUUID(),
-    sourceSheetId: sheet.id,
-    name: sheet.name || 'Sem nome',
-    initiative: existingIndex >= 0 ? current[existingIndex].initiative : 0,
-    hp: hp?.current ?? 0,
-    maxHp: hp?.max ?? 0,
-    ca: defense?.current ?? 10,
-    conditions: existingIndex >= 0 ? current[existingIndex].conditions ?? [] : [],
-    type: sheet.kind === 'monster' ? 'monster' : 'player',
-  };
-  const next = [...current];
-  if (existingIndex >= 0) next[existingIndex] = { ...current[existingIndex], ...combatant };
-  else next.push(combatant);
-  localStorage.setItem(key, JSON.stringify(next));
-  window.dispatchEvent(new CustomEvent('local-storage-sync', { detail: { key, value: next } }));
-  toast.success(existingIndex >= 0 ? 'Ficha atualizada na iniciativa.' : 'Ficha enviada. Agora digite a iniciativa na lista de combate.');
 };
 
 const splitIdentity = (value: string) => {
@@ -299,9 +274,6 @@ const Cast = () => {
           </Button>
           <Button variant="outline" size="sm" className="gap-1" onClick={() => exportSheet(s)}>
             <Download className="w-3.5 h-3.5" /> Exportar ficha
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1" onClick={() => sendToInitiative(s)}>
-            <Swords className="w-3.5 h-3.5" /> Enviar para iniciativa
           </Button>
           <Button variant="outline" size="sm" className="gap-1" onClick={toggleFull}>
             {full ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />} Projetor
