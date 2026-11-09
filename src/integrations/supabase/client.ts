@@ -3,13 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { brokeredPreviewStorage } from './previewAuthStorage';
 
-const LEGACY_SUPABASE_URL = 'https://dvtssucmagnpdvgjkhuf.supabase.co';
-const ARCANUM_SUPABASE_URL = 'https://yelfvgqyybsypvovgqoi.supabase.co';
-const ARCANUM_SUPABASE_KEY = 'sb_publishable_URDx6qDaJPcQ9cv_bYBgJA_B5Aqa9Jl';
-const configuredUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const configuredKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
-const SUPABASE_URL = !configuredUrl || configuredUrl === LEGACY_SUPABASE_URL ? ARCANUM_SUPABASE_URL : configuredUrl;
-const SUPABASE_PUBLISHABLE_KEY = !configuredKey || configuredUrl === LEGACY_SUPABASE_URL ? ARCANUM_SUPABASE_KEY : configuredKey;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 
 function isNewSupabaseApiKey(value: string): boolean {
