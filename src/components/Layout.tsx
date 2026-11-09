@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
   StickyNote, LayoutDashboard, Menu, Gauge, Dices, Wand2, BookOpen, Network,
-  Drama, Map as MapIcon, Shield, LogOut, ScrollText, Play, LibraryBig } from 'lucide-react';
+  Drama, Map as MapIcon, Shield, LogOut, ScrollText, Play } from 'lucide-react';
 import { GlobalTimerBar } from '@/components/GlobalTimerBar';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { CampaignBackup } from '@/components/CampaignBackup';
@@ -21,7 +21,6 @@ const navItems = [
   { path: '/tabletop', label: 'Tabletop', icon: MapIcon },
   { path: '/geradores', label: 'Geradores', icon: Wand2 },
   { path: '/compendio', label: 'Compêndio', icon: BookOpen },
-  { path: '/biblioteca', label: 'Biblioteca', icon: LibraryBig },
   { path: '/mapa', label: 'Mapa Mental', icon: Network },
   { path: '/notas', label: 'Notas', icon: StickyNote },
 ];

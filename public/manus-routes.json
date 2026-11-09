@@ -8,7 +8,6 @@
     { "path": "/fichas", "title": "Fichas" },
     { "path": "/geradores", "title": "Geradores" },
     { "path": "/compendio", "title": "Compêndio" },
-    { "path": "/biblioteca", "title": "Biblioteca" },
     { "path": "/notas", "title": "Notas" },
     { "path": "/mapa", "title": "Mapa mental" },
     { "path": "/mestre", "title": "Mestre" },
