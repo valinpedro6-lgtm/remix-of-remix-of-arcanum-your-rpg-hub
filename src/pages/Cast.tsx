@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Users, Skull, Plus, Trash2, Link2, Copy, Maximize2, Minimize2,
-  PanelsTopLeft, Save, ArrowLeft, Send, Loader2, ImagePlus, BookOpen, Palette, Download,
+  Users, Skull, Plus, Trash2, Link2, Copy, Maximize2, Minimize2, ArrowUp, ArrowDown,
+  PanelsTopLeft, Save, ArrowLeft, Send, Loader2, ImagePlus, BookOpen, Palette,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,11 +17,11 @@ import { toast } from 'sonner';
 import { NumberInput } from '@/components/NumberInput';
 import { SheetPoster } from '@/components/sheet/SheetPoster';
 import {
-  Sheet, SheetAbility, SheetAttribute, SheetResource, SheetSkill,
+  Sheet, SheetAbility, SheetAttribute, SheetResource, SheetSkill, SheetStyle,
   createSheet, deleteSheet, listSheets, updateSheet, uid, shareUrl,
   DEFAULT_SKILLS, OP_SKILLS, SheetKind, STYLE_COLORS,
 } from '@/lib/sheets';
-import { PLAYER_SYSTEM_PRESETS } from '@/data/rpgSystemPresets';
+import { SHEET_SYSTEMS, getSystem, getSystemOptions, systemTemplate } from '@/lib/sheetSystems';
 
 const TONES: SheetResource['tone'][] = ['life', 'sanity', 'effort', 'neutral'];
 const TONE_LABEL: Record<SheetResource['tone'], string> = {
@@ -35,33 +36,20 @@ const readImage = (file: File): Promise<string> =>
     r.readAsDataURL(file);
   });
 
-const escapeHtml = (value: unknown) => String(value ?? '')
-  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-
-const exportSheet = (sheet: Sheet) => {
-  const popup = window.open('', '_blank', 'width=900,height=1100');
-  if (!popup) {
-    toast.error('O navegador bloqueou a exportação. Permita pop-ups para o Arcanum e tente novamente.');
-    return;
-  }
-  const attrs = sheet.attributes.map(a => `<div class="stat"><b>${escapeHtml(a.short || a.label)}</b><span>${escapeHtml(a.value)}</span><small>${escapeHtml(a.label)}</small></div>`).join('');
-  const resources = sheet.resources.map(r => `<div class="resource"><div><b>${escapeHtml(r.label)}</b><span>${escapeHtml(r.current)} / ${escapeHtml(r.max)}</span></div><div class="bar"><i style="width:${r.max > 0 ? Math.max(0, Math.min(100, (r.current / r.max) * 100)) : 0}%"></i></div></div>`).join('');
-  const skills = sheet.skills.filter(s => s.trained || s.value > 0).map(s => `<li><span>${escapeHtml(s.name)}</span><b>${s.value >= 0 ? '+' : ''}${escapeHtml(s.value)}</b></li>`).join('');
-  const abilities = sheet.abilities.map(a => `<article><b>${escapeHtml(a.name)} ${a.cost ? `<em>${escapeHtml(a.cost)}</em>` : ''}</b><p>${escapeHtml(a.description)}</p></article>`).join('');
-  const inventory = sheet.style?.inventory?.map(i => `<li><span>${escapeHtml(i.name)}${i.note ? ` · ${escapeHtml(i.note)}` : ''}</span><b>x${escapeHtml(i.qty)}</b></li>`).join('') ?? '';
-  popup.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${escapeHtml(sheet.name)} — Arcanum</title><style>
-    @page{size:A4;margin:14mm}*{box-sizing:border-box}body{margin:0;background:#121214;color:#f4f1ea;font:14px Arial,sans-serif}main{max-width:820px;margin:0 auto;border:1px solid #40332f;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,#171518,#211415)}header{min-height:210px;padding:34px;display:flex;align-items:flex-end;position:relative;background:${sheet.image_url ? `linear-gradient(90deg,rgba(12,9,10,.98),rgba(12,9,10,.45)),url('${sheet.image_url}') center/cover` : '#211719'}}header h1{margin:0;color:#ef272c;font:900 46px Georgia,serif;letter-spacing:1px;text-transform:uppercase}header p{margin:8px 0 0;color:#ddd;font-style:italic}header small{display:block;margin-top:10px;color:#ed7777;text-transform:uppercase;letter-spacing:2px}.content{padding:26px;display:grid;gap:22px}.section{break-inside:avoid}.section h2{font:700 12px Arial,sans-serif;text-transform:uppercase;letter-spacing:2px;color:#ed555b;border-bottom:1px solid #59363a;padding-bottom:8px;margin:0 0 12px}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.stat{padding:12px 8px;text-align:center;border:1px solid #4d3032;border-radius:10px;background:#1e1719}.stat b{display:block;font-size:20px;color:#fff}.stat small{display:block;margin-top:4px;color:#a99b9b;font-size:10px;text-transform:uppercase}.resource{padding:10px 0;border-bottom:1px solid #3c2c2e}.resource>div:first-child{display:flex;justify-content:space-between;color:#ddd}.resource span{color:#f29b9b}.bar{height:7px;background:#35292b;border-radius:8px;margin-top:7px;overflow:hidden}.bar i{display:block;height:100%;background:#e52b32;border-radius:8px}ul{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,1fr);gap:5px 18px}li{display:flex;justify-content:space-between;border-bottom:1px solid #32282a;padding:6px 0;color:#ddd}li b{color:#ee686d}article{border-left:3px solid #e52b32;background:#1c1719;padding:10px 12px;margin:8px 0}article b{color:#fff}article em{color:#ee686d;font-style:normal;float:right}article p{color:#c7bcbc;line-height:1.4;margin:6px 0 0}.notes{white-space:pre-wrap;color:#c7bcbc;line-height:1.5}.footer{padding:15px 26px;border-top:1px solid #3b292b;color:#887d7d;font-size:11px;display:flex;justify-content:space-between}@media print{body{background:#fff;color:#171717}main{border:1px solid #bbb;background:#fff;color:#171717}.footer{color:#666}.stat,.resource,article{background:#fafafa}.stat,article{border-color:#ccc}header{print-color-adjust:exact;-webkit-print-color-adjust:exact}.content{padding:20px}}@media(max-width:600px){.stats{grid-template-columns:repeat(3,1fr)}header h1{font-size:32px}.content{padding:18px}}
-  </style></head><body><main><header>${sheet.image_url ? '' : ''}<div><h1>${escapeHtml(sheet.name)}</h1><p>${escapeHtml(sheet.subtitle)}</p><small>${escapeHtml(sheet.origin)}${sheet.systemName ? ` · ${escapeHtml(sheet.systemName)}` : ''}</small></div></header><div class="content"><section class="section"><h2>Atributos</h2><div class="stats">${attrs || '<p>Sem atributos registrados.</p>'}</div></section><section class="section"><h2>Recursos</h2>${resources || '<p>Sem recursos registrados.</p>'}</section>${skills ? `<section class="section"><h2>Perícias</h2><ul>${skills}</ul></section>` : ''}${abilities ? `<section class="section"><h2>Habilidades</h2>${abilities}</section>` : ''}${inventory ? `<section class="section"><h2>Inventário</h2><ul>${inventory}</ul></section>` : ''}${sheet.notes ? `<section class="section"><h2>Anotações</h2><div class="notes">${escapeHtml(sheet.notes)}</div></section>` : ''}</div><div class="footer"><span>ARCANUM · Ficha de personagem</span><span>${new Date().toLocaleDateString('pt-BR')}</span></div></main><script>window.onload=()=>setTimeout(()=>window.print(),350)</script></body></html>`);
-  popup.document.close();
-  toast.success('Ficha preparada para impressão ou PDF.');
+const splitIdentity = (value: string) => {
+  const [className = '', ...originParts] = value.split(' — ');
+  return { className, originName: originParts.join(' — ') };
 };
 
+const joinIdentity = (className: string, originName: string) => [className, originName].filter(Boolean).join(' — ');
+
 const Cast = () => {
+  const [searchParams] = useSearchParams();
+  const [newSystem, setNewSystem] = useState(() => localStorage.getItem('arcanum-sheet-system') ?? 'ordemparanormal');
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [tab, setTab] = useState('player');
+  const [tab, setTab] = useState(() => searchParams.get('t') === 'monstros' ? 'monster' : searchParams.get('t') === 'projetar' ? 'table' : 'player');
   const [full, setFull] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -73,19 +61,22 @@ const Cast = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  // Busca de novo a cada 4s para mostrar as mudanças feitas pelos jogadores no link
+  // Atualização rápida para refletir alterações feitas na ficha compartilhada.
   const pending = useRef<Record<string, number>>({});
+  const syncing = useRef(false);
   useEffect(() => {
-    const t = setInterval(() => {
-      if (document.hidden) return;
+    const sync = () => {
+      if (document.hidden || syncing.current) return;
+      syncing.current = true;
       listSheets().then(fresh => setSheets(prev => {
         const now = Date.now();
         return fresh.map(f => {
           const local = prev.find(p => p.id === f.id);
           return local && (pending.current[f.id] ?? 0) > now ? local : f;
         });
-      })).catch(() => {});
-    }, 4000);
+      })).catch(() => {}).finally(() => { syncing.current = false; });
+    };
+    const t = setInterval(sync, 1500);
     return () => clearInterval(t);
   }, []);
 
@@ -107,7 +98,8 @@ const Cast = () => {
 
   const add = async (kind: SheetKind) => {
     try {
-      const s = await createSheet(kind);
+      localStorage.setItem('arcanum-sheet-system', newSystem);
+      const s = await createSheet(kind, newSystem);
       setSheets(prev => [...prev, s]);
       setSelectedId(s.id);
       toast.success(kind === 'monster' ? 'Criatura criada!' : 'Personagem criado!');
@@ -153,10 +145,16 @@ const Cast = () => {
   /* ---------- Lista ---------- */
   const grid = (items: Sheet[], kind: SheetKind) => (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+      <select value={newSystem} onChange={e => setNewSystem(e.target.value)} aria-label="Sistema da ficha"
+        className="h-10 rounded-md border border-input bg-background px-3 text-sm max-w-full">
+        {SHEET_SYSTEMS.map(sys => <option key={sys.id} value={sys.id}>{sys.name}</option>)}
+      </select>
       <Button onClick={() => add(kind)} className="gap-2">
         <Plus className="w-4 h-4" />
         {kind === 'monster' ? 'Nova criatura' : kind === 'story' ? 'Novo personagem da história' : 'Novo jogador'}
       </Button>
+      </div>
 
       {loading ? (
         <div className="flex items-center gap-2 text-muted-foreground text-sm py-8">
@@ -203,42 +201,34 @@ const Cast = () => {
   /* ---------- Editor ---------- */
   if (selected) {
     const s = selected;
+    const identity = splitIdentity(s.origin);
+    const systemOptions = getSystemOptions(s.style.system);
+    const classChoices = systemOptions.classes.includes(identity.className) || !identity.className ? systemOptions.classes : [identity.className, ...systemOptions.classes];
+    const originChoices = systemOptions.origins.includes(identity.originName) || !identity.originName ? systemOptions.origins : [identity.originName, ...systemOptions.origins];
     const setAttr = (list: SheetAttribute[]) => patch(s.id, { attributes: list });
     const setSkills = (list: SheetSkill[]) => patch(s.id, { skills: list });
     const setRes = (list: SheetResource[]) => patch(s.id, { resources: list });
     const setAb = (list: SheetAbility[]) => patch(s.id, { abilities: list });
     const reorderAttributes = (fromId: string, toId: string) => {
       const next = [...s.attributes];
-      const fromIndex = next.findIndex(a => a.id === fromId);
-      const toIndex = next.findIndex(a => a.id === toId);
-      if (fromIndex < 0 || toIndex < 0) return;
-      const [moved] = next.splice(fromIndex, 1);
-      next.splice(toIndex, 0, moved);
+      const from = next.findIndex(attribute => attribute.id === fromId);
+      const to = next.findIndex(attribute => attribute.id === toId);
+      if (from < 0 || to < 0) return;
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
       setAttr(next);
     };
-    const applySystemPreset = (presetId: string) => {
-      const preset = PLAYER_SYSTEM_PRESETS.find(item => item.id === presetId);
-      if (!preset) return;
-      const attrs = preset.attributes.map((attr, index) => {
-        const existing = s.attributes.find(item => item.label.toLowerCase() === attr.name.toLowerCase());
-        return existing ?? { id: uid(), label: attr.name, short: attr.name.replace(/[^A-Za-zÀ-ÿ]/g, '').slice(0, 3).toUpperCase(), value: index < 2 ? 2 : 1 };
-      });
-      const skills = preset.skills.map(skill => {
-        const existing = s.skills.find(item => item.name.toLowerCase() === skill.name.toLowerCase());
-        return existing ?? { id: uid(), name: skill.name, value: 0, trained: false };
-      });
-      const resourceSpecs = [
-        preset.combatFields.hp ? { label: 'Vida', short: 'PV', tone: 'life' as const } : null,
-        preset.combatFields.mana ? { label: 'Mana', short: 'PM', tone: 'sanity' as const } : null,
-        preset.combatFields.energy ? { label: 'Esforço', short: 'PE', tone: 'effort' as const } : null,
-        preset.combatFields.ca ? { label: 'Defesa', short: 'DEF', tone: 'neutral' as const } : null,
-      ].filter(Boolean) as { label: string; short: string; tone: SheetResource['tone'] }[];
-      const resources = resourceSpecs.map(spec => {
-        const existing = s.resources.find(item => item.label.toLowerCase() === spec.label.toLowerCase());
-        return existing ?? { id: uid(), ...spec, current: spec.label === 'Vida' ? 12 : 0, max: spec.label === 'Vida' ? 12 : 0 };
-      });
-      patch(s.id, { systemId: preset.id, systemName: preset.name, attributes: attrs, skills, resources });
-      toast.success(`Preset de ${preset.name} aplicado.`);
+    const blockLabels: Record<string, string> = {
+      abilities: 'Habilidades', skills: 'Perícias', inventory: 'Inventário', notes: 'Anotações',
+    };
+    const blockOrder = s.style.blockOrder ?? ['abilities', 'skills', 'inventory', 'notes'];
+    const moveBlock = (id: string, direction: -1 | 1) => {
+      const from = blockOrder.indexOf(id);
+      const to = from + direction;
+      if (from < 0 || to < 0 || to >= blockOrder.length) return;
+      const next = [...blockOrder];
+      [next[from], next[to]] = [next[to], next[from]];
+      patch(s.id, { style: { ...s.style, blockOrder: next } });
     };
 
     return (
@@ -261,9 +251,6 @@ const Cast = () => {
             toast.success('Link copiado! O jogador só vê essa ficha.');
           }}>
             <Link2 className="w-3.5 h-3.5" /> Link do jogador
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1" onClick={() => exportSheet(s)}>
-            <Download className="w-3.5 h-3.5" /> Exportar ficha
           </Button>
           <Button variant="outline" size="sm" className="gap-1" onClick={toggleFull}>
             {full ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />} Projetor
@@ -294,13 +281,54 @@ const Cast = () => {
                   <Input value={s.name} onChange={e => patch(s.id, { name: e.target.value })} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Origem / classe</Label>
-                  <Input value={s.origin} onChange={e => patch(s.id, { origin: e.target.value })} placeholder="Ex: Combatente — Militar" />
+                  <Label>Classe / perfil</Label>
+                  <select value={identity.className} onChange={e => patch(s.id, { origin: joinIdentity(e.target.value, identity.originName) })} aria-label="Classe ou perfil" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                    <option value="">Escolha a classe / perfil</option>
+                    {classChoices.map(option => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Origem / antecedente</Label>
+                  <select value={identity.originName} onChange={e => patch(s.id, { origin: joinIdentity(identity.className, e.target.value) })} aria-label="Origem ou antecedente" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                    <option value="">Escolha a origem / antecedente</option>
+                    {originChoices.map(option => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label>Combinação personalizada</Label>
+                  <Input value={s.origin} onChange={e => patch(s.id, { origin: e.target.value })} placeholder="Ex.: Combatente — Herdeiro de uma família amaldiçoada" />
+                  <p className="text-[11px] text-muted-foreground">As seleções acima preenchem este campo. Você pode editar livremente para homebrew.</p>
                 </div>
                 <div className="space-y-1.5 md:col-span-2">
                   <Label>Frase de efeito</Label>
                   <Input value={s.subtitle} onChange={e => patch(s.id, { subtitle: e.target.value })} placeholder="O sangue podia até pagar bem, mas..." />
                 </div>
+                {s.style.system === 'ordemparanormal2-alpha' && <>
+                  <div className="md:col-span-2 rounded-lg border border-primary/25 bg-primary/5 p-3 text-xs text-muted-foreground">
+                    <strong className="text-primary">Ordem Paranormal II — Playtest Alpha.</strong> Esta ficha usa Físico, Mente, Emoção, Vida, PD e os campos do material de teste. Ela não converte automaticamente uma ficha da edição anterior.
+                  </div>
+                  <div className="space-y-1.5"><Label>Idade</Label><Input value={s.age ?? ''} onChange={e => patch(s.id, { age: e.target.value })} placeholder="Ex: 27" /></div>
+                  <div className="space-y-1.5"><Label>Ocupação</Label><Input value={s.occupation ?? ''} onChange={e => patch(s.id, { occupation: e.target.value })} placeholder="Ex: Perita criminal" /></div>
+                  <div className="space-y-1.5 md:col-span-2"><Label>Perfil</Label><Input value={s.profile ?? ''} onChange={e => patch(s.id, { profile: e.target.value })} placeholder="Executor, Analista ou Vigilante" /></div>
+                  <div className="space-y-1.5 md:col-span-2"><Label>Histórico e conceito</Label><Textarea value={s.background ?? ''} onChange={e => patch(s.id, { background: e.target.value })} placeholder="Quem era essa pessoa antes do caso? O que ela teme perder?" /></div>
+                </>}
+              </div>
+
+              {/* Sistema */}
+              <div className="space-y-1.5">
+                <Label>Sistema de RPG</Label>
+                <select value={s.style.system ?? 'ordemparanormal'} aria-label="Sistema de RPG"
+                  onChange={e => {
+                    const sys = e.target.value;
+                    if (confirm(`Trocar para ${getSystem(sys).name}? Os atributos, recursos e perícias serão trocados pelos desse sistema.`)) {
+                      const t = systemTemplate(sys);
+                      patch(s.id, { style: { ...s.style, system: sys, color: undefined, font: undefined }, attributes: t.attributes, resources: t.resources, skills: s.kind === 'monster' ? s.skills : t.skills });
+                    }
+                  }}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                  {SHEET_SYSTEMS.map(sys => <option key={sys.id} value={sys.id}>{sys.name}</option>)}
+                </select>
+                <p className="text-xs text-muted-foreground">O visual e as opções de classe/origem mudam de acordo com o sistema. Escolha “Livre” para criar algo personalizado.</p>
               </div>
 
               {/* Tipo */}
@@ -313,23 +341,23 @@ const Cast = () => {
                 </div>
               </div>
 
-              {/* Sistema */}
+              {/* Layout */}
               <div className="space-y-2 rounded-lg border border-primary/25 bg-primary/5 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <Label>Sistema da ficha</Label>
-                    <p className="text-xs text-muted-foreground">Aplicar preset troca atributos, perícias e recursos compatíveis.</p>
-                  </div>
-                  <select
-                    className="h-9 min-w-[190px] rounded-md border border-border bg-background px-2 text-sm"
-                    value={s.systemId ?? ''}
-                    onChange={e => applySystemPreset(e.target.value)}
-                  >
-                    <option value="" disabled>Escolha um sistema</option>
-                    {PLAYER_SYSTEM_PRESETS.map(preset => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
-                  </select>
+                <div>
+                  <Label>Ordem dos blocos da ficha</Label>
+                  <p className="text-xs text-muted-foreground">Monte a ficha do seu jeito: use as setas para reorganizar as seções.</p>
                 </div>
-                {s.systemName && <Badge variant="outline" className="border-primary/30 text-primary">Ativo: {s.systemName}</Badge>}
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {blockOrder.map((id, index) => (
+                    <div key={id} className="flex items-center justify-between gap-2 rounded-md border border-border/60 bg-background/50 px-2 py-1.5">
+                      <span className="text-sm font-medium">{index + 1}. {blockLabels[id]}</span>
+                      <div className="flex gap-1">
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" disabled={index === 0} onClick={() => moveBlock(id, -1)} aria-label="Mover para cima"><ArrowUp className="h-3.5 w-3.5" /></Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" disabled={index === blockOrder.length - 1} onClick={() => moveBlock(id, 1)} aria-label="Mover para baixo"><ArrowDown className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Personalizar */}
@@ -352,7 +380,7 @@ const Cast = () => {
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Fonte do nome</p>
                     <select className="h-9 w-full rounded-md bg-background border border-border text-sm px-2" value={s.style.font ?? 'display'}
-                      onChange={e => patch(s.id, { style: { ...s.style, font: e.target.value as any } })}>
+                      onChange={e => patch(s.id, { style: { ...s.style, font: e.target.value as SheetStyle['font'] } })}>
                       <option value="display">Medieval</option><option value="serif">Clássica</option>
                       <option value="sans">Moderna</option><option value="mono">Máquina</option>
                     </select>
@@ -360,7 +388,7 @@ const Cast = () => {
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Posição da imagem</p>
                     <select className="h-9 w-full rounded-md bg-background border border-border text-sm px-2" value={s.style.layout ?? 'right'}
-                      onChange={e => patch(s.id, { style: { ...s.style, layout: e.target.value as any } })}>
+                      onChange={e => patch(s.id, { style: { ...s.style, layout: e.target.value as SheetStyle['layout'] } })}>
                       <option value="right">Direita</option><option value="left">Esquerda</option><option value="full">Fundo inteiro</option>
                     </select>
                   </div>
@@ -549,17 +577,17 @@ const Cast = () => {
   return (
     <div className="space-y-5">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="page-title">Personagens da Campanha</h1>
-        <p className="text-sm text-muted-foreground mt-1">Fichas, elenco narrativo e criaturas em um só lugar</p>
+        <h1 className="page-title">Elenco & Fichas</h1>
+        <p className="text-sm text-muted-foreground mt-1">O centro completo de personagens da ARCANUM: fichas, edição, compartilhamento e projeção.</p>
       </motion.div>
 
       <Tabs value={tab} onValueChange={setTab}>
         <div className="w-full overflow-x-auto no-scrollbar"><TabsList className="w-max min-w-full flex justify-start h-auto p-1 bg-card/60 backdrop-blur-md border border-border/50">
           <TabsTrigger value="player" className="flex-1 gap-2 py-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
-            <Users className="w-4 h-4" /> Jogadores da mesa
+            <Users className="w-4 h-4" /> <span className="sm:hidden">Jogadores</span><span className="hidden sm:inline">Jogadores da mesa</span>
           </TabsTrigger>
           <TabsTrigger value="story" className="flex-1 gap-2 py-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
-            <BookOpen className="w-4 h-4" /> Personagens da história
+            <BookOpen className="w-4 h-4" /> <span className="sm:hidden">História</span><span className="hidden sm:inline">Personagens da história</span>
           </TabsTrigger>
           <TabsTrigger value="monster" className="flex-1 gap-2 py-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
             <Skull className="w-4 h-4" /> Monstros
