@@ -33,7 +33,7 @@ const Master = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [info, setInfo] = useState({ total: 0, active: 0 });
   const [custom, setCustom] = useState('');
-  const [uses, setUses] = useState(1);
+  const [uses] = useState(1);
   const [usesLeft, setUsesLeft] = useState(1);
   const [usesTouched, setUsesTouched] = useState(false);
   const [testCode, setTestCode] = useState('');
@@ -50,7 +50,7 @@ const Master = () => {
     setTestCode(res.testCode ?? '');
     setTestExpiresAt(res.testExpiresAt ?? null);
     setUsesLeft(res.usesLeft ?? 1);
-    if (!usesTouched) setUses(res.maxUses ?? 1);
+    if (!usesTouched) setUsesLeft(res.usesLeft ?? 1);
     setSessions(res.sessions ?? []);
     setInfo({ total: res.total ?? 0, active: res.active ?? 0 });
     return true;
@@ -183,18 +183,13 @@ const Master = () => {
             </div>
             <p className="text-center text-sm">
               <span className="font-bold text-primary">{usesLeft}</span>
-              <span className="text-muted-foreground"> de {uses} entrada(s) restante(s)</span>
+              <span className="text-muted-foreground"> entrada restante — uso único</span>
             </p>
-            <label className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground shrink-0">Pessoas por código</span>
-              <Input type="number" min={1} max={1000} value={uses} className="w-24"
-                onChange={e => { setUsesTouched(true); setUses(Math.max(1, Math.min(1000, Number(e.target.value) || 1))); }} />
-            </label>
             <div className="flex gap-2">
               <Input value={custom} onChange={e => setCustom(e.target.value)} placeholder="Código personalizado" maxLength={32} />
               <Button variant="secondary" onClick={() => custom.trim() && rotate(custom.trim())} disabled={busy || !custom.trim()}>Definir</Button>
             </div>
-            <p className="text-[11px] text-muted-foreground">Escolha quantas pessoas podem entrar e clique em Gerar (ou Definir). Quando o limite acaba, um novo código é criado sozinho.</p>
+            <p className="text-[11px] text-muted-foreground">Cada código funciona uma única vez. Assim que alguém entrar, ele é invalidado e um novo código é criado automaticamente.</p>
 
             <div className="border-t border-border/40 pt-3 space-y-2">
               <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Código teste (5 minutos)</p>
