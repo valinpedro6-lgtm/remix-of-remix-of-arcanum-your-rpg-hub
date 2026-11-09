@@ -18,7 +18,7 @@ const admin = createClient(
 );
 
 const SHEET_FIELDS = [
-  "kind", "style", "name", "subtitle", "origin", "image_url", "accent",
+  "kind", "style", "name", "subtitle", "origin", "age", "occupation", "profile", "background", "image_url", "accent",
   "attributes", "skills", "resources", "abilities", "notes", "in_list",
 ];
 const BOARD_FIELDS = ["name", "map_url", "tokens", "grid", "fog", "zoom", "last_roll"];

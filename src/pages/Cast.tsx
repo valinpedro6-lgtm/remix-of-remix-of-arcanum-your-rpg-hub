@@ -22,19 +22,12 @@ import {
   DEFAULT_SKILLS, OP_SKILLS, SheetKind, STYLE_COLORS,
 } from '@/lib/sheets';
 import { SHEET_SYSTEMS, getSystem, systemTemplate } from '@/lib/sheetSystems';
+import { compressImage } from '@/lib/image';
 
 const TONES: SheetResource['tone'][] = ['life', 'sanity', 'effort', 'neutral'];
 const TONE_LABEL: Record<SheetResource['tone'], string> = {
   life: 'Vermelho', sanity: 'Azul', effort: 'Dourado', neutral: 'Cinza',
 };
-
-const readImage = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
 
 const sendToInitiative = (sheet: Sheet) => {
   const life = sheet.resources.find(r => r.tone === 'life' || /vida|pv|hp/i.test(`${r.label} ${r.short}`));
@@ -113,8 +106,8 @@ const Cast = () => {
       setSheets(prev => [...prev, s]);
       setSelectedId(s.id);
       toast.success(kind === 'monster' ? 'Criatura criada!' : 'Personagem criado!');
-    } catch {
-      toast.error('Não consegui criar a ficha.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não consegui criar a ficha.');
     }
   };
 
@@ -149,7 +142,11 @@ const Cast = () => {
       toast.error('Imagem muito grande (máx. 4MB).');
       return;
     }
-    patch(selected.id, { image_url: await readImage(file) });
+    try {
+      patch(selected.id, { image_url: await compressImage(file, { maxDimension: 1400, maxBytes: 1_500_000 }) });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não consegui preparar a imagem.');
+    }
   };
 
   /* ---------- Lista ---------- */

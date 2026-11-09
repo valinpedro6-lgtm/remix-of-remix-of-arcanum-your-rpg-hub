@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { listRows, createRow, updateRow, deleteRow } from '@/lib/userData';
 import { listSheets, Sheet } from '@/lib/sheets';
 import { DiceBar, DiceAnimation, Roll } from '@/components/DiceBar';
+import { compressImage } from '@/lib/image';
 
 interface Token {
   id: string;
@@ -39,28 +40,6 @@ interface Board {
 type Tool = 'move' | 'pan' | 'fog';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
-
-const shrink = (file: File | string, max: number, keepPng: boolean): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const load = (src: string) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onerror = reject;
-      img.onload = () => {
-        const s = Math.min(1, max / Math.max(img.width, img.height));
-        const c = document.createElement('canvas');
-        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
-        c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
-        try { resolve(c.toDataURL(keepPng ? 'image/png' : 'image/jpeg', 0.85)); } catch { resolve(src); }
-      };
-      img.src = src;
-    };
-    if (typeof file === 'string') return load(file);
-    const r = new FileReader();
-    r.onerror = reject;
-    r.onload = () => load(r.result as string);
-    r.readAsDataURL(file);
-  });
 
 const Tabletop = () => {
   const [boards, setBoards] = useState<Board[]>([]);
@@ -165,8 +144,12 @@ const Tabletop = () => {
 
   const uploadMap = async (f?: File) => {
     if (!f) return;
-    patch({ map_url: await shrink(f, 2000, false) }, true);
-    toast.success('Mapa carregado!');
+    try {
+      patch({ map_url: await compressImage(f, { maxDimension: 2000, maxBytes: 1_800_000 }) }, true);
+      toast.success('Mapa carregado!');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não consegui preparar o mapa.');
+    }
   };
 
   const addTokenImg = (name: string, image: string) => {
@@ -177,11 +160,15 @@ const Tabletop = () => {
   const uploadTokens = async (files: FileList | null) => {
     if (!files || !board) return;
     const added: Token[] = [];
-    for (const f of Array.from(files)) {
-      if (f.type !== 'image/png') toast.info('Prefira PNG com fundo transparente para os personagens.');
-      added.push({ id: uid(), name: f.name.replace(/\.[^.]+$/, ''), image: await shrink(f, 300, true), x: 40 + added.length * 5, y: 45, size: 8, rotation: 0 });
+    try {
+      for (const f of Array.from(files)) {
+        if (f.type !== 'image/png') toast.info('Prefira PNG com fundo transparente para os personagens.');
+        added.push({ id: uid(), name: f.name.replace(/\.[^.]+$/, ''), image: await compressImage(f, { maxDimension: 300, maxBytes: 350_000 }), x: 40 + added.length * 5, y: 45, size: 8, rotation: 0 });
+      }
+      patch({ tokens: [...board.tokens, ...added] }, true);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não consegui preparar o personagem.');
     }
-    patch({ tokens: [...board.tokens, ...added] }, true);
   };
 
   const updateToken = (id: string, p: Partial<Token>, now = false) =>
@@ -377,7 +364,10 @@ const Tabletop = () => {
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
               {sheets.filter(s => s.image_url).length === 0 && <p className="text-xs text-muted-foreground">Nenhuma ficha com imagem no Elenco.</p>}
               {sheets.filter(s => s.image_url).map(s => (
-                <button key={s.id} className="shrink-0 w-16 text-center" onClick={async () => addTokenImg(s.name, await shrink(s.image_url, 300, true))}>
+                <button key={s.id} className="shrink-0 w-16 text-center" onClick={async () => {
+                  try { addTokenImg(s.name, await compressImage(s.image_url, { maxDimension: 300, maxBytes: 350_000 })); }
+                  catch (error) { toast.error(error instanceof Error ? error.message : 'Não consegui preparar o personagem.'); }
+                }}>
                   <img src={s.image_url} alt={s.name} className="w-14 h-14 mx-auto rounded-full object-cover object-top ring-2 ring-primary/40" />
                   <span className="text-[10px] line-clamp-1">{s.name}</span>
                 </button>
