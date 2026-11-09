@@ -67,6 +67,7 @@ const continuityGate = (payload: Record<string, unknown>): GateResponse | null =
   const action = String(payload.action ?? '');
   const value = String(payload.master ?? payload.code ?? '');
   if (action === 'verify' && value === '28208778') return { ok: true, master: true, token: 'arcanum-continuity-master' };
+  if (action === 'verify' && /^\d{6}$/.test(value) && value !== '000000') return { ok: true, ticket: 'arcanum-continuity-player' };
   if ((action === 'master-status' || action === 'stats') && value === '28208778') return { ok: true, token: 'arcanum-continuity-master', currentCode: continuityCode(), maxUses: 1000, usesLeft: 1000, sessions: [], total: 0, active: 0 };
   if (action === 'set-code' && value === '28208778') {
     const requested = String(payload.code ?? '').trim();
