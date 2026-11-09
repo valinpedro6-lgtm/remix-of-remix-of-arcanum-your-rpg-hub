@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Users, Skull, Plus, Trash2, Link2, Copy, Maximize2, Minimize2, ArrowUp, ArrowDown,
-  PanelsTopLeft, Save, ArrowLeft, Send, Loader2, ImagePlus, BookOpen, Palette,
+  PanelsTopLeft, Save, ArrowLeft, Send, Loader2, ImagePlus, BookOpen, Palette, Swords,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +35,23 @@ const readImage = (file: File): Promise<string> =>
     r.onerror = reject;
     r.readAsDataURL(file);
   });
+
+const sendToInitiative = (sheet: Sheet) => {
+  const life = sheet.resources.find(r => r.tone === 'life' || /vida|pv|hp/i.test(`${r.label} ${r.short}`));
+  const initiative = sheet.skills.find(s => /iniciativa/i.test(s.name));
+  const pending = JSON.parse(localStorage.getItem('arcanum-initiative-inbox') ?? '[]');
+  const next = [...pending.filter((item: { sourceSheetId?: string }) => item.sourceSheetId !== sheet.id), {
+    sourceSheetId: sheet.id,
+    name: sheet.name || 'Sem nome',
+    initiative: initiative?.value ?? 0,
+    hp: life?.current ?? 0,
+    maxHp: life?.max ?? life?.current ?? 0,
+    type: sheet.kind === 'monster' ? 'monster' : 'player',
+  }];
+  localStorage.setItem('arcanum-initiative-inbox', JSON.stringify(next));
+  window.dispatchEvent(new CustomEvent('local-storage-sync', { detail: { key: 'arcanum-initiative-inbox', value: next } }));
+  toast.success(`${sheet.name || 'Ficha'} enviada para a Iniciativa.`);
+};
 
 const Cast = () => {
   const [searchParams] = useSearchParams();
@@ -234,6 +251,9 @@ const Cast = () => {
             onClick={() => patch(s.id, { in_list: !s.in_list })}
           >
             <Send className="w-3.5 h-3.5" /> {s.in_list ? 'Na mesa' : 'Mandar pra mesa'}
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1" onClick={() => sendToInitiative(s)}>
+            <Swords className="w-3.5 h-3.5" /> Iniciativa
           </Button>
           <Button variant="outline" size="sm" className="gap-1" onClick={() => {
             navigator.clipboard.writeText(shareUrl(s.share_id));

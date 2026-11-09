@@ -5,7 +5,7 @@ import { Map as MapIcon, Loader2 } from 'lucide-react';
 import { useStageZoom } from '@/hooks/useStageZoom';
 import { DiceBar, DiceAnimation, Roll } from '@/components/DiceBar';
 
-interface Token { id: string; name: string; image: string; x: number; y: number; size: number }
+interface Token { id: string; name: string; image: string; x: number; y: number; size: number; rotation?: number }
 interface FogRect { id: string; x: number; y: number; w: number; h: number }
 interface SharedBoard {
   id: string; name: string; map_url: string; tokens: Token[]; grid: boolean;
@@ -161,6 +161,7 @@ const SharedTabletop = () => {
               className={`absolute touch-none -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing ${dragId === t.id ? '' : 'transition-[left,top] duration-300 ease-out'}`}
               style={{ left: `${t.x}%`, top: `${t.y}%`, width: `${t.size}%` }}>
               <img src={t.image} alt={t.name} draggable={false}
+                style={{ transform: `rotate(${t.rotation ?? 0}deg)` }}
                 className="w-full object-contain pointer-events-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]" />
               <p className="text-center text-[10px] sm:text-xs font-bold text-foreground bg-background/70 rounded px-1 mt-0.5 truncate">{t.name}</p>
             </div>

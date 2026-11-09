@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Plus, Trash2, Map as MapIcon, ImagePlus, UserPlus, Maximize2, Minimize2,
-  Grid3x3, Loader2, ZoomIn, ZoomOut, Users, Hand, MousePointer2, Square, Share2, Eye, ScrollText,
+  Grid3x3, Loader2, ZoomIn, ZoomOut, Users, Hand, MousePointer2, Square, Share2, Eye, ScrollText, RotateCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ interface Token {
   x: number; // % do mapa
   y: number;
   size: number; // % da largura do mapa
+  rotation?: number; // graus, no sentido horário
 }
 interface FogRect { id: string; x: number; y: number; w: number; h: number }
 interface Board {
@@ -170,7 +171,7 @@ const Tabletop = () => {
 
   const addTokenImg = (name: string, image: string) => {
     if (!board) return;
-    patch({ tokens: [...board.tokens, { id: uid(), name, image, x: 45, y: 45, size: 8 }] }, true);
+    patch({ tokens: [...board.tokens, { id: uid(), name, image, x: 45, y: 45, size: 8, rotation: 0 }] }, true);
   };
 
   const uploadTokens = async (files: FileList | null) => {
@@ -178,7 +179,7 @@ const Tabletop = () => {
     const added: Token[] = [];
     for (const f of Array.from(files)) {
       if (f.type !== 'image/png') toast.info('Prefira PNG com fundo transparente para os personagens.');
-      added.push({ id: uid(), name: f.name.replace(/\.[^.]+$/, ''), image: await shrink(f, 300, true), x: 40 + added.length * 5, y: 45, size: 8 });
+      added.push({ id: uid(), name: f.name.replace(/\.[^.]+$/, ''), image: await shrink(f, 300, true), x: 40 + added.length * 5, y: 45, size: 8, rotation: 0 });
     }
     patch({ tokens: [...board.tokens, ...added] }, true);
   };
@@ -391,6 +392,13 @@ const Tabletop = () => {
               <span className="text-xs text-muted-foreground">Tamanho</span>
               <input type="range" min={3} max={30} value={sel.size} className="w-32 accent-primary"
                 onChange={e => updateToken(sel.id, { size: Number(e.target.value) })} />
+              <span className="text-xs text-muted-foreground">Giro {Math.round(sel.rotation ?? 0)}°</span>
+              <input type="range" min={0} max={359} value={((sel.rotation ?? 0) + 360) % 360} className="w-28 accent-primary"
+                aria-label="Rotação do personagem"
+                onChange={e => updateToken(sel.id, { rotation: Number(e.target.value) })} />
+              <Button size="sm" variant="outline" className="h-8 gap-1" title="Girar 45 graus" onClick={() => updateToken(sel.id, { rotation: ((sel.rotation ?? 0) + 45) % 360 }, true)}>
+                <RotateCw className="w-3.5 h-3.5" />45°
+              </Button>
               <Button size="sm" variant="ghost" className="text-destructive h-8"
                 onClick={() => { patch({ tokens: board.tokens.filter(t => t.id !== sel.id) }, true); setSelToken(null); }}>
                 <Trash2 className="w-4 h-4" />
@@ -444,6 +452,7 @@ const Tabletop = () => {
                     className={`absolute -translate-x-1/2 -translate-y-1/2 ${tool === 'move' ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'}`}
                     style={{ left: `${t.x}%`, top: `${t.y}%`, width: `${t.size}%` }}>
                     <img src={t.image} alt={t.name} draggable={false}
+                      style={{ transform: `rotate(${t.rotation ?? 0}deg)` }}
                       className={`w-full object-contain pointer-events-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] ${multi.includes(t.id) || selToken === t.id ? 'ring-2 ring-primary rounded-full shadow-[0_0_16px_hsl(var(--primary))]' : ''}`} />
                     <p className="text-center text-[10px] sm:text-xs font-bold text-foreground bg-background/70 rounded px-1 mt-0.5 truncate">{t.name}</p>
                   </div>

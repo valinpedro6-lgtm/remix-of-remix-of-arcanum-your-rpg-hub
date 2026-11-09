@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,16 @@ interface Combatant {
   deathSaves?: { success: number; fail: number };
   tempHp?: number;
   notes?: string;
+  sourceSheetId?: string;
+}
+
+interface InitiativeImport {
+  sourceSheetId: string;
+  name: string;
+  initiative: number;
+  hp: number;
+  maxHp: number;
+  type: 'player' | 'monster';
 }
 
 const CONDITION_OPTIONS = [
@@ -63,6 +73,28 @@ const Initiative = () => {
   const [bulkAdd, setBulkAdd] = useState(false);
   const [bulkCount, setBulkCount] = useState(3);
   const [showImport, setShowImport] = useState(false);
+  const [inbox, setInbox] = useLocalStorage<InitiativeImport[]>('arcanum-initiative-inbox', []);
+
+  useEffect(() => {
+    if (inbox.length === 0) return;
+    setCombatants(prev => {
+      const additions = inbox
+        .filter(item => !prev.some(c => c.sourceSheetId === item.sourceSheetId))
+        .map(item => ({
+          id: crypto.randomUUID(),
+          sourceSheetId: item.sourceSheetId,
+          name: item.name || 'Sem nome',
+          initiative: item.initiative || Math.floor(Math.random() * 20) + 1,
+          hp: item.hp ?? 0,
+          maxHp: item.maxHp ?? item.hp ?? 0,
+          ca: 10,
+          conditions: [],
+          type: item.type,
+        }));
+      return additions.length ? [...prev, ...additions] : prev;
+    });
+    setInbox([]);
+  }, [inbox, setCombatants, setInbox]);
 
   const importSheet = (sheet: SavedSheet, type: 'player' | 'monster') => {
     setCombatants(prev => [...prev, {
