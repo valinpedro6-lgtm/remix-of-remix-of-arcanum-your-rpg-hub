@@ -72,13 +72,14 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, com
   const fr = FRAMES[sys.frame];
   const blockOrder = st.blockOrder ?? ['abilities', 'skills', 'inventory', 'notes'];
   const blockIndex = (id: string) => blockOrder.indexOf(id) < 0 ? blockOrder.length : blockOrder.indexOf(id);
+  const fontClass = { display: 'font-display', serif: 'font-serif', sans: 'font-sans', mono: 'font-mono' }[st.font ?? sys.font];
   const layout = st.layout ?? 'right';
   const imgPos = layout === 'full' ? 'inset-0 w-full' : layout === 'left' ? 'left-0 top-0 w-full sm:w-[58%]' : 'right-0 top-0 w-full sm:w-[58%]';
   const overlay = (st.overlay ?? 50) / 100;
   const vars = { '--primary': st.color ?? sys.color, ...(fr.bg ?? {}) } as React.CSSProperties;
 
   return (
-    <div style={vars} className={`group relative min-h-[520px] w-full overflow-hidden bg-black shadow-[0_0_55px_hsl(var(--primary)/0.22)] ${fr.wrap}`}>
+    <div style={vars} className={`relative w-full overflow-hidden bg-black shadow-[0_0_40px_hsl(var(--primary)/0.15)] ${fr.wrap}`}>
       {fr.fx && <div className="absolute inset-0 pointer-events-none z-0" style={fr.fx} />}
       {/* Arte de fundo */}
       {sheet.image_url ? (
@@ -102,9 +103,9 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, com
       <div className={`relative z-10 ${compact ? 'p-4' : 'p-5 md:p-8'}`}>
         {/* Cabeçalho */}
         <div className={layout === 'left' ? 'max-w-[60%] sm:max-w-[55%] ml-auto text-right' : 'max-w-[60%] sm:max-w-[55%]'}>
-          <p className="font-poster text-[11px] tracking-[0.32em] uppercase text-primary/80 mb-1">{fr.tag} · {sys.name}</p>
+          <p className={`${fontClass} text-[10px] tracking-[0.3em] uppercase text-primary/70 mb-1`}>{fr.tag} · {sys.name}</p>
           <h2
-            className={`${st.font === 'mono' ? 'font-mono' : st.font === 'sans' ? 'font-poster' : st.font === 'serif' ? 'font-elegant' : 'font-display'} font-black ${st.uppercase === false ? '' : 'uppercase'} tracking-tight text-primary leading-none ${
+            className={`${fontClass} font-black ${st.uppercase === false ? '' : 'uppercase'} tracking-tight text-primary leading-none ${
               compact ? 'text-2xl' : 'text-4xl md:text-6xl'
             }`}
             style={{ textShadow: '0 0 18px hsl(var(--primary)/0.75), 0 0 42px hsl(var(--primary)/0.4)' }}
@@ -129,8 +130,6 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, com
             </div>
           )}
         </div>
-
-        {sheet.image_url && <div className="absolute right-5 top-5 z-20 flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-primary/80 bg-black/70 p-1 shadow-[0_0_24px_hsl(var(--primary)/.65)] md:right-8 md:top-8 md:h-20 md:w-20"><img src={sheet.image_url} alt="" className="h-full w-full rounded-full object-cover object-top" /></div>}
 
         <div className={`mt-5 grid gap-5 ${compact ? '' : 'md:grid-cols-[minmax(0,340px)_minmax(0,1fr)]'}`}>
           {/* Roda + recursos */}
