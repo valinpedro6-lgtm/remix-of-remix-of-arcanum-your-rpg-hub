@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import { Loader2, Pencil, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SheetPoster } from '@/components/sheet/SheetPoster';
-import { PlayerSheetCard } from '@/components/sheet/PlayerSheetCard';
 import { Sheet, getSheetByShareId, updateSharedSheet } from '@/lib/sheets';
 
 /** Página pública: o jogador vê e edita só a ficha dele. */
@@ -48,8 +47,8 @@ const SharedSheet = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#070708] p-0 md:p-8">
-      <div className="mx-auto max-w-6xl">
+    <div className="min-h-[100dvh] bg-background p-3 md:p-8">
+      <div className="max-w-5xl mx-auto">
         {loading ? (
           <div className="flex items-center gap-2 text-muted-foreground text-sm py-20 justify-center">
             <Loader2 className="w-4 h-4 animate-spin" /> Carregando ficha...
@@ -67,7 +66,7 @@ const SharedSheet = () => {
                 {editing ? 'Só olhar' : 'Editar minha ficha'}
               </Button>
             </div>
-            {editing ? <SheetPoster sheet={sheet} editable onPatch={patch} /> : <PlayerSheetCard sheet={sheet} />}
+            <SheetPoster sheet={sheet} editable={editing} onPatch={patch} />
             <p className="text-center text-xs text-muted-foreground mt-4">
               {editing
                 ? 'Suas alterações salvam sozinhas e aparecem para o mestre.'
