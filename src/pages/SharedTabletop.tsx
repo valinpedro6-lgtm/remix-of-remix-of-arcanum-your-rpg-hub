@@ -1,14 +1,15 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Map as MapIcon, Loader2 } from 'lucide-react';
+import { useStageZoom } from '@/hooks/useStageZoom';
 import { DiceBar, DiceAnimation, Roll } from '@/components/DiceBar';
 
 interface Token { id: string; name: string; image: string; x: number; y: number; size: number }
 interface FogRect { id: string; x: number; y: number; w: number; h: number }
 interface SharedBoard {
   id: string; name: string; map_url: string; tokens: Token[]; grid: boolean;
-  fog: FogRect[]; zoom: number; camera_x?: number; camera_y?: number; last_roll: Roll | null; updated_at: string;
+  fog: FogRect[]; zoom: number; last_roll: Roll | null; updated_at: string;
 }
 
 /** Mapa compartilhado pelo mestre: jogadores veem em tempo real, movem os bonecos e rolam dados.
@@ -27,8 +28,9 @@ const SharedTabletop = () => {
   const lastUpdatedAt = useRef('');
   const loadingRef = useRef(false);
   const stageRef = useRef<HTMLDivElement>(null);
-  const [mapReady, setMapReady] = useState(0);
-  const zoom = board?.zoom ?? 1;
+  const [myZoom, setMyZoom] = useState<number | null>(null);
+  const zoom = myZoom ?? board?.zoom ?? 1;
+  const zoomCtl = useStageZoom(stageRef, zoom, setMyZoom, () => { drag.current = null; setDragId(null); });
 
   useEffect(() => {
     let stop = false;
@@ -48,7 +50,7 @@ const SharedTabletop = () => {
             lastRollAt.current = b.last_roll.at;
             setAnimRoll(b.last_roll);
           }
-          if (!dirty.current) setBoard({ ...b, camera_x: b.camera_x ?? 50, camera_y: b.camera_y ?? 50 });
+          if (!dirty.current) setBoard(b);
         } else if (!board) setMissing(true);
       } finally {
         loadingRef.current = false;
@@ -59,22 +61,6 @@ const SharedTabletop = () => {
     return () => { stop = true; clearInterval(id); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shareId]);
-
-  useLayoutEffect(() => {
-    if (!board) return;
-    const frame = requestAnimationFrame(() => {
-      const stage = stageRef.current;
-      const map = mapRef.current;
-      if (!stage || !map || !map.offsetWidth || !map.offsetHeight) return;
-      const cx = Math.max(0, Math.min(100, board.camera_x ?? 50)) / 100;
-      const cy = Math.max(0, Math.min(100, board.camera_y ?? 50)) / 100;
-      stage.scrollLeft = Math.max(0, map.offsetLeft + cx * map.offsetWidth - stage.clientWidth / 2);
-      stage.scrollTop = Math.max(0, map.offsetTop + cy * map.offsetHeight - stage.clientHeight / 2);
-    });
-    return () => cancelAnimationFrame(frame);
-    // Não incluir o objeto board inteiro: atualizações de tokens não devem recentralizar a câmera.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [board?.id, board?.zoom, board?.camera_x, board?.camera_y, mapReady]);
 
   const pushTokens = (tokens: Token[]) => {
     if (!shareId) return;
@@ -138,7 +124,9 @@ const SharedTabletop = () => {
         <MapIcon className="w-4 h-4 text-primary" />
         <h1 className="font-display font-bold truncate">{board.name}</h1>
         <div className="ml-auto flex items-center gap-1">
-          <span className="h-8 px-2 inline-flex items-center rounded-md border border-border/60 text-[10px] tabular-nums" title="Zoom controlado pelo mestre">Mestre · {Math.round(zoom * 100)}%</span>
+          <button type="button" aria-label="Diminuir zoom" onClick={() => zoomCtl.zoomOut()} className="w-8 h-8 rounded-md border border-border/60 text-lg leading-none">−</button>
+          <button type="button" onClick={() => setMyZoom(null)} className="h-8 px-2 rounded-md border border-border/60 text-[10px] tabular-nums" title="Voltar ao zoom do mestre">{myZoom === null ? 'Mestre' : `${Math.round(zoom * 100)}%`}</button>
+          <button type="button" aria-label="Aumentar zoom" onClick={() => zoomCtl.zoomIn()} className="w-8 h-8 rounded-md border border-border/60 text-lg leading-none">+</button>
         </div>
         <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Ao vivo</span>
         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -153,7 +141,7 @@ const SharedTabletop = () => {
           onPointerCancel={onUp}
         >
           {board.map_url ? (
-                <img src={board.map_url} alt={board.name} draggable={false} onLoad={() => setMapReady(v => v + 1)} className="w-full block pointer-events-none" />
+            <img src={board.map_url} alt={board.name} draggable={false} className="w-full block pointer-events-none" />
           ) : (
             <div className="aspect-video flex items-center justify-center text-muted-foreground subtle-pattern">
               <p className="text-sm">O mestre ainda não carregou o mapa</p>

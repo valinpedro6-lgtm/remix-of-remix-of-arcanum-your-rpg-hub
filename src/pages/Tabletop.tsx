@@ -1,5 +1,5 @@
 import { useStageZoom } from '@/hooks/useStageZoom';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 // A névoa fica POR CIMA dos personagens (z-20) — cobre bonecos também.
 import { motion } from 'framer-motion';
 import {
@@ -32,8 +32,6 @@ interface Board {
   fog: FogRect[];
   share_id?: string;
   zoom?: number;
-  camera_x?: number;
-  camera_y?: number;
   last_roll?: Roll | null;
 }
 
@@ -75,7 +73,6 @@ const Tabletop = () => {
   const [tool, setTool] = useState<Tool>('move');
   const [draftFog, setDraftFog] = useState<FogRect | null>(null);
   const [animRoll, setAnimRoll] = useState<Roll | null>(null);
-  const [mapReady, setMapReady] = useState(0);
   const stageRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ start: { x: number; y: number }; orig: Record<string, { x: number; y: number }> } | null>(null);
@@ -85,13 +82,11 @@ const Tabletop = () => {
   const pan = useRef<{ sx: number; sy: number; sl: number; st: number } | null>(null);
   const fogStart = useRef<{ x: number; y: number } | null>(null);
   const saveT = useRef<ReturnType<typeof setTimeout>>();
-  const cameraSaveT = useRef<ReturnType<typeof setTimeout>>();
-  const applyingCamera = useRef(false);
   const syncing = useRef(false);
 
   useEffect(() => {
     listRows<Board>('tabletops')
-      .then(list => { setBoards(list.map(b => ({ ...b, fog: b.fog ?? [], camera_x: b.camera_x ?? 50, camera_y: b.camera_y ?? 50 }))); setActiveId(list[0]?.id ?? null); })
+      .then(list => { setBoards(list.map(b => ({ ...b, fog: b.fog ?? [] }))); setActiveId(list[0]?.id ?? null); })
       .catch(() => toast.error('Não consegui carregar os mapas.'))
       .finally(() => setLoading(false));
     listSheets().then(setSheets).catch(() => {});
@@ -110,7 +105,7 @@ const Tabletop = () => {
         if (drag.current || Date.now() < busyUntil.current) return;
         const f = list.find(b => b.id === activeId);
         if (!f) return;
-        setBoards(prev => prev.map(b => b.id === f.id ? { ...b, tokens: f.tokens, last_roll: f.last_roll, zoom: f.zoom, camera_x: f.camera_x, camera_y: f.camera_y } : b));
+        setBoards(prev => prev.map(b => b.id === f.id ? { ...b, tokens: f.tokens, last_roll: f.last_roll } : b));
         const lr = f.last_roll;
         if (lr && lr.at > lastSeenRoll.current) { lastSeenRoll.current = lr.at; if (lr.by !== 'Mestre') setAnimRoll(lr); }
       }).catch(() => {}).finally(() => { syncing.current = false; });
@@ -132,48 +127,6 @@ const Tabletop = () => {
     const run = () => updateRow('tabletops', id, { ...p }).catch(() => toast.error('Não consegui salvar.'));
     if (now) run(); else saveT.current = setTimeout(run, 150);
   };
-
-  const cameraValue = (value: number) => Math.max(0, Math.min(100, Number.isFinite(value) ? value : 50));
-
-  // A câmera é armazenada como ponto focal em porcentagem do mapa. Assim, o
-  // mesmo ponto fica centralizado em celulares, notebooks e monitores ultrawide.
-  useLayoutEffect(() => {
-    if (!board) return;
-    const frame = requestAnimationFrame(() => {
-      const stage = stageRef.current;
-      const map = mapRef.current;
-      if (!stage || !map || !map.offsetWidth || !map.offsetHeight) return;
-      applyingCamera.current = true;
-      const cx = cameraValue(board.camera_x ?? 50) / 100;
-      const cy = cameraValue(board.camera_y ?? 50) / 100;
-      stage.scrollLeft = Math.max(0, map.offsetLeft + cx * map.offsetWidth - stage.clientWidth / 2);
-      stage.scrollTop = Math.max(0, map.offsetTop + cy * map.offsetHeight - stage.clientHeight / 2);
-      requestAnimationFrame(() => { applyingCamera.current = false; });
-    });
-    return () => cancelAnimationFrame(frame);
-    // Não incluir o objeto board inteiro: movimentos de tokens não devem recentralizar a câmera.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [board?.id, board?.zoom, board?.camera_x, board?.camera_y, full, mapReady]);
-
-  useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage || !board) return;
-    const onScroll = () => {
-      if (applyingCamera.current || !mapRef.current) return;
-      clearTimeout(cameraSaveT.current);
-      cameraSaveT.current = setTimeout(() => {
-        const map = mapRef.current;
-        if (!map || !map.offsetWidth || !map.offsetHeight) return;
-        const x = cameraValue(((stage.scrollLeft + stage.clientWidth / 2 - map.offsetLeft) / map.offsetWidth) * 100);
-        const y = cameraValue(((stage.scrollTop + stage.clientHeight / 2 - map.offsetTop) / map.offsetHeight) * 100);
-        patch({ camera_x: x, camera_y: y });
-      }, 120);
-    };
-    stage.addEventListener('scroll', onScroll, { passive: true });
-    return () => { stage.removeEventListener('scroll', onScroll); clearTimeout(cameraSaveT.current); };
-    // A câmera só precisa trocar de listener ao mudar de mapa.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [board?.id]);
 
   // Atalhos de teclado: M mover, H mãozinha, N névoa, G grade, F tela cheia, +/- zoom
   useEffect(() => {
@@ -460,7 +413,7 @@ const Tabletop = () => {
                 onPointerCancel={onUp}
               >
                 {board.map_url ? (
-                    <img src={board.map_url} alt={board.name} draggable={false} onLoad={() => setMapReady(v => v + 1)} className="w-full block pointer-events-none" />
+                  <img src={board.map_url} alt={board.name} draggable={false} className="w-full block pointer-events-none" />
                 ) : (
                   <div className="aspect-video flex flex-col items-center justify-center gap-2 text-muted-foreground subtle-pattern">
                     <MapIcon className="w-10 h-10" /><p className="text-sm">Carregue a imagem do mapa</p>
