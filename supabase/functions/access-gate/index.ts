@@ -123,10 +123,15 @@ async function touchSession(device: string, label = "") {
   }
 }
 
-/** Cada código é descartável: uma entrada gera imediatamente outro código. */
-async function consumeUse() {
+/** consome um uso; quando acabar, gera outro código com o mesmo limite */
+async function consumeUse(row: { code_uses_left: number; code_max_uses: number }) {
+  const left = (row.code_uses_left ?? 1) - 1;
+  if (left > 0) {
+    await admin.from("access_gate").update({ code_uses_left: left }).eq("id", 1);
+    return;
+  }
   await admin.from("access_gate")
-    .update({ current_code: generateCode(), code_updated_at: new Date().toISOString(), code_uses_left: 1, code_max_uses: 1 })
+    .update({ current_code: generateCode(), code_updated_at: new Date().toISOString(), code_uses_left: row.code_max_uses ?? 1 })
     .eq("id", 1);
 }
 
@@ -193,7 +198,7 @@ Deno.serve(async (req) => {
       if (code === row.current_code) {
         await clearAttempts(ip);
         await touchSession(device);
-        await consumeUse();
+        await consumeUse(row);
         return json({ ok: true, master: false, ticket: await makeTicket(device) });
       }
       const r = await registerFail(ip);
@@ -262,7 +267,7 @@ Deno.serve(async (req) => {
       if (master !== row.master_password) return json({ ok: false }, 200);
       const raw = String(body.code ?? "").trim();
       const next = raw ? raw.slice(0, 32) : generateCode();
-      const uses = 1;
+      const uses = Math.max(1, Math.min(1000, Math.floor(Number(body.uses ?? row.code_max_uses ?? 1)) || 1));
       const { error } = await admin
         .from("access_gate")
         .update({ current_code: next, code_updated_at: new Date().toISOString(), code_max_uses: uses, code_uses_left: uses })
