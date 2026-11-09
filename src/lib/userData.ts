@@ -18,13 +18,56 @@ export const setOwnerToken = (t: string) => { if (t) localStorage.setItem(OWNER_
 export const currentOwnerToken = () => localStorage.getItem(OWNER_KEY) ?? '';
 export const clearOwnerToken = () => localStorage.removeItem(OWNER_KEY);
 
+const localTableKey = (table: unknown) => `arcanum-local-${String(table ?? 'data')}`;
+const localRows = (table: unknown): Array<Record<string, unknown>> => {
+  try { return JSON.parse(localStorage.getItem(localTableKey(table)) ?? '[]'); } catch { return []; }
+};
+const saveLocalRows = (table: unknown, rows: Array<Record<string, unknown>>) =>
+  localStorage.setItem(localTableKey(table), JSON.stringify(rows));
+
+const localFallback = (payload: Record<string, unknown>) => {
+  const action = String(payload.action ?? '');
+  const table = payload.table;
+  if (action === 'claim' || action === 'heartbeat') return {};
+  if (action === 'list') return { rows: localRows(table) };
+  if (action === 'create') {
+    const now = new Date().toISOString();
+    const row = {
+      ...((payload.values ?? {}) as Record<string, unknown>),
+      id: crypto.randomUUID(),
+      share_id: crypto.randomUUID().replaceAll('-', '').slice(0, 12),
+      created_at: now,
+      updated_at: now,
+    };
+    saveLocalRows(table, [...localRows(table), row]);
+    return { row };
+  }
+  if (action === 'update') {
+    const id = String(payload.id ?? '');
+    const rows = localRows(table).map(row => row.id === id ? { ...row, ...((payload.values ?? {}) as Record<string, unknown>), updated_at: new Date().toISOString() } : row);
+    saveLocalRows(table, rows);
+    return { ok: true };
+  }
+  if (action === 'delete') {
+    saveLocalRows(table, localRows(table).filter(row => row.id !== String(payload.id ?? '')));
+    return { ok: true };
+  }
+  return null;
+};
+
 export async function userData<T = unknown>(payload: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke('user-data', {
-    body: { ...payload, token: ownerToken() },
-  });
-  if (error) throw error;
-  if (isErrorResponse(data)) throw new Error(data.error);
-  return data as T;
+  try {
+    const { data, error } = await supabase.functions.invoke('user-data', {
+      body: { ...payload, token: ownerToken() },
+    });
+    if (error) throw error;
+    if (isErrorResponse(data)) throw new Error(data.error);
+    return data as T;
+  } catch (error) {
+    const fallback = localFallback(payload);
+    if (fallback !== null) return fallback as T;
+    throw error;
+  }
 }
 
 const isErrorResponse = (data: unknown): data is { error: string } =>
