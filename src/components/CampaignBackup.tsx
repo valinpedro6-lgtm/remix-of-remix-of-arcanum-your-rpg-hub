@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Archive, ChevronDown, Download, Smartphone, Upload } from 'lucide-react';
+import { Archive, Download, Smartphone, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -88,32 +88,28 @@ export const CampaignBackup = () => {
   };
 
   return (
-    <details className="group rounded-lg border border-border/40 bg-background/20">
-      <summary className="flex cursor-pointer list-none items-center gap-2 px-2.5 py-2 text-xs font-semibold text-muted-foreground [&::-webkit-details-marker]:hidden">
-        <Archive className="w-3.5 h-3.5 text-primary" />
-        <span className="flex-1">Dados e instalação</span>
-        <ChevronDown className="w-3.5 h-3.5 transition-transform group-open:rotate-180" />
-      </summary>
-      <div className="space-y-2 border-t border-border/30 px-2.5 pb-2.5 pt-2">
-        <div className="grid grid-cols-2 gap-1.5">
-          <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={exportCampaign}>
-            <Download className="w-3.5 h-3.5" /> Baixar
-          </Button>
-          <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => fileRef.current?.click()}>
-            <Upload className="w-3.5 h-3.5" /> Restaurar
-          </Button>
-        </div>
-        {installPrompt && (
-          <Button variant="secondary" size="sm" className="w-full text-xs gap-1.5" onClick={install}>
-            <Smartphone className="w-3.5 h-3.5" /> Instalar aplicativo
-          </Button>
-        )}
-        <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={event => {
-          const file = event.target.files?.[0];
-          if (file) void importCampaign(file);
-        }} />
-        <p className="text-[10px] leading-relaxed text-muted-foreground/70">Inclui dados locais da campanha. Senhas, tokens e acesso não entram no arquivo.</p>
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+        <Archive className="w-3.5 h-3.5 text-primary" /> Backup da campanha
       </div>
-    </details>
+      <div className="grid grid-cols-2 gap-1.5">
+        <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={exportCampaign}>
+          <Download className="w-3.5 h-3.5" /> Baixar
+        </Button>
+        <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => fileRef.current?.click()}>
+          <Upload className="w-3.5 h-3.5" /> Restaurar
+        </Button>
+      </div>
+      {installPrompt && (
+        <Button variant="secondary" size="sm" className="w-full text-xs gap-1.5" onClick={install}>
+          <Smartphone className="w-3.5 h-3.5" /> Instalar aplicativo
+        </Button>
+      )}
+      <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={event => {
+        const file = event.target.files?.[0];
+        if (file) void importCampaign(file);
+      }} />
+      <p className="text-[10px] leading-relaxed text-muted-foreground/70">Inclui dados locais da campanha. Senhas, tokens e acesso não entram no arquivo.</p>
+    </div>
   );
 };

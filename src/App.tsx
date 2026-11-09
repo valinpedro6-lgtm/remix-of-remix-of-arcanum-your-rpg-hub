@@ -19,7 +19,6 @@ import SharedSheet from "./pages/SharedSheet";
 import SharedTabletop from "./pages/SharedTabletop";
 import Master from "./pages/Master";
 import StoryStudio from "./pages/StoryStudio";
-import Session from "./pages/Session";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,7 +42,6 @@ const App = () => (
             <Route path="/elenco" element={<Cast />} />
             <Route path="/tabletop" element={<Tabletop />} />
             <Route path="/painel" element={<Dashboard />} />
-            <Route path="/sessao" element={<Session />} />
             <Route path="/mesa" element={<TableHub />} />
             <Route path="/fichas" element={<SheetsHub />} />
             <Route path="/geradores" element={<GeneratorsHub />} />
