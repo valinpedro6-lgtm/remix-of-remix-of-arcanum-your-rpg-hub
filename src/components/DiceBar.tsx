@@ -2,13 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dices } from 'lucide-react';
 
-export interface Roll {
-  expr: string;
-  total: number;
-  by: string;
-  at: number;
-  viewport?: { zoom: number; camera_x: number; camera_y: number; viewportOnly?: boolean };
-}
+export interface Roll { expr: string; total: number; by: string; at: number }
 
 const DICE = [4, 6, 8, 10, 12, 20, 100];
 const BURST = Array.from({ length: 12 }, (_, i) => i);

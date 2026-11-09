@@ -126,25 +126,10 @@ const Tabletop = () => {
   const patch = (p: Partial<Board>, now = false) => {
     if (!board) return;
     const id = board.id;
-    const viewportChanged = 'zoom' in p || 'camera_x' in p || 'camera_y' in p;
-    const values = viewportChanged
-      ? {
-          ...p,
-          last_roll: {
-            ...(board.last_roll ?? { expr: '', total: 0, by: 'Viewport', at: 0 }),
-            viewport: {
-              zoom: p.zoom ?? board.zoom ?? 1,
-              camera_x: p.camera_x ?? board.camera_x ?? 50,
-              camera_y: p.camera_y ?? board.camera_y ?? 50,
-              viewportOnly: !board.last_roll,
-            },
-          },
-        }
-      : p;
     busyUntil.current = Date.now() + 2500;
-    setBoards(prev => prev.map(b => (b.id === id ? { ...b, ...values } : b)));
+    setBoards(prev => prev.map(b => (b.id === id ? { ...b, ...p } : b)));
     clearTimeout(saveT.current);
-    const run = () => updateRow('tabletops', id, values).catch(() => toast.error('Não consegui salvar.'));
+    const run = () => updateRow('tabletops', id, { ...p }).catch(() => toast.error('Não consegui salvar.'));
     if (now) run(); else saveT.current = setTimeout(run, 150);
   };
 
@@ -347,13 +332,7 @@ const Tabletop = () => {
   };
 
   const rollDice = (roll: Roll) => {
-    const r = {
-      ...roll,
-      by: 'Mestre',
-      viewport: board?.last_roll?.viewport
-        ? { ...board.last_roll.viewport, viewportOnly: false }
-        : undefined,
-    };
+    const r = { ...roll, by: 'Mestre' };
     setAnimRoll(r);
     patch({ last_roll: r }, true);
   };

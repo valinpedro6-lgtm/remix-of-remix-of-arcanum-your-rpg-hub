@@ -44,15 +44,11 @@ const SharedTabletop = () => {
         if (data?.board) {
           const b = data.board as SharedBoard;
           lastUpdatedAt.current = b.updated_at ?? lastUpdatedAt.current;
-          const viewport = b.last_roll?.viewport;
-          const nextBoard = viewport
-            ? { ...b, zoom: viewport.zoom, camera_x: viewport.camera_x, camera_y: viewport.camera_y }
-            : { ...b, camera_x: b.camera_x ?? 50, camera_y: b.camera_y ?? 50 };
-          if (b.last_roll && !b.last_roll.viewport?.viewportOnly && b.last_roll.at > lastRollAt.current) {
+          if (b.last_roll && b.last_roll.at > lastRollAt.current) {
             lastRollAt.current = b.last_roll.at;
             setAnimRoll(b.last_roll);
           }
-          if (!dirty.current) setBoard(nextBoard);
+          if (!dirty.current) setBoard({ ...b, camera_x: b.camera_x ?? 50, camera_y: b.camera_y ?? 50 });
         } else if (!board) setMissing(true);
       } finally {
         loadingRef.current = false;
