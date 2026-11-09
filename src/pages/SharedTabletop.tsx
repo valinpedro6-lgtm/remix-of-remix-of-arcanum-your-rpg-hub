@@ -47,7 +47,7 @@ const SharedTabletop = () => {
           const viewport = b.last_roll?.viewport;
           const nextBoard = viewport
             ? { ...b, zoom: viewport.zoom, camera_x: viewport.camera_x, camera_y: viewport.camera_y }
-            : { ...b, camera_x: b.camera_x ?? board?.camera_x ?? 50, camera_y: b.camera_y ?? board?.camera_y ?? 50 };
+            : { ...b, camera_x: b.camera_x ?? 50, camera_y: b.camera_y ?? 50 };
           if (b.last_roll && !b.last_roll.viewport?.viewportOnly && b.last_roll.at > lastRollAt.current) {
             lastRollAt.current = b.last_roll.at;
             setAnimRoll(b.last_roll);

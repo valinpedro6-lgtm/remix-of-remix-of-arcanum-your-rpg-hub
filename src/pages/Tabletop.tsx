@@ -12,7 +12,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { listRows, createRow, updateRow, deleteRow } from '@/lib/userData';
 import { listSheets, Sheet } from '@/lib/sheets';
-import { supabase } from '@/integrations/supabase/client';
 import { DiceBar, DiceAnimation, Roll } from '@/components/DiceBar';
 
 interface Token {
@@ -89,9 +88,6 @@ const Tabletop = () => {
   const cameraSaveT = useRef<ReturnType<typeof setTimeout>>();
   const applyingCamera = useRef(false);
   const syncing = useRef(false);
-  const boardsRef = useRef<Board[]>([]);
-  const sharedUpdatedAt = useRef('');
-  boardsRef.current = boards;
 
   useEffect(() => {
     listRows<Board>('tabletops')
@@ -104,38 +100,21 @@ const Tabletop = () => {
     return () => document.removeEventListener('fullscreenchange', h);
   }, []);
 
-  // Puxa apenas mudanças feitas pelos jogadores no link (bonecos e dados).
-  // O endpoint compartilhado responde incrementalmente e evita retransmitir a imagem pesada.
+  // Puxa as mudanças feitas pelos jogadores no link (bonecos e dados)
   useEffect(() => {
     if (!activeId) return;
-    sharedUpdatedAt.current = '';
     const t = setInterval(() => {
       if (document.hidden || drag.current || syncing.current || Date.now() < busyUntil.current) return;
-      const active = boardsRef.current.find(b => b.id === activeId);
-      if (!active?.share_id) return;
       syncing.current = true;
-      supabase.functions.invoke('shared-tabletop', {
-        body: { shareId: active.share_id, since: sharedUpdatedAt.current || undefined },
-      }).then(({ data }) => {
-        if (data?.unchanged || !data?.board || drag.current || Date.now() < busyUntil.current) return;
-        const f = data.board as Board;
-        sharedUpdatedAt.current = f.updated_at ?? sharedUpdatedAt.current;
-        const viewport = f.last_roll?.viewport;
-        setBoards(prev => prev.map(b => b.id === f.id ? {
-          ...b,
-          tokens: f.tokens,
-          last_roll: f.last_roll,
-          zoom: viewport?.zoom ?? f.zoom ?? b.zoom,
-          camera_x: viewport?.camera_x ?? f.camera_x ?? b.camera_x,
-          camera_y: viewport?.camera_y ?? f.camera_y ?? b.camera_y,
-        } : b));
+      listRows<Board>('tabletops').then(list => {
+        if (drag.current || Date.now() < busyUntil.current) return;
+        const f = list.find(b => b.id === activeId);
+        if (!f) return;
+        setBoards(prev => prev.map(b => b.id === f.id ? { ...b, tokens: f.tokens, last_roll: f.last_roll, zoom: f.zoom, camera_x: f.camera_x, camera_y: f.camera_y } : b));
         const lr = f.last_roll;
-        if (lr && !lr.viewport?.viewportOnly && lr.at > lastSeenRoll.current) {
-          lastSeenRoll.current = lr.at;
-          if (lr.by !== 'Mestre') setAnimRoll(lr);
-        }
+        if (lr && lr.at > lastSeenRoll.current) { lastSeenRoll.current = lr.at; if (lr.by !== 'Mestre') setAnimRoll(lr); }
       }).catch(() => {}).finally(() => { syncing.current = false; });
-    }, 500);
+    }, 1000);
     return () => clearInterval(t);
   }, [activeId]);
   const lastSeenRoll = useRef(Date.now());
