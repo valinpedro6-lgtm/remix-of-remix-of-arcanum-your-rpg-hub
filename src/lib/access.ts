@@ -54,29 +54,10 @@ export const deviceId = () => {
   return id;
 };
 
-/** Continuidade temporária para o caso de o projeto Supabase estar retomando. */
-const offlineGate = (payload: Record<string, unknown>): GateResponse | null => {
-  const action = String(payload.action ?? '');
-  const master = String(payload.master ?? payload.code ?? '');
-  if (action === 'verify' && master === '28208778') return { ok: true, master: true, token: 'arcanum-local-master' };
-  if (action === 'verify' && master === '000000') return { ok: true, ticket: 'arcanum-local-ticket' };
-  if (action === 'register') return { ok: true, token: 'arcanum-local-player' };
-  if ((action === 'master-status' || action === 'stats') && master === '28208778') return { ok: true, token: 'arcanum-local-master', currentCode: '000000', maxUses: 1000, usesLeft: 1000, total: 0, active: 0, sessions: [] };
-  if (action === 'set-code' && master === '28208778') return { ok: true, currentCode: '000000', maxUses: 1000, usesLeft: 1000 };
-  if (action === 'set-master' || action === 'heartbeat' || action === 'reset-sessions' || action === 'set-test-code') return { ok: true, currentCode: '000000', sessions: [], total: 0, active: 0 };
-  return null;
-};
-
 export const callGate = async (payload: Record<string, unknown>) => {
-  try {
-    const { data, error } = await supabase.functions.invoke('access-gate', { body: payload });
-    if (error) throw error;
-    return data as GateResponse;
-  } catch (error) {
-    const fallback = offlineGate(payload);
-    if (fallback) return fallback;
-    throw error;
-  }
+  const { data, error } = await supabase.functions.invoke('access-gate', { body: payload });
+  if (error) throw error;
+  return data as GateResponse;
 };
 
 export const isMaster = () => !!localStorage.getItem(MASTER_KEY);
