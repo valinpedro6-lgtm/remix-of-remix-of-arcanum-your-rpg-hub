@@ -7,7 +7,6 @@ export const LOCK_KEY = 'arcanum-access-lock';
 export const DEVICE_KEY = 'arcanum-device-id';
 export const EMAIL_KEY = 'arcanum-access-email';
 export const TEST_UNTIL_KEY = 'arcanum-test-until';
-const OFFLINE_CODE_KEY = 'arcanum-offline-code';
 
 export interface GateResponse {
   ok?: boolean;
@@ -56,31 +55,15 @@ export const deviceId = () => {
 };
 
 /** Continuidade temporária para o caso de o projeto Supabase estar retomando. */
-const offlineCode = () => {
-  const saved = localStorage.getItem(OFFLINE_CODE_KEY);
-  if (saved && /^\d{6}$/.test(saved)) return saved;
-  const next = String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0');
-  localStorage.setItem(OFFLINE_CODE_KEY, next);
-  return next;
-};
-
 const offlineGate = (payload: Record<string, unknown>): GateResponse | null => {
   const action = String(payload.action ?? '');
   const master = String(payload.master ?? payload.code ?? '');
   if (action === 'verify' && master === '28208778') return { ok: true, master: true, token: 'arcanum-local-master' };
-  // O backend é a fonte de verdade quando disponível. Durante a retomada,
-  // aceitamos um código numérico de seis dígitos para que o código aleatório
-  // exibido ao mestre também possa ser usado em outro aparelho.
-  if (action === 'verify' && /^\d{6}$/.test(master) && master !== '000000') return { ok: true, ticket: 'arcanum-local-ticket' };
+  if (action === 'verify' && master === '000000') return { ok: true, ticket: 'arcanum-local-ticket' };
   if (action === 'register') return { ok: true, token: 'arcanum-local-player' };
-  if ((action === 'master-status' || action === 'stats') && master === '28208778') return { ok: true, token: 'arcanum-local-master', currentCode: offlineCode(), maxUses: 1000, usesLeft: 1000, total: 0, active: 0, sessions: [] };
-  if (action === 'set-code' && master === '28208778') {
-    const requested = String(payload.code ?? '').trim();
-    const next = /^\d{6}$/.test(requested) ? requested : offlineCode();
-    localStorage.setItem(OFFLINE_CODE_KEY, next);
-    return { ok: true, currentCode: next, maxUses: 1000, usesLeft: 1000 };
-  }
-  if (action === 'set-master' || action === 'heartbeat' || action === 'reset-sessions' || action === 'set-test-code') return { ok: true, currentCode: offlineCode(), sessions: [], total: 0, active: 0 };
+  if ((action === 'master-status' || action === 'stats') && master === '28208778') return { ok: true, token: 'arcanum-local-master', currentCode: '000000', maxUses: 1000, usesLeft: 1000, total: 0, active: 0, sessions: [] };
+  if (action === 'set-code' && master === '28208778') return { ok: true, currentCode: '000000', maxUses: 1000, usesLeft: 1000 };
+  if (action === 'set-master' || action === 'heartbeat' || action === 'reset-sessions' || action === 'set-test-code') return { ok: true, currentCode: '000000', sessions: [], total: 0, active: 0 };
   return null;
 };
 
