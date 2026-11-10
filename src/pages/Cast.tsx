@@ -23,6 +23,7 @@ import {
 } from '@/lib/sheets';
 import { SHEET_SYSTEMS, getSystem, systemTemplate } from '@/lib/sheetSystems';
 import { compressImage } from '@/lib/image';
+import { clearDraft, readDraft, saveDraft } from '@/lib/drafts';
 
 const TONES: SheetResource['tone'][] = ['life', 'sanity', 'effort', 'neutral'];
 const TONE_LABEL: Record<SheetResource['tone'], string> = {
@@ -59,7 +60,17 @@ const Cast = () => {
 
   useEffect(() => {
     listSheets()
-      .then(setSheets)
+      .then(rows => {
+        let recovered = 0;
+        const next = rows.map(row => {
+          const draft = readDraft<Sheet>('sheet', row.id, row.updated_at);
+          if (!draft) return row;
+          recovered += 1;
+          return { ...row, ...draft.value, id: row.id, share_id: row.share_id, created_at: row.created_at, updated_at: row.updated_at };
+        });
+        if (recovered) toast.info(`${recovered} rascunho(s) local(is) recuperado(s).`);
+        setSheets(next);
+      })
       .catch(() => toast.error('Não consegui carregar as fichas.'))
       .finally(() => setLoading(false));
   }, []);
@@ -92,10 +103,15 @@ const Cast = () => {
   /** Atualiza localmente na hora e salva na nuvem com um pequeno atraso. */
   const patch = (id: string, p: Partial<Sheet>) => {
     pending.current[id] = Date.now() + 3000;
+    const current = sheets.find(s => s.id === id);
+    const next = current ? { ...current, ...p } : null;
+    if (next) saveDraft('sheet', id, next);
     setSheets(prev => prev.map(s => (s.id === id ? { ...s, ...p } : s)));
     clearTimeout(saveTimer.current[id]);
     saveTimer.current[id] = setTimeout(() => {
-      updateSheet(id, p).catch(() => toast.error('Não consegui salvar.'));
+      updateSheet(id, p)
+        .then(() => clearDraft('sheet', id))
+        .catch(() => toast.error('Não consegui salvar. O rascunho local foi mantido.'));
     }, 500);
   };
 

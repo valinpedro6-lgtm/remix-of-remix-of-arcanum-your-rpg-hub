@@ -14,6 +14,7 @@ import { listRows, createRow, updateRow, deleteRow } from '@/lib/userData';
 import { listSheets, Sheet } from '@/lib/sheets';
 import { DiceBar, DiceAnimation, Roll } from '@/components/DiceBar';
 import { compressImage } from '@/lib/image';
+import { clearDraft, readDraft, saveDraft } from '@/lib/drafts';
 
 interface Token {
   id: string;
@@ -66,7 +67,19 @@ const Tabletop = () => {
 
   useEffect(() => {
     listRows<Board>('tabletops')
-      .then(list => { setBoards(list.map(b => ({ ...b, fog: b.fog ?? [] }))); setActiveId(list[0]?.id ?? null); })
+      .then(list => {
+        let recovered = 0;
+        const next = list.map(raw => {
+          const board = { ...raw, fog: raw.fog ?? [] };
+          const draft = readDraft<Board>('tabletop', board.id);
+          if (!draft) return board;
+          recovered += 1;
+          return { ...board, ...draft.value, id: board.id, share_id: board.share_id };
+        });
+        if (recovered) toast.info(`${recovered} rascunho(s) local(is) de mapa recuperado(s).`);
+        setBoards(next);
+        setActiveId(next[0]?.id ?? null);
+      })
       .catch(() => toast.error('Não consegui carregar os mapas.'))
       .finally(() => setLoading(false));
     listSheets().then(setSheets).catch(() => {});
@@ -102,9 +115,13 @@ const Tabletop = () => {
     if (!board) return;
     const id = board.id;
     busyUntil.current = Date.now() + 2500;
+    const next = { ...board, ...p };
+    saveDraft('tabletop', id, next);
     setBoards(prev => prev.map(b => (b.id === id ? { ...b, ...p } : b)));
     clearTimeout(saveT.current);
-    const run = () => updateRow('tabletops', id, { ...p }).catch(() => toast.error('Não consegui salvar.'));
+    const run = () => updateRow('tabletops', id, { ...p })
+      .then(() => clearDraft('tabletop', id))
+      .catch(() => toast.error('Não consegui salvar. O rascunho local foi mantido.'));
     if (now) run(); else saveT.current = setTimeout(run, 150);
   };
 
