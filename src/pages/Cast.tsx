@@ -90,7 +90,7 @@ const Cast = () => {
         });
       })).catch(() => {}).finally(() => { syncing.current = false; });
     };
-    const t = setInterval(sync, 1500);
+    const t = setInterval(sync, 15000);
     return () => clearInterval(t);
   }, []);
 

@@ -32,7 +32,7 @@ const SharedSheet = () => {
     };
 
     load();
-    const poll = setInterval(load, 2000);
+    const poll = setInterval(load, 10000);
     return () => { alive = false; clearInterval(poll); };
   }, [shareId]);
 

@@ -57,7 +57,7 @@ const SharedTabletop = () => {
       }
     };
     load();
-    const id = setInterval(load, 650);
+    const id = setInterval(load, 2000);
     return () => { stop = true; clearInterval(id); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shareId]);

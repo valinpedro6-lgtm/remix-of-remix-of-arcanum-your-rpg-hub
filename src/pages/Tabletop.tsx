@@ -102,7 +102,7 @@ const Tabletop = () => {
         const lr = f.last_roll;
         if (lr && lr.at > lastSeenRoll.current) { lastSeenRoll.current = lr.at; if (lr.by !== 'Mestre') setAnimRoll(lr); }
       }).catch(() => {}).finally(() => { syncing.current = false; });
-    }, 1000);
+    }, 5000);
     return () => clearInterval(t);
   }, [activeId]);
   const lastSeenRoll = useRef(Date.now());
