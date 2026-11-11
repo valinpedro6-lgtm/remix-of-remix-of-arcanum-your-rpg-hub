@@ -1,4 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
 import { userData, setOwnerToken, clearOwnerToken } from '@/lib/userData';
 import { invokeResilient } from '@/lib/network';
 
