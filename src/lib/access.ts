@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { userData, setOwnerToken, clearOwnerToken } from '@/lib/userData';
+import { invokeResilient } from '@/lib/network';
 
 export const GRANT_KEY = 'arcanum-access-granted';
 export const MASTER_KEY = 'arcanum-master-key';
@@ -55,7 +56,7 @@ export const deviceId = () => {
 };
 
 export const callGate = async (payload: Record<string, unknown>) => {
-  const { data, error } = await supabase.functions.invoke('access-gate', { body: payload });
+  const { data, error } = await invokeResilient<GateResponse>('access-gate', payload, { attempts: 4 });
   if (error) throw error;
   return data as GateResponse;
 };

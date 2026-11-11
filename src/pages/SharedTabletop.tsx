@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Map as MapIcon, Loader2 } from 'lucide-react';
 import { useStageZoom } from '@/hooks/useStageZoom';
 import { DiceBar, DiceAnimation, Roll } from '@/components/DiceBar';
+import { invokeResilient } from '@/lib/network';
 
 interface Token { id: string; name: string; image: string; x: number; y: number; size: number; rotation?: number }
 interface FogRect { id: string; x: number; y: number; w: number; h: number }
@@ -29,19 +29,40 @@ const SharedTabletop = () => {
   const loadingRef = useRef(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const [myZoom, setMyZoom] = useState<number | null>(null);
+  const [connection, setConnection] = useState<'online' | 'retrying' | 'offline'>('retrying');
   const zoom = myZoom ?? board?.zoom ?? 1;
   const zoomCtl = useStageZoom(stageRef, zoom, setMyZoom, () => { drag.current = null; setDragId(null); });
+  const pending = useRef<{ tokens?: Token[]; last_roll?: Roll } | null>(null);
+
+  const flushPending = async () => {
+    if (!shareId || !pending.current) return;
+    const payload = { ...pending.current };
+    setConnection('retrying');
+    const { error } = await invokeResilient('shared-tabletop', {
+      action: 'shared-update', shareId, ...payload,
+    }, { attempts: 4 });
+    if (error) {
+      setConnection('offline');
+      return;
+    }
+    if (pending.current?.tokens === payload.tokens) delete pending.current.tokens;
+    if (pending.current?.last_roll === payload.last_roll) delete pending.current.last_roll;
+    if (pending.current && !pending.current.tokens && !pending.current.last_roll) pending.current = null;
+    setConnection('online');
+  };
 
   useEffect(() => {
     let stop = false;
     const load = async () => {
       if (loadingRef.current || document.hidden) return;
       loadingRef.current = true;
-      const { data } = await supabase.functions.invoke('shared-tabletop', {
-        body: { shareId, since: lastUpdatedAt.current || undefined },
-      }).catch(() => ({ data: null }));
+      const { data, error } = await invokeResilient<{ unchanged?: boolean; board?: SharedBoard }>('shared-tabletop', {
+        shareId, since: lastUpdatedAt.current || undefined,
+      });
       try {
         if (stop) return;
+        if (error) { setConnection('offline'); return; }
+        setConnection('online');
         if (data?.unchanged) return;
         if (data?.board) {
           const b = data.board as SharedBoard;
@@ -57,8 +78,10 @@ const SharedTabletop = () => {
       }
     };
     load();
-    const id = setInterval(load, 2000);
-    return () => { stop = true; clearInterval(id); };
+    const id = setInterval(() => { void load(); void flushPending(); }, 2000);
+    const onOnline = () => { setConnection('retrying'); void load(); void flushPending(); };
+    window.addEventListener('online', onOnline);
+    return () => { stop = true; clearInterval(id); window.removeEventListener('online', onOnline); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shareId]);
 
@@ -66,18 +89,20 @@ const SharedTabletop = () => {
     if (!shareId) return;
     dirty.current = true;
     setBoard(prev => (prev ? { ...prev, tokens } : prev));
+    pending.current = { ...pending.current, tokens };
+    setConnection('retrying');
     clearTimeout(saveT.current);
-    saveT.current = setTimeout(() => {
-      supabase.functions.invoke('shared-tabletop', { body: { action: 'shared-update', shareId, tokens } })
-        .catch(() => {}).finally(() => { setTimeout(() => { if (!drag.current) dirty.current = false; }, 600); });
-    }, 120);
+    saveT.current = setTimeout(() => { void flushPending().finally(() => {
+      setTimeout(() => { if (!drag.current) dirty.current = false; }, 600);
+    }); }, 180);
   };
 
   const rollDice = (roll: Roll) => {
     const r = { ...roll, by: 'Jogador' };
     lastRollAt.current = r.at;
     setAnimRoll(r);
-    supabase.functions.invoke('shared-tabletop', { body: { action: 'shared-update', shareId, last_roll: r } }).catch(() => {});
+    pending.current = { ...pending.current, last_roll: r };
+    void flushPending();
   };
 
   const pct = (e: React.PointerEvent) => {
@@ -128,8 +153,10 @@ const SharedTabletop = () => {
           <button type="button" onClick={() => setMyZoom(null)} className="h-8 px-2 rounded-md border border-border/60 text-[10px] tabular-nums" title="Voltar ao zoom do mestre">{myZoom === null ? 'Mestre' : `${Math.round(zoom * 100)}%`}</button>
           <button type="button" aria-label="Aumentar zoom" onClick={() => zoomCtl.zoomIn()} className="w-8 h-8 rounded-md border border-border/60 text-lg leading-none">+</button>
         </div>
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Ao vivo</span>
-        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+          {connection === 'online' ? 'Salvo e ao vivo' : connection === 'retrying' ? 'Reconectando…' : 'Offline · tentando salvar'}
+        </span>
+        <span className={`w-2 h-2 rounded-full ${connection === 'online' ? 'bg-green-500 animate-pulse' : connection === 'retrying' ? 'bg-amber-400 animate-pulse' : 'bg-destructive'}`} />
       </header>
       <div ref={stageRef} className="relative flex-1 overflow-auto pb-20 overscroll-contain">
         <div

@@ -1,0 +1,40 @@
+import { supabase } from '@/integrations/supabase/client';
+
+export type ConnectionState = 'online' | 'retrying' | 'offline';
+
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Chamadas de leitura/atualização podem ser repetidas com segurança quando a
+ * borda do Supabase acorda ou a rede oscila. Criações ficam fora desta função
+ * para não correr o risco de duplicar registros após uma resposta perdida.
+ */
+export async function invokeResilient<T = unknown>(
+  name: string,
+  body: Record<string, unknown>,
+  options: { attempts?: number; onRetry?: (attempt: number) => void } = {},
+): Promise<{ data: T | null; error: Error | null }> {
+  const attempts = Math.max(1, options.attempts ?? 3);
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const { data, error } = await supabase.functions.invoke(name, { body });
+      if (!error) return { data: data as T, error: null };
+      lastError = error instanceof Error ? error : new Error(String(error));
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+    }
+    if (attempt < attempts) {
+      options.onRetry?.(attempt);
+      await wait(350 * 2 ** (attempt - 1));
+    }
+  }
+
+  return { data: null, error: lastError ?? new Error('Falha de conexão') };
+}
+
+export const isNetworkError = (error: unknown) => {
+  const text = error instanceof Error ? error.message : String(error ?? '');
+  return /fetch|network|timeout|failed|abort|conexão|warp|503|502|504/i.test(text);
+};

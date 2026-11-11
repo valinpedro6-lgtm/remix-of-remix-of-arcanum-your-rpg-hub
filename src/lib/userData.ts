@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { invokeResilient } from '@/lib/network';
 
 /** Chave secreta deste aparelho: tudo que a pessoa cria fica preso a ela. */
 const OWNER_KEY = 'arcanum-owner-token';
@@ -19,9 +20,11 @@ export const currentOwnerToken = () => localStorage.getItem(OWNER_KEY) ?? '';
 export const clearOwnerToken = () => localStorage.removeItem(OWNER_KEY);
 
 export async function userData<T = unknown>(payload: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke('user-data', {
-    body: { ...payload, token: ownerToken() },
-  });
+  const body = { ...payload, token: ownerToken() };
+  const response = payload.action !== 'create'
+    ? await invokeResilient<T>('user-data', body)
+    : await supabase.functions.invoke('user-data', { body });
+  const { data, error } = response;
   if (error) throw error;
   if (isErrorResponse(data)) throw new Error(data.error);
   return data as T;

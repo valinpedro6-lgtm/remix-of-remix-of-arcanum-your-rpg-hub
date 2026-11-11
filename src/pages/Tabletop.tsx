@@ -51,6 +51,7 @@ const Tabletop = () => {
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [showCast, setShowCast] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [connection, setConnection] = useState<'online' | 'retrying' | 'offline'>('retrying');
   const [tool, setTool] = useState<Tool>('move');
   const [draftFog, setDraftFog] = useState<FogRect | null>(null);
   const [animRoll, setAnimRoll] = useState<Roll | null>(null);
@@ -68,6 +69,7 @@ const Tabletop = () => {
   useEffect(() => {
     listRows<Board>('tabletops')
       .then(list => {
+        setConnection('online');
         let recovered = 0;
         const next = list.map(raw => {
           const board = { ...raw, fog: raw.fog ?? [] };
@@ -80,7 +82,7 @@ const Tabletop = () => {
         setBoards(next);
         setActiveId(next[0]?.id ?? null);
       })
-      .catch(() => toast.error('Não consegui carregar os mapas.'))
+      .catch(() => { setConnection('offline'); toast.error('Não consegui carregar os mapas. Tentando novamente…'); })
       .finally(() => setLoading(false));
     listSheets().then(setSheets).catch(() => {});
     const h = () => setFull(!!document.fullscreenElement);
@@ -101,7 +103,7 @@ const Tabletop = () => {
         setBoards(prev => prev.map(b => b.id === f.id ? { ...b, tokens: f.tokens, last_roll: f.last_roll } : b));
         const lr = f.last_roll;
         if (lr && lr.at > lastSeenRoll.current) { lastSeenRoll.current = lr.at; if (lr.by !== 'Mestre') setAnimRoll(lr); }
-      }).catch(() => {}).finally(() => { syncing.current = false; });
+      }).then(() => setConnection('online')).catch(() => setConnection('offline')).finally(() => { syncing.current = false; });
     }, 5000);
     return () => clearInterval(t);
   }, [activeId]);
@@ -116,12 +118,13 @@ const Tabletop = () => {
     const id = board.id;
     busyUntil.current = Date.now() + 2500;
     const next = { ...board, ...p };
+    setConnection('retrying');
     saveDraft('tabletop', id, next);
     setBoards(prev => prev.map(b => (b.id === id ? { ...b, ...p } : b)));
     clearTimeout(saveT.current);
     const run = () => updateRow('tabletops', id, { ...p })
-      .then(() => clearDraft('tabletop', id))
-      .catch(() => toast.error('Não consegui salvar. O rascunho local foi mantido.'));
+      .then(() => { clearDraft('tabletop', id); setConnection('online'); })
+      .catch(() => { setConnection('offline'); toast.error('A conexão caiu. O rascunho local foi mantido e será reenviado.'); });
     if (now) run(); else saveT.current = setTimeout(run, 150);
   };
 
@@ -336,6 +339,10 @@ const Tabletop = () => {
         <>
           {/* Ferramentas */}
           <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground rounded-md border border-border/60 px-2 h-9" title="O mapa continua editável mesmo se a conexão oscilar">
+              <span className={`w-2 h-2 rounded-full ${connection === 'online' ? 'bg-green-500' : connection === 'retrying' ? 'bg-amber-400 animate-pulse' : 'bg-destructive'}`} />
+              {connection === 'online' ? 'Salvo' : connection === 'retrying' ? 'Salvando…' : 'Offline · rascunho local'}
+            </div>
             <div className="flex gap-1 rounded-lg border border-border/60 p-1">
               {toolBtn('move', <MousePointer2 className="w-4 h-4" />, 'Mover', 'M')}
               {toolBtn('pan', <Hand className="w-4 h-4" />, 'Mãozinha', 'H')}
