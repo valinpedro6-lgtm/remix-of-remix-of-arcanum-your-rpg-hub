@@ -5,11 +5,13 @@ import { useStageZoom } from '@/hooks/useStageZoom';
 import { DiceBar, DiceAnimation, Roll } from '@/components/DiceBar';
 import { invokeResilient } from '@/lib/network';
 
-interface Token { id: string; name: string; image: string; x: number; y: number; size: number; rotation?: number }
+interface Condition { id: string; name: string; rounds: number }
+interface Token { id: string; name: string; image: string; x: number; y: number; size: number; rotation?: number; conditions?: Condition[] }
 interface FogRect { id: string; x: number; y: number; w: number; h: number }
 interface SharedBoard {
   id: string; name: string; map_url: string; tokens: Token[]; grid: boolean;
   fog: FogRect[]; zoom: number; last_roll: Roll | null; updated_at: string;
+  turn_order?: string[]; active_turn?: number; round?: number; vision_mode?: 'all' | 'token';
 }
 
 /** Mapa compartilhado pelo mestre: jogadores veem em tempo real, movem os bonecos e rolam dados.
@@ -30,6 +32,7 @@ const SharedTabletop = () => {
   const stageRef = useRef<HTMLDivElement>(null);
   const [myZoom, setMyZoom] = useState<number | null>(null);
   const [connection, setConnection] = useState<'online' | 'retrying' | 'offline'>('retrying');
+  const observer = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mode') === 'observer';
   const zoom = myZoom ?? board?.zoom ?? 1;
   const zoomCtl = useStageZoom(stageRef, zoom, setMyZoom, () => { drag.current = null; setDragId(null); });
   const pending = useRef<{ tokens?: Token[]; last_roll?: Roll } | null>(null);
@@ -111,6 +114,7 @@ const SharedTabletop = () => {
   };
 
   const onTokenDown = (e: React.PointerEvent, t: Token) => {
+    if (observer) return;
     e.stopPropagation();
     const p = pct(e);
     drag.current = { id: t.id, dx: p.x - t.x, dy: p.y - t.y };
@@ -154,10 +158,13 @@ const SharedTabletop = () => {
           <button type="button" aria-label="Aumentar zoom" onClick={() => zoomCtl.zoomIn()} className="w-8 h-8 rounded-md border border-border/60 text-lg leading-none">+</button>
         </div>
         <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-          {connection === 'online' ? 'Salvo e ao vivo' : connection === 'retrying' ? 'Reconectando…' : 'Offline · tentando salvar'}
+          {observer ? 'Observador' : connection === 'online' ? 'Salvo e ao vivo' : connection === 'retrying' ? 'Reconectando…' : 'Offline · tentando salvar'}
         </span>
         <span className={`w-2 h-2 rounded-full ${connection === 'online' ? 'bg-green-500 animate-pulse' : connection === 'retrying' ? 'bg-amber-400 animate-pulse' : 'bg-destructive'}`} />
       </header>
+      <div className="px-4 py-1.5 border-b border-border/30 text-xs text-muted-foreground">
+        Rodada {board.round ?? 1} · turno {board.turn_order?.length ? (board.tokens.find(t => t.id === board.turn_order?.[board.active_turn ?? 0])?.name ?? '—') : 'não definido'}
+      </div>
       <div ref={stageRef} className="relative flex-1 overflow-auto pb-20 overscroll-contain">
         <div
           ref={mapRef}
@@ -183,7 +190,7 @@ const SharedTabletop = () => {
               style={{ left: `${f.x}%`, top: `${f.y}%`, width: `${f.w}%`, height: `${f.h}%` }} />
           ))}
           {board.tokens.map(t => (
-            <div key={t.id}
+              <div key={t.id}
               onPointerDown={e => onTokenDown(e, t)}
               className={`absolute touch-none -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing ${dragId === t.id ? '' : 'transition-[left,top] duration-300 ease-out'}`}
               style={{ left: `${t.x}%`, top: `${t.y}%`, width: `${t.size}%` }}>
@@ -191,14 +198,13 @@ const SharedTabletop = () => {
                 style={{ transform: `rotate(${t.rotation ?? 0}deg)` }}
                 className="w-full object-contain pointer-events-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]" />
               <p className="text-center text-[10px] sm:text-xs font-bold text-foreground bg-background/70 rounded px-1 mt-0.5 truncate">{t.name}</p>
+              {(t.conditions ?? []).length > 0 && <div className="flex justify-center gap-1 flex-wrap">{(t.conditions ?? []).map(c => <span key={c.id} className="rounded-full bg-amber-500/80 px-1 text-[8px] text-black">{c.name} · {c.rounds}r</span>)}</div>}
             </div>
           ))}
         </div>
       </div>
       {/* Barra de dados fixa embaixo */}
-      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40">
-        <DiceBar onRoll={rollDice} />
-      </div>
+      {!observer && <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40"><DiceBar onRoll={rollDice} /></div>}
       <DiceAnimation roll={animRoll} />
     </div>
   );

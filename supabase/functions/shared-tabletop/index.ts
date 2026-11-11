@@ -17,7 +17,7 @@ const admin = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
 );
 
-const SELECT = "id, name, map_url, tokens, grid, fog, zoom, last_roll, share_id, updated_at";
+const SELECT = "id, name, map_url, tokens, grid, fog, zoom, last_roll, turn_order, active_turn, round, vision_mode, share_id, updated_at";
 const validId = (s: string) => /^[a-zA-Z0-9_-]{4,64}$/.test(s);
 
 Deno.serve(async (req) => {
@@ -39,6 +39,12 @@ Deno.serve(async (req) => {
           x: Math.max(0, Math.min(100, Number(t.x) || 0)),
           y: Math.max(0, Math.min(100, Number(t.y) || 0)),
           size: Math.max(1, Math.min(40, Number(t.size) || 8)),
+          rotation: Number(t.rotation) || 0,
+          conditions: Array.isArray(t.conditions) ? t.conditions.slice(0, 12).map((c: Record<string, unknown>) => ({
+            id: String(c.id ?? "").slice(0, 32),
+            name: String(c.name ?? "").slice(0, 40),
+            rounds: Math.max(1, Math.min(99, Number(c.rounds) || 1)),
+          })).filter((c: { id: string; name: string }) => c.id && c.name) : [],
         })).filter((t: { id: string }) => t.id);
       }
       if (body.last_roll && typeof body.last_roll === "object") {

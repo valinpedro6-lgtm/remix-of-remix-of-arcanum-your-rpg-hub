@@ -16,6 +16,7 @@ import { DiceBar, DiceAnimation, Roll } from '@/components/DiceBar';
 import { compressImage } from '@/lib/image';
 import { clearDraft, readDraft, saveDraft } from '@/lib/drafts';
 
+interface Condition { id: string; name: string; rounds: number }
 interface Token {
   id: string;
   name: string;
@@ -24,6 +25,7 @@ interface Token {
   y: number;
   size: number; // % da largura do mapa
   rotation?: number; // graus, no sentido horário
+  conditions?: Condition[];
 }
 interface FogRect { id: string; x: number; y: number; w: number; h: number }
 interface Board {
@@ -36,6 +38,10 @@ interface Board {
   share_id?: string;
   zoom?: number;
   last_roll?: Roll | null;
+  turn_order?: string[];
+  active_turn?: number;
+  round?: number;
+  vision_mode?: 'all' | 'token';
 }
 
 type Tool = 'move' | 'pan' | 'fog';
@@ -52,6 +58,7 @@ const Tabletop = () => {
   const [showCast, setShowCast] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [connection, setConnection] = useState<'online' | 'retrying' | 'offline'>('retrying');
+  const [combatOpen, setCombatOpen] = useState(false);
   const [tool, setTool] = useState<Tool>('move');
   const [draftFog, setDraftFog] = useState<FogRect | null>(null);
   const [animRoll, setAnimRoll] = useState<Roll | null>(null);
@@ -72,7 +79,7 @@ const Tabletop = () => {
         setConnection('online');
         let recovered = 0;
         const next = list.map(raw => {
-          const board = { ...raw, fog: raw.fog ?? [] };
+          const board = { ...raw, fog: raw.fog ?? [], turn_order: raw.turn_order ?? [], active_turn: raw.active_turn ?? 0, round: raw.round ?? 1, vision_mode: raw.vision_mode ?? 'all' };
           const draft = readDraft<Board>('tabletop', board.id);
           if (!draft) return board;
           recovered += 1;
@@ -280,6 +287,31 @@ const Tabletop = () => {
     patch({ fog: (board.fog ?? []).filter(f => f.id !== id) }, true);
   };
 
+  const activeTurnId = board?.turn_order?.[board.active_turn ?? 0];
+  const advanceTurn = () => {
+    if (!board || !board.turn_order?.length) return toast.info('Adicione tokens à ordem de turno primeiro.');
+    const next = (board.active_turn ?? 0) + 1;
+    const currentId = board.turn_order[board.active_turn ?? 0];
+    const tokens = board.tokens.map(token => token.id !== currentId ? token : {
+      ...token,
+      conditions: (token.conditions ?? []).map(c => ({ ...c, rounds: c.rounds - 1 })).filter(c => c.rounds > 0),
+    });
+    patch({ tokens, active_turn: next % board.turn_order.length, round: next >= board.turn_order.length ? (board.round ?? 1) + 1 : (board.round ?? 1) }, true);
+  };
+
+  const toggleTurnToken = (id: string) => {
+    if (!board) return;
+    const order = board.turn_order ?? [];
+    patch({ turn_order: order.includes(id) ? order.filter(x => x !== id) : [...order, id] }, true);
+  };
+
+  const addCondition = (token: Token) => {
+    const name = window.prompt('Nome da condição (ex.: Atordoado)')?.trim();
+    if (!name) return;
+    const rounds = Math.max(1, Number(window.prompt('Duração em rodadas', '1')) || 1);
+    updateToken(token.id, { conditions: [...(token.conditions ?? []), { id: uid(), name, rounds }] }, true);
+  };
+
   const toggleFull = async () => {
     if (!document.fullscreenElement) await stageRef.current?.requestFullscreen?.().catch(() => {});
     else await document.exitFullscreen().catch(() => {});
@@ -290,6 +322,13 @@ const Tabletop = () => {
     const url = `${window.location.origin}${window.location.pathname}#/mapa-ao-vivo/${board.share_id}`;
     navigator.clipboard?.writeText(url);
     toast.success('Link copiado! Os jogadores veem e movem os bonecos em tempo real.');
+  };
+
+  const shareObserver = () => {
+    if (!board?.share_id) return toast.error('Este mapa ainda não tem link. Salve uma alteração e tente de novo.');
+    const url = `${window.location.origin}${window.location.pathname}?mode=observer#/mapa-ao-vivo/${board.share_id}`;
+    navigator.clipboard?.writeText(url);
+    toast.success('Link de observador copiado: somente leitura e sem rolagem.');
   };
 
   const rollDice = (roll: Roll) => {
@@ -371,7 +410,9 @@ const Tabletop = () => {
             <Button size="sm" variant="outline" className="h-9 px-2 tabular-nums text-xs" onClick={() => zoomCtl.reset()}>{Math.round(zoom * 100)}%</Button>
             <Button size="sm" variant="outline" className="h-9" onClick={toggleFull}>{full ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</Button>
             <Button size="sm" variant={showSummary ? 'default' : 'outline'} className="h-9 gap-1" onClick={() => setShowSummary(v => !v)} title="Resumo das fichas na mesa"><ScrollText className="w-4 h-4" /><span className="hidden sm:inline">Fichas</span></Button>
+            <Button size="sm" variant={combatOpen ? 'default' : 'outline'} className="h-9 gap-1" onClick={() => setCombatOpen(v => !v)} title="Ordem de turno e condições"><RotateCw className="w-4 h-4" /><span className="hidden sm:inline">Combate</span></Button>
             <Button size="sm" variant="secondary" className="h-9 gap-1" onClick={share} title="Copiar link ao vivo para os jogadores"><Share2 className="w-4 h-4" /><span className="hidden sm:inline">Compartilhar</span></Button>
+            <Button size="sm" variant="outline" className="h-9 gap-1" onClick={shareObserver} title="Copiar link somente leitura"><Eye className="w-4 h-4" /><span className="hidden sm:inline">Observador</span></Button>
             <Button size="sm" variant="outline" className="h-9 text-destructive" onClick={remove}><Trash2 className="w-4 h-4" /></Button>
           </div>
 
@@ -399,6 +440,27 @@ const Tabletop = () => {
             </div>
           )}
 
+          {combatOpen && (
+            <Card className="glass-card">
+              <CardContent className="p-3 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-xs uppercase tracking-widest text-muted-foreground">Combate</p>
+                    <p className="text-sm font-semibold">Rodada {board.round ?? 1} · turno {activeTurnId ? (board.tokens.find(t => t.id === activeTurnId)?.name ?? '—') : 'não definido'}</p>
+                  </div>
+                  <Button size="sm" className="h-8" onClick={advanceTurn}>Próximo turno</Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {board.tokens.map(token => {
+                    const active = board.turn_order?.includes(token.id);
+                    return <button key={token.id} type="button" onClick={() => toggleTurnToken(token.id)} className={`rounded-md border px-2 py-1 text-xs ${active ? 'border-primary bg-primary/15' : 'border-border/60 text-muted-foreground'}`}>{token.name}{active ? ' · na ordem' : ''}</button>;
+                  })}
+                </div>
+                <p className="text-[11px] text-muted-foreground">Toque nos tokens para incluí-los ou removê-los da ordem. O turno e a rodada ficam salvos para mestre e jogadores.</p>
+              </CardContent>
+            </Card>
+          )}
+
           {sel && (
             <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/60 bg-card/60 p-2">
               <img src={sel.image} alt="" className="w-8 h-8 object-contain" />
@@ -417,6 +479,10 @@ const Tabletop = () => {
                 onClick={() => { patch({ tokens: board.tokens.filter(t => t.id !== sel.id) }, true); setSelToken(null); }}>
                 <Trash2 className="w-4 h-4" />
               </Button>
+              <Button size="sm" variant="outline" className="h-8" onClick={() => addCondition(sel)}>+ condição</Button>
+              {(sel.conditions ?? []).map(condition => (
+                <span key={condition.id} className="rounded-full border border-amber-500/50 bg-amber-500/10 px-2 py-1 text-[10px] text-amber-300">{condition.name} · {condition.rounds}r</span>
+              ))}
             </div>
           )}
 
