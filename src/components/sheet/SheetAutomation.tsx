@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dices, Shield, Zap } from 'lucide-react';
+import { Dices } from 'lucide-react';
 import { Sheet, SheetAttribute, SheetRoll, SheetSkill } from '@/lib/sheets';
 import { derivedStats, rollAttribute, rollDerived, rollSkill } from '@/lib/sheetAutomation';
 import { DiceAnimation, Roll } from '@/components/DiceBar';
@@ -21,7 +21,6 @@ export const SheetAutomation = ({ sheet, onRoll }: Props) => {
 
   const attr = (attribute: SheetAttribute) => emit(rollAttribute(sheet, attribute));
   const skill = (entry: SheetSkill) => emit(rollSkill(sheet, entry));
-  const derived = (label: 'iniciativa' | 'percepção') => emit(rollDerived(sheet, label));
 
   return (
     <div className="rounded-lg border border-primary/25 bg-primary/5 p-3 space-y-3">
@@ -29,20 +28,19 @@ export const SheetAutomation = ({ sheet, onRoll }: Props) => {
         <Dices className="w-4 h-4 text-primary" />
         <div>
           <p className="text-xs font-display font-bold uppercase tracking-widest text-primary">Automação da ficha</p>
-          <p className="text-[11px] text-muted-foreground">Clique para rolar sem fazer a matemática à mão.</p>
+          <p className="text-[11px] text-muted-foreground">{sheet.style?.system === 'custom' ? 'Atributos e perícias funcionam com qualquer sistema.' : 'Cálculos adaptados ao sistema desta ficha.'}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
-        <button type="button" onClick={() => derived('iniciativa')} className="rounded-md border border-border/60 bg-background/60 px-2 py-2 text-left hover:border-primary">
-          <span className="block text-muted-foreground">Iniciativa</span><strong>+{stats.initiative}</strong>
-        </button>
-        <button type="button" onClick={() => derived('percepção')} className="rounded-md border border-border/60 bg-background/60 px-2 py-2 text-left hover:border-primary">
-          <span className="block text-muted-foreground">Percepção</span><strong>+{stats.perception}</strong>
-        </button>
-        <div className="rounded-md border border-border/60 bg-background/40 px-2 py-2"><span className="block text-muted-foreground"><Shield className="inline w-3 h-3 mr-1" />Defesa</span><strong>{stats.defense}</strong></div>
-        <div className="rounded-md border border-border/60 bg-background/40 px-2 py-2"><span className="block text-muted-foreground"><Zap className="inline w-3 h-3 mr-1" />Carga</span><strong>{stats.load}</strong></div>
-      </div>
+      {stats.length > 0 && <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+        {stats.map(stat => stat.rollable ? (
+          <button key={stat.id} type="button" onClick={() => emit(rollDerived(sheet, stat.id))} className="rounded-md border border-border/60 bg-background/60 px-2 py-2 text-left hover:border-primary">
+            <span className="block text-muted-foreground">{stat.label}</span><strong>{stat.value >= 0 ? `+${stat.value}` : stat.value}</strong>
+          </button>
+        ) : (
+          <div key={stat.id} className="rounded-md border border-border/60 bg-background/40 px-2 py-2"><span className="block text-muted-foreground">{stat.label}</span><strong>{stat.value}</strong></div>
+        ))}
+      </div>}
 
       <div className="flex flex-wrap gap-1.5">
         {sheet.attributes.map(attribute => <button key={attribute.id} type="button" onClick={() => attr(attribute)} className="rounded-full border border-primary/30 bg-background/60 px-2 py-1 text-[11px] hover:border-primary">{attribute.short} {attribute.value}</button>)}

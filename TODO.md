@@ -28,4 +28,5 @@
 - [x] A ficha calcula e mostra iniciativa, percepção, defesa e carga sem apagar valores manuais.
 - [x] A última rolagem é salva no Supabase, aparece para o mestre e é validada no endpoint público.
 - [x] A automação funciona na ficha privada e no link público compartilhado.
+- [x] A rolagem de atributos e perícias funciona em todos os sistemas disponíveis, com derivados adaptados por sistema quando aplicável.
 - [ ] Adicionar ataques, dano, crítico, inventário mecânico e efeitos configuráveis na próxima fase.

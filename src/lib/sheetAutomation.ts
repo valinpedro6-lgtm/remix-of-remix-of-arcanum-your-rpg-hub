@@ -1,42 +1,97 @@
 import type { Sheet, SheetAttribute, SheetSkill } from '@/lib/sheets';
 import type { Roll } from '@/components/DiceBar';
 
-export interface DerivedStats {
-  defense: number;
-  initiative: number;
-  perception: number;
-  load: number;
+export interface DerivedStat {
+  id: string;
+  label: string;
+  value: number;
+  rollable?: boolean;
 }
 
+const normalize = (value: string) => value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
 const attributeValue = (attributes: SheetAttribute[], names: string[]) => {
-  const found = attributes.find(attribute => names.some(name => attribute.label.toLowerCase().includes(name) || attribute.short.toLowerCase() === name.slice(0, 3)));
+  const wanted = names.map(normalize);
+  const found = attributes.find(attribute => {
+    const label = normalize(attribute.label);
+    const short = normalize(attribute.short);
+    return wanted.some(name => label.includes(name) || short === name);
+  });
   return found?.value ?? 0;
 };
 
 const skillValue = (skills: SheetSkill[], names: string[]) => {
-  const found = skills.find(skill => names.some(name => skill.name.toLowerCase().includes(name)));
+  const wanted = names.map(normalize);
+  const found = skills.find(skill => wanted.some(name => normalize(skill.name).includes(name)));
   if (!found) return 0;
-  // Fichas antigas usam value como bônus manual. O treinamento garante pelo menos +5.
   return found.trained ? Math.max(5, found.value) : found.value;
 };
 
-export const derivedStats = (sheet: Sheet): DerivedStats => ({
-  defense: 10 + attributeValue(sheet.attributes, ['agilidade', 'agi']),
-  initiative: attributeValue(sheet.attributes, ['agilidade', 'agi']) + skillValue(sheet.skills, ['iniciativa']),
-  perception: attributeValue(sheet.attributes, ['presença', 'pre']) + skillValue(sheet.skills, ['percepção', 'percepcao']),
-  load: 5 + attributeValue(sheet.attributes, ['força', 'forca', 'for']),
-});
+const resourceValue = (sheet: Sheet, shorts: string[]) => {
+  const wanted = shorts.map(normalize);
+  const found = sheet.resources.find(resource => wanted.includes(normalize(resource.short)) || wanted.includes(normalize(resource.label)));
+  return found?.max ?? 0;
+};
+
+const genericStats = (sheet: Sheet): DerivedStat[] => [
+  { id: 'initiative', label: 'Iniciativa', value: attributeValue(sheet.attributes, ['agilidade', 'destreza', 'reflexos', 'reacao', 'reação']) + skillValue(sheet.skills, ['iniciativa']), rollable: true },
+  { id: 'perception', label: 'Percepção', value: attributeValue(sheet.attributes, ['presenca', 'presença', 'sabedoria', 'intuicao', 'intuição', 'poder']) + skillValue(sheet.skills, ['percepcao', 'percepção', 'notar', 'escutar']), rollable: true },
+];
+
+export const derivedStats = (sheet: Sheet): DerivedStat[] => {
+  const system = sheet.style?.system ?? 'custom';
+  if (system === 'ordemparanormal') {
+    return [
+      { id: 'defense', label: 'Defesa', value: 10 + attributeValue(sheet.attributes, ['agilidade', 'agi']) },
+      { id: 'initiative', label: 'Iniciativa', value: attributeValue(sheet.attributes, ['agilidade', 'agi']) + skillValue(sheet.skills, ['iniciativa']), rollable: true },
+      { id: 'perception', label: 'Percepção', value: attributeValue(sheet.attributes, ['presenca', 'presença', 'pre']) + skillValue(sheet.skills, ['percepcao', 'percepção']), rollable: true },
+      { id: 'load', label: 'Carga', value: 5 + attributeValue(sheet.attributes, ['forca', 'força', 'for']) },
+    ];
+  }
+  if (system === 'dnd5e') {
+    return [
+      { id: 'armor', label: 'Classe de Armadura', value: resourceValue(sheet, ['ca', 'classe de armadura']) || 10 + attributeValue(sheet.attributes, ['destreza', 'des']) },
+      { id: 'initiative', label: 'Iniciativa', value: attributeValue(sheet.attributes, ['destreza', 'des']) + skillValue(sheet.skills, ['iniciativa']), rollable: true },
+      { id: 'perception', label: 'Percepção', value: attributeValue(sheet.attributes, ['sabedoria', 'sab']) + skillValue(sheet.skills, ['percepcao', 'percepção']), rollable: true },
+      { id: 'load', label: 'Carga', value: attributeValue(sheet.attributes, ['forca', 'força', 'for']) * 15 },
+    ];
+  }
+  if (system === 'tormenta20') {
+    return [
+      { id: 'defense', label: 'Defesa', value: resourceValue(sheet, ['def', 'defesa']) || 10 + attributeValue(sheet.attributes, ['destreza', 'des']) },
+      { id: 'initiative', label: 'Iniciativa', value: attributeValue(sheet.attributes, ['destreza', 'des']) + skillValue(sheet.skills, ['iniciativa']), rollable: true },
+      { id: 'perception', label: 'Percepção', value: attributeValue(sheet.attributes, ['sabedoria', 'sab']) + skillValue(sheet.skills, ['percepcao', 'percepção']), rollable: true },
+      { id: 'load', label: 'Carga', value: attributeValue(sheet.attributes, ['forca', 'força', 'for']) },
+    ];
+  }
+  if (system === 'pf2e') {
+    return [
+      { id: 'armor', label: 'Classe de Armadura', value: resourceValue(sheet, ['ca', 'classe de armadura']) || 10 + attributeValue(sheet.attributes, ['destreza', 'des']) },
+      { id: 'perception', label: 'Percepção', value: attributeValue(sheet.attributes, ['sabedoria', 'sab']) + skillValue(sheet.skills, ['percepcao', 'percepção']), rollable: true },
+      { id: 'initiative', label: 'Iniciativa', value: skillValue(sheet.skills, ['iniciativa']) + attributeValue(sheet.attributes, ['destreza', 'des']), rollable: true },
+      { id: 'load', label: 'Carga', value: attributeValue(sheet.attributes, ['forca', 'força', 'for']) },
+    ];
+  }
+  if (system === 'cthulhu') {
+    return [
+      { id: 'dodge', label: 'Esquiva', value: skillValue(sheet.skills, ['esquiva']) || Math.floor(attributeValue(sheet.attributes, ['destreza', 'des']) / 2) },
+      { id: 'initiative', label: 'Iniciativa', value: attributeValue(sheet.attributes, ['destreza', 'des']), rollable: true },
+      { id: 'luck', label: 'Sorte', value: resourceValue(sheet, ['sor', 'sorte']), rollable: true },
+    ];
+  }
+  if (system === 'cpred') {
+    return [
+      { id: 'evasion', label: 'Evasão', value: skillValue(sheet.skills, ['esquiva']) || 10 + attributeValue(sheet.attributes, ['reflexos', 'ref']) },
+      { id: 'initiative', label: 'Iniciativa', value: attributeValue(sheet.attributes, ['reflexos', 'ref']) + skillValue(sheet.skills, ['iniciativa']), rollable: true },
+      { id: 'humanity', label: 'Humanidade', value: resourceValue(sheet, ['hum', 'humanidade']) },
+    ];
+  }
+  return genericStats(sheet);
+};
 
 const d20 = () => 1 + Math.floor(Math.random() * 20);
 const signed = (value: number) => value >= 0 ? `+${value}` : String(value);
-
-const result = (expr: string, total: number, by: string, detail: string): Roll => ({
-  expr,
-  total,
-  by,
-  at: Date.now(),
-  detail,
-});
+const result = (expr: string, total: number, by: string, detail: string): Roll => ({ expr, total, by, at: Date.now(), detail });
 
 export const rollAttribute = (sheet: Sheet, attribute: SheetAttribute): Roll => {
   const die = d20();
@@ -49,9 +104,8 @@ export const rollSkill = (sheet: Sheet, skill: SheetSkill): Roll => {
   return result(`d20 ${signed(modifier)}`, die + modifier, sheet.name, `${skill.name}: ${die} ${signed(modifier)}`);
 };
 
-export const rollDerived = (sheet: Sheet, label: 'iniciativa' | 'percepção'): Roll => {
-  const stats = derivedStats(sheet);
-  const modifier = label === 'iniciativa' ? stats.initiative : stats.perception;
+export const rollDerived = (sheet: Sheet, id: string): Roll => {
+  const stat = derivedStats(sheet).find(entry => entry.id === id) ?? genericStats(sheet)[0];
   const die = d20();
-  return result(`d20 ${signed(modifier)}`, die + modifier, sheet.name, `${label}: ${die} ${signed(modifier)}`);
+  return result(`d20 ${signed(stat.value)}`, die + stat.value, sheet.name, `${stat.label}: ${die} ${signed(stat.value)}`);
 };
