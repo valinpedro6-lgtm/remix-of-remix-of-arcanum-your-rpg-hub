@@ -45,14 +45,14 @@ export const Layout = ({ children }: { children: ReactNode }) => {
             key={item.path}
             to={item.path}
             onClick={() => setOpen(false)}
-            className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-base transition-all duration-200 ${
+            className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-base transition-all duration-200 ${
               isActive
                 ? 'nav-active text-primary font-semibold'
                 : 'text-muted-foreground hover:bg-secondary hover:text-foreground hover:translate-x-1'
             }`}
           >
             <item.icon className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'text-primary' : 'group-hover:scale-110'}`} />
-            <span>{item.label}</span>
+            <span className="nav-label">{item.label}</span>
             {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}
           </Link>
         );
@@ -63,18 +63,18 @@ export const Layout = ({ children }: { children: ReactNode }) => {
   return (
     <div className="min-h-screen flex">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-60 flex-col border-r border-border/50 bg-card/40 backdrop-blur-xl fixed h-full z-40">
-        <div className="p-5 border-b border-border/50">
-          <div className="flex items-center gap-3"><div className="brand-mark w-9 h-9 rounded-lg grid place-items-center text-primary-foreground"><Dices className="w-5 h-5" /></div><div><h1 className="text-2xl font-display font-black gradient-text tracking-widest leading-none">ARCANUM</h1><p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mt-1">Ferramentas do Mestre</p></div></div>
+      <aside className="hidden md:flex w-[88px] flex-col border-r border-border/50 bg-card/35 backdrop-blur-2xl fixed h-full z-40">
+        <div className="p-4 border-b border-border/50">
+          <div className="flex flex-col items-center gap-2"><div className="brand-mark w-11 h-11 rounded-2xl grid place-items-center text-primary-foreground"><Dices className="w-5 h-5" /></div><span className="text-[9px] font-display font-black tracking-[0.28em] gradient-text">ARC</span></div>
         </div>
-        <nav className="flex flex-col gap-0.5 p-3 flex-1 overflow-y-auto">
+        <nav className="desktop-nav flex flex-col gap-1 p-3 flex-1 overflow-y-auto">
           <NavLinks />
         </nav>
-        <div className="p-3 border-t border-border/50 space-y-2">
+        <div className="desktop-nav-footer p-3 border-t border-border/50 space-y-2">
           <ThemeSwitcher />
           <CampaignBackup />
-          <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={() => confirm('Sair da conta neste aparelho?') && logout()}>
-            <LogOut className="w-4 h-4 mr-2" /> Sair da conta
+          <Button variant="ghost" size="sm" className="w-full justify-center text-muted-foreground" title="Sair da conta" onClick={() => confirm('Sair da conta neste aparelho?') && logout()}>
+            <LogOut className="w-4 h-4" /> <span className="sr-only">Sair da conta</span>
           </Button>
           <GlobalTimerBar />
           <div className="text-[10px] text-muted-foreground/50 text-center">⚔️ Arcanum v2.0</div>
@@ -112,7 +112,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
       </div>
 
       {/* Main content */}
-      <main className="flex-1 min-w-0 overflow-x-hidden md:ml-60 p-3 sm:p-4 md:p-6 pt-[calc(4.75rem+env(safe-area-inset-top))] md:pt-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-6 min-h-screen subtle-pattern">
+      <main className="flex-1 min-w-0 overflow-x-hidden md:ml-[88px] p-3 sm:p-4 md:p-8 pt-[calc(4.75rem+env(safe-area-inset-top))] md:pt-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8 min-h-screen subtle-pattern">
         <div className="animate-fade-in">
           {children}
         </div>

@@ -330,14 +330,15 @@ body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Rajdhani', sans-serif;
     background-image:
-      radial-gradient(ellipse 80% 50% at 50% -10%, hsl(var(--primary) / 0.16), transparent 70%),
-      radial-gradient(ellipse 60% 40% at 100% 100%, hsl(var(--ember) / 0.08), transparent 70%);
+      radial-gradient(ellipse 72% 52% at 80% -8%, hsl(var(--primary) / 0.18), transparent 68%),
+      radial-gradient(ellipse 52% 42% at 100% 78%, hsl(var(--ember) / 0.13), transparent 70%),
+      radial-gradient(ellipse 46% 36% at 0% 100%, hsl(var(--accent) / 0.08), transparent 72%);
     background-attachment: fixed;
     min-width: 320px;
     overflow-x: hidden;
   }
   ::selection { background: hsl(var(--primary) / 0.35); }
-  .bg-card { box-shadow: 0 1px 0 hsl(0 0% 100% / 0.04) inset, 0 8px 24px -12px hsl(0 0% 0% / 0.6); }
+  .bg-card { background-color: hsl(var(--card) / 0.62); backdrop-filter: blur(18px); box-shadow: 0 1px 0 hsl(0 0% 100% / 0.06) inset, 0 18px 42px -24px hsl(0 0% 0% / 0.9); }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Cinzel', serif;
     letter-spacing: 0.02em;
@@ -364,17 +365,17 @@ body {
     text-shadow: 0 0 20px hsl(var(--primary) / 0.6), 0 0 40px hsl(0 75% 50% / 0.3);
   }
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-[0_0_28px_hsl(var(--primary)/0.22)] hover:border-primary/30 hover:-translate-y-0.5;
+    @apply transition-all duration-300 hover:shadow-[0_0_34px_hsl(var(--primary)/0.2)] hover:border-primary/35 hover:-translate-y-0.5;
   }
   .glass-card {
-    @apply bg-card/50 backdrop-blur-xl border border-border/60 shadow-[0_1px_0_hsl(0_0%_100%/0.05)_inset,0_12px_32px_-16px_hsl(0_0%_0%/0.8)];
+    @apply bg-card/45 backdrop-blur-2xl border border-white/10 shadow-[0_1px_0_hsl(0_0%_100%/0.08)_inset,0_18px_42px_-20px_hsl(0_0%_0%/0.9)];
   }
   .gradient-text {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-[hsl(var(--ember))];
   }
   .page-title {
-    @apply text-3xl md:text-5xl font-display font-black gradient-text tracking-wider;
-    filter: drop-shadow(0 0 18px hsl(var(--primary) / 0.35));
+    @apply text-3xl md:text-4xl font-display font-black gradient-text tracking-wide;
+    filter: drop-shadow(0 0 18px hsl(var(--primary) / 0.28));
   }
   .glow-border {
     @apply border border-primary/20 shadow-[0_0_15px_hsl(var(--primary)/0.12),inset_0_0_15px_hsl(var(--primary)/0.05)];
@@ -398,13 +399,20 @@ body {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
 .nav-active {
-  background: linear-gradient(90deg, hsl(var(--primary) / 0.22), hsl(var(--primary) / 0.04));
-  box-shadow: inset 2px 0 0 hsl(var(--primary)), 0 0 20px -6px hsl(var(--primary) / 0.5);
+  background: linear-gradient(145deg, hsl(var(--primary) / 0.26), hsl(var(--primary) / 0.06));
+  box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.22), 0 0 20px -6px hsl(var(--primary) / 0.5);
 }
 .brand-mark {
   background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--ember)));
-  box-shadow: 0 0 22px hsl(var(--primary) / 0.55);
+  box-shadow: 0 0 28px hsl(var(--primary) / 0.48), 0 0 55px hsl(var(--ember) / 0.14);
 }
+
+.desktop-nav a { justify-content: center; }
+.desktop-nav a .nav-label { display: none; }
+.desktop-nav a svg { width: 1.25rem; height: 1.25rem; }
+.desktop-nav a > div { display: none; }
+.desktop-nav-footer > div:first-child { justify-content: center; padding-left: 0; padding-right: 0; }
+.desktop-nav-footer > div:first-child > div { justify-content: center; }
 
 @media (max-width: 767px) {
   input, textarea, select, button {

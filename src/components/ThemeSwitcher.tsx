@@ -15,7 +15,7 @@ const THEMES = [
 ] as const;
 
 export const ThemeSwitcher = () => {
-  const [theme, setTheme] = useLocalStorage<string>('arcanum-theme', 'red');
+  const [theme, setTheme] = useLocalStorage<string>('arcanum-theme', 'blue');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
