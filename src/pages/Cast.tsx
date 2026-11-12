@@ -37,7 +37,7 @@ const sendToInitiative = (sheet: Sheet) => {
   const next = [...pending.filter((item: { sourceSheetId?: string }) => item.sourceSheetId !== sheet.id), {
     sourceSheetId: sheet.id,
     name: sheet.name || 'Sem nome',
-    initiative: initiative?.value ?? 0,
+    initiative: sheet.initiative ?? initiative?.value ?? 0,
     hp: life?.current ?? 0,
     maxHp: life?.max ?? life?.current ?? 0,
     type: sheet.kind === 'monster' ? 'monster' : 'player',
@@ -332,6 +332,7 @@ const Cast = () => {
                 <div className="space-y-1.5"><Label>Nível</Label><NumberInput value={s.level} onChange={v => patch(s.id, { level: Math.max(1, v) })} /></div>
                 <div className="space-y-1.5"><Label>XP atual</Label><NumberInput value={s.xp} onChange={v => patch(s.id, { xp: Math.max(0, v) })} /></div>
                 <div className="space-y-1.5"><Label>XP para o próximo nível</Label><NumberInput value={s.xp_goal} onChange={v => patch(s.id, { xp_goal: Math.max(1, v) })} /></div>
+                <div className="space-y-1.5"><Label>Iniciativa</Label><NumberInput value={s.initiative ?? 0} onChange={v => patch(s.id, { initiative: v })} /></div>
                 <div className="sm:col-span-3"><div className="mb-1 flex justify-between text-[10px] uppercase tracking-wider text-muted-foreground"><span>Progressão</span><span>{Math.min(100, Math.round((s.xp / Math.max(1, s.xp_goal)) * 100))}%</span></div><div className="h-2 overflow-hidden rounded-full bg-background/70"><div className="h-full rounded-full bg-gradient-to-r from-primary to-[hsl(var(--ember))] transition-all" style={{ width: `${Math.min(100, Math.round((s.xp / Math.max(1, s.xp_goal)) * 100))}%` }} /></div></div>
               </div>
 

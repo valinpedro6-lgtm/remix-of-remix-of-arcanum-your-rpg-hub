@@ -87,6 +87,7 @@ export interface Sheet {
   level: number;
   xp: number;
   xp_goal: number;
+  initiative?: number;
   notes: string;
   in_list: boolean;
   share_id: string;
@@ -145,6 +146,7 @@ export const emptySheet = (kind: SheetKind, system = 'ordemparanormal'): Omit<Sh
     level: 1,
     xp: 0,
     xp_goal: 100,
+    initiative: 0,
     notes: '',
     in_list: false,
     last_roll: null,
@@ -162,6 +164,7 @@ const parse = (row: Record<string, unknown>): Sheet => {
     level: Number(source.level ?? 1),
     xp: Number(source.xp ?? 0),
     xp_goal: Number(source.xp_goal ?? 100),
+    initiative: Number(source.initiative ?? 0),
     style: (source.style ?? {}) as SheetStyle,
   } as Sheet;
 };

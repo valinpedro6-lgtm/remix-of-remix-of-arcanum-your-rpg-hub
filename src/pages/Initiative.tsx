@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, ChevronRight, RotateCcw, Dices, Swords, Heart, Shield, Skull, User, Zap, Minus, Copy, UserPlus, Users } from 'lucide-react';
 import { NumberInput } from '@/components/NumberInput';
 import { motion, AnimatePresence } from 'framer-motion';
-import { listSheets, type Sheet } from '@/lib/sheets';
+import { listSheets, updateSheet } from '@/lib/sheets';
 
 interface SavedSheet {
   id: string;
@@ -16,6 +16,7 @@ interface SavedSheet {
   maxHp?: number;
   ca?: number;
   kind: 'player' | 'monster' | 'story';
+  initiative?: number;
 }
 
 interface Combatant {
@@ -81,7 +82,7 @@ const Initiative = () => {
     try {
       const sheets = await listSheets();
       setSavedSheets(sheets
-        .filter(sheet => sheet.kind === 'player' || sheet.kind === 'monster')
+        .filter(sheet => sheet.kind !== 'story')
         .map(sheet => {
           const life = sheet.resources.find(resource => resource.tone === 'life' || resource.short.toLowerCase() === 'pv');
           return {
@@ -91,6 +92,7 @@ const Initiative = () => {
             maxHp: life?.max ?? 0,
             ca: 10,
             kind: sheet.kind,
+            initiative: sheet.initiative ?? 0,
           };
         }));
     } catch (error) {
@@ -134,7 +136,7 @@ const Initiative = () => {
       id: crypto.randomUUID(),
       sourceSheetId: sheet.id,
       name: sheet.name || 'Sem Nome',
-      initiative: Math.floor(Math.random() * 20) + 1,
+      initiative: sheet.initiative || Math.floor(Math.random() * 20) + 1,
       hp: sheet.hp ?? sheet.maxHp ?? 0,
       maxHp: sheet.maxHp ?? sheet.hp ?? 0,
       ca: sheet.ca ?? 10,
@@ -201,6 +203,10 @@ const Initiative = () => {
 
   const updateField = (id: string, field: keyof Combatant, value: Combatant[keyof Combatant]) => {
     setCombatants(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+    const combatant = combatants.find(c => c.id === id);
+    if (combatant?.sourceSheetId && field === 'initiative') {
+      void updateSheet(combatant.sourceSheetId, { initiative: Number(value) });
+    }
   };
 
   const applyDamage = (id: string, amount: number) => {
