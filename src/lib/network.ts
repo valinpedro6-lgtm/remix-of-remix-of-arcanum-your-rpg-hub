@@ -31,6 +31,26 @@ export async function invokeResilient<T = unknown>(
     }
   }
 
+  // Alguns navegadores móveis recusam a camada de invoke do SDK mesmo com a
+  // API online. Tenta a mesma função pelo endpoint HTTP público antes de
+  // devolver erro ao usuário.
+  const baseUrl = String(import.meta.env.VITE_SUPABASE_URL ?? '').replace(/\/$/, '');
+  const publishableKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '');
+  if (baseUrl && publishableKey) {
+    try {
+      const response = await fetch(`${baseUrl}/functions/v1/${name}`, {
+        method: 'POST',
+        headers: { apikey: publishableKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await response.json().catch(() => null) as T | null;
+      if (response.ok && data !== null) return { data, error: null };
+      if (data !== null) return { data, error: null };
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+    }
+  }
+
   return { data: null, error: lastError ?? new Error('Falha de conexão') };
 }
 
