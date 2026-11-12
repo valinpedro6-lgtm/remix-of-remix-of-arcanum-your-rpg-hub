@@ -18,8 +18,14 @@ export const ThemeSwitcher = () => {
   const [theme, setTheme] = useLocalStorage<string>('arcanum-theme', 'blue');
 
   useEffect(() => {
+    const refreshKey = 'arcanum-visual-refresh-v1';
+    if (!localStorage.getItem(refreshKey)) {
+      localStorage.setItem(refreshKey, '1');
+      setTheme('blue');
+      return;
+    }
     document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+  }, [theme, setTheme]);
 
   return (
     <div className="flex items-start gap-2 px-3 py-1.5">
