@@ -1,5 +1,6 @@
-import { Sheet, SheetResource } from '@/lib/sheets';
+import { Sheet, SheetResource, SheetRoll } from '@/lib/sheets';
 import { AttributeWheel } from './AttributeWheel';
+import { SheetAutomation } from './SheetAutomation';
 import { Minus, Plus, UserRound } from 'lucide-react';
 import { getSystem, SheetFrame } from '@/lib/sheetSystems';
 
@@ -38,6 +39,7 @@ interface Props {
   editable?: boolean;
   onPatch?: (patch: Partial<Sheet>) => void;
   onReorderAttributes?: (fromId: string, toId: string) => void;
+  onRoll?: (roll: SheetRoll) => void;
   compact?: boolean;
 }
 
@@ -49,7 +51,7 @@ const toneClass: Record<SheetResource['tone'], string> = {
 };
 
 /** Ficha em formato "pôster": arte do personagem ao fundo, roda de atributos e perícias. */
-export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, compact }: Props) => {
+export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, onRoll, compact }: Props) => {
   const patchResource = (id: string, delta: number) => {
     if (!onPatch) return;
     onPatch({
@@ -182,6 +184,7 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, com
                 );
               })}
             </div>
+            <SheetAutomation sheet={sheet} onRoll={onRoll} />
           </div>
 
           {/* Habilidades + perícias */}

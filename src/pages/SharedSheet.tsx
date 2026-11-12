@@ -66,7 +66,7 @@ const SharedSheet = () => {
                 {editing ? 'Só olhar' : 'Editar minha ficha'}
               </Button>
             </div>
-            <SheetPoster sheet={sheet} editable={editing} onPatch={patch} />
+            <SheetPoster sheet={sheet} editable={editing} onPatch={patch} onRoll={roll => patch({ last_roll: roll })} />
             <p className="text-center text-xs text-muted-foreground mt-4">
               {editing
                 ? 'Suas alterações salvam sozinhas e aparecem para o mestre.'

@@ -32,6 +32,14 @@ export interface SheetAbility {
   description: string;
 }
 
+export interface SheetRoll {
+  expr: string;
+  total: number;
+  by: string;
+  at: number;
+  detail?: string;
+}
+
 export type SheetKind = 'player' | 'story' | 'monster';
 
 export interface SheetStyle {
@@ -77,6 +85,7 @@ export interface Sheet {
   share_id: string;
   created_at: string;
   updated_at: string;
+  last_roll?: SheetRoll | null;
 }
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
@@ -126,8 +135,9 @@ export const emptySheet = (kind: SheetKind, system = 'ordemparanormal'): Omit<Sh
   skills: kind === 'monster' ? [] : t.skills,
   resources: t.resources,
   abilities: [],
-  notes: '',
-  in_list: false,
+    notes: '',
+    in_list: false,
+    last_roll: null,
   };
 };
 

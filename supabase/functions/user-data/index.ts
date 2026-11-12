@@ -19,7 +19,7 @@ const admin = createClient(
 
 const SHEET_FIELDS = [
   "kind", "style", "name", "subtitle", "origin", "age", "occupation", "profile", "background", "image_url", "accent",
-  "attributes", "skills", "resources", "abilities", "notes", "in_list",
+  "attributes", "skills", "resources", "abilities", "notes", "in_list", "last_roll",
 ];
 const BOARD_FIELDS = ["name", "map_url", "tokens", "grid", "fog", "zoom", "last_roll", "turn_order", "active_turn", "round", "vision_mode"];
 const TABLES: Record<string, string[]> = { sheets: SHEET_FIELDS, tabletops: BOARD_FIELDS };
@@ -37,7 +37,19 @@ const strip = (row: Record<string, unknown> | null) => {
 };
 
 /** campos que o jogador pode editar pelo link da ficha */
-const SHARED_EDIT_FIELDS = ["name", "subtitle", "origin", "image_url", "attributes", "skills", "resources", "abilities", "notes"];
+const SHARED_EDIT_FIELDS = ["name", "subtitle", "origin", "image_url", "attributes", "skills", "resources", "abilities", "notes", "last_roll"];
+
+const safeRoll = (value: unknown) => {
+  if (!value || typeof value !== "object") return null;
+  const roll = value as Record<string, unknown>;
+  return {
+    expr: String(roll.expr ?? "").slice(0, 40),
+    total: Math.max(-999, Math.min(999, Number(roll.total) || 0)),
+    by: String(roll.by ?? "").slice(0, 80),
+    at: Number(roll.at) || Date.now(),
+    detail: String(roll.detail ?? "").slice(0, 120),
+  };
+};
 
 async function hashToken(token: string) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
@@ -64,6 +76,7 @@ Deno.serve(async (req) => {
       const shareId = String(body.shareId ?? "").slice(0, 64);
       if (!/^[a-zA-Z0-9_-]{4,64}$/.test(shareId)) return json({ ok: false }, 400);
       const values = pick(body.values ?? {}, SHARED_EDIT_FIELDS);
+      if ("last_roll" in values) values.last_roll = safeRoll(values.last_roll);
       if (Object.keys(values).length === 0) return json({ ok: true });
       const { error } = await admin.from("sheets").update(values).eq("share_id", shareId);
       if (error) throw error;
@@ -104,6 +117,7 @@ Deno.serve(async (req) => {
 
     if (action === "update") {
       const values = pick(body.values ?? {}, fields);
+      if ("last_roll" in values) values.last_roll = safeRoll(values.last_roll);
       if (!id || Object.keys(values).length === 0) return json({ ok: true });
       const { error } = await admin.from(table).update(values).eq("id", id).eq("owner", owner);
       if (error) throw error;

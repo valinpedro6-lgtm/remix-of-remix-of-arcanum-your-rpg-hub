@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dices } from 'lucide-react';
 
-export interface Roll { expr: string; total: number; by: string; at: number }
+export interface Roll { expr: string; total: number; by: string; at: number; detail?: string }
 
 const DICE = [4, 6, 8, 10, 12, 20, 100];
 const BURST = Array.from({ length: 12 }, (_, i) => i);
@@ -75,6 +75,7 @@ export const DiceAnimation = ({ roll }: { roll: Roll | null }) => {
                   transition={{ duration: 0.55, delay: i * 0.01 }} />;
               })}
             </motion.div>
+            {shown.detail && <p className="text-xs text-muted-foreground">{shown.detail}</p>}
             <p className="text-xs text-muted-foreground">
               {shown.by ? `${shown.by} rolou` : 'Rolagem'} {shown.expr}
             </p>

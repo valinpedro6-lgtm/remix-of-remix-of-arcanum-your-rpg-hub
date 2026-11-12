@@ -288,6 +288,7 @@ const Cast = () => {
               sheet={s}
               editable
               onPatch={p => patch(s.id, p)}
+              onRoll={roll => patch(s.id, { last_roll: roll })}
               onReorderAttributes={reorderAttributes}
             />
           </div>
@@ -616,7 +617,7 @@ const Cast = () => {
             <div className="space-y-6">
               {onTable.map(s => (
                 <div key={s.id} className="space-y-2">
-                  <SheetPoster sheet={s} editable onPatch={p => patch(s.id, p)} />
+                  <SheetPoster sheet={s} editable onPatch={p => patch(s.id, p)} onRoll={roll => patch(s.id, { last_roll: roll })} />
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" onClick={() => setSelectedId(s.id)}>Editar ficha</Button>
                     <Button size="sm" variant="ghost" className="gap-1" onClick={() => {

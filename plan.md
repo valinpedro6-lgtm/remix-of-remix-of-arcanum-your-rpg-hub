@@ -31,15 +31,12 @@ Transformar o Arcanum em um hub confortável no celular e no PC, adicionando um 
 ## Restrições
 A primeira versão usa armazenamento local, preservando o funcionamento imediato do projeto existente e permitindo exportar os dados antes de uma futura sincronização em nuvem.
 
-
 # Roadmap — recursos avançados do Tabletop
 
 ## Direção
-
 Ampliar o Tabletop sem quebrar fichas, mapas, links públicos ou a separação por proprietário. Toda mudança compartilhada deve ser validada no endpoint Supabase, não apenas no React.
 
 ## Fase 1 — base segura do Tabletop
-
 - Permissões explícitas para mestre, jogador e observador.
 - Turno atual, ordem de iniciativa e avanço automático/manual.
 - Condições por token com duração em rodadas e remoção segura.
@@ -47,21 +44,18 @@ Ampliar o Tabletop sem quebrar fichas, mapas, links públicos ou a separação p
 - Reconexão e salvamento resiliente preservados.
 
 ## Fase 2 — ferramentas de jogo
-
 - Linha de visão e alcance real usando posição, alcance e obstáculos.
 - NPCs controlados pelo mestre.
 - Gerador de encontros.
 - Gerador de nomes, cidades e ganchos.
 
 ## Fase 3 — campanha e distribuição
-
 - Diário compartilhado da campanha.
 - Convites por código ou link com permissões.
 - Exportação da aventura em PDF.
 - IA para criar NPCs e missões, sempre com edição e confirmação do mestre antes de salvar.
 
 ## Organização técnica
-
 - `src/pages/Tabletop.tsx`: controles do mestre e estado visual da mesa.
 - `src/pages/SharedTabletop.tsx`: experiência pública de jogador/observador.
 - `supabase/functions/shared-tabletop/index.ts`: leitura, atualização e autorização server-side.
@@ -69,5 +63,7 @@ Ampliar o Tabletop sem quebrar fichas, mapas, links públicos ou a separação p
 - `src/lib/network.ts`: retries e estado de conexão.
 
 ## Design da expansão
-
 **Grimório tático cinematográfico.** Painel assimétrico, mapa em destaque, chips de estado, marcadores de turno sobre a cena e condições como selos compactos. Carvão e vinho formam o mundo; âmbar sinaliza turno e atenção; verde discreto confirma sincronização.
+
+## Automação de fichas — fase inicial
+A ficha continua usando o Supabase atual como fonte de dados. O motor `src/lib/sheetAutomation.ts` calcula valores derivados sem sobrescrever atributos ou recursos existentes, enquanto `SheetAutomation` oferece rolagens de atributos, perícias, iniciativa e percepção. O último resultado é salvo no campo `last_roll` e aparece tanto na ficha do jogador quanto na visão do mestre. O endpoint `user-data` valida e limita esse payload antes de persistir.
