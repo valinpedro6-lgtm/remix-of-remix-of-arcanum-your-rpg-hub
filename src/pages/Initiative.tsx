@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, ChevronRight, RotateCcw, Dices, Swords, Heart, Shield, Skull, User, Zap, Minus, Copy, UserPlus, Users } from 'lucide-react';
 import { NumberInput } from '@/components/NumberInput';
 import { motion, AnimatePresence } from 'framer-motion';
+import { listSheets, type Sheet } from '@/lib/sheets';
 
 interface SavedSheet {
   id: string;
@@ -14,6 +15,7 @@ interface SavedSheet {
   hp?: number;
   maxHp?: number;
   ca?: number;
+  kind: 'player' | 'monster' | 'story';
 }
 
 interface Combatant {
@@ -63,8 +65,8 @@ const Initiative = () => {
   const [combatants, setCombatants] = useLocalStorage<Combatant[]>('arcanum-initiative', []);
   const [currentTurn, setCurrentTurn] = useLocalStorage<number>('arcanum-initiative-turn', 0);
   const [round, setRound] = useLocalStorage<number>('arcanum-initiative-round', 1);
-  const [savedPlayers] = useLocalStorage<SavedSheet[]>('arcanum-players', []);
-  const [savedMonsters] = useLocalStorage<SavedSheet[]>('arcanum-monsters', []);
+  const [savedSheets, setSavedSheets] = useState<SavedSheet[]>([]);
+  const [sheetsLoading, setSheetsLoading] = useState(true);
   const [name, setName] = useState('');
   const [init, setInit] = useState('');
   const [showHp, setShowHp] = useState(true);
@@ -74,6 +76,36 @@ const Initiative = () => {
   const [bulkCount, setBulkCount] = useState(3);
   const [showImport, setShowImport] = useState(false);
   const [inbox, setInbox] = useLocalStorage<InitiativeImport[]>('arcanum-initiative-inbox', []);
+
+  const loadSheets = async () => {
+    try {
+      const sheets = await listSheets();
+      setSavedSheets(sheets
+        .filter(sheet => sheet.kind === 'player' || sheet.kind === 'monster')
+        .map(sheet => {
+          const life = sheet.resources.find(resource => resource.tone === 'life' || resource.short.toLowerCase() === 'pv');
+          return {
+            id: sheet.id,
+            name: sheet.name,
+            hp: life?.current ?? 0,
+            maxHp: life?.max ?? 0,
+            ca: 10,
+            kind: sheet.kind,
+          };
+        }));
+    } catch (error) {
+      console.error('Não foi possível carregar as fichas para a iniciativa', error);
+    } finally {
+      setSheetsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadSheets();
+    const refresh = () => void loadSheets();
+    window.addEventListener('arcanum:sheets-updated', refresh);
+    return () => window.removeEventListener('arcanum:sheets-updated', refresh);
+  }, []);
 
   useEffect(() => {
     if (inbox.length === 0) return;
@@ -97,8 +129,10 @@ const Initiative = () => {
   }, [inbox, setCombatants, setInbox]);
 
   const importSheet = (sheet: SavedSheet, type: 'player' | 'monster') => {
+    if (combatants.some(combatant => combatant.sourceSheetId === sheet.id)) return;
     setCombatants(prev => [...prev, {
       id: crypto.randomUUID(),
+      sourceSheetId: sheet.id,
       name: sheet.name || 'Sem Nome',
       initiative: Math.floor(Math.random() * 20) + 1,
       hp: sheet.hp ?? sheet.maxHp ?? 0,
@@ -260,7 +294,7 @@ const Initiative = () => {
                   className="text-xs gap-1 ml-auto"
                 >
                   <UserPlus className="w-3 h-3" />
-                  Importar Fichas ({savedPlayers.length + savedMonsters.length})
+                  Importar Fichas ({savedSheets.length})
                 </Button>
               </div>
 
@@ -274,13 +308,13 @@ const Initiative = () => {
                     className="overflow-hidden"
                   >
                     <div className="pt-2 space-y-3 border-t border-border/50">
-                      {savedPlayers.length > 0 && (
+                      {savedSheets.filter(sheet => sheet.kind === 'player').length > 0 && (
                         <div>
                           <div className="flex items-center gap-1.5 text-xs font-semibold text-primary mb-1.5">
                             <Users className="w-3 h-3" /> Jogadores Salvos
                           </div>
                           <div className="flex flex-wrap gap-1.5">
-                            {savedPlayers.map(p => (
+                            {savedSheets.filter(sheet => sheet.kind === 'player').map(p => (
                               <Button key={p.id} variant="outline" size="sm" className="h-7 text-xs gap-1 hover:bg-primary/10"
                                 onClick={() => importSheet(p, 'player')}>
                                 <Plus className="w-3 h-3" />{p.name || 'Sem nome'}
@@ -289,13 +323,13 @@ const Initiative = () => {
                           </div>
                         </div>
                       )}
-                      {savedMonsters.length > 0 && (
+                      {savedSheets.filter(sheet => sheet.kind === 'monster').length > 0 && (
                         <div>
                           <div className="flex items-center gap-1.5 text-xs font-semibold text-destructive mb-1.5">
                             <Skull className="w-3 h-3" /> Monstros Salvos
                           </div>
                           <div className="flex flex-wrap gap-1.5">
-                            {savedMonsters.map(m => (
+                            {savedSheets.filter(sheet => sheet.kind === 'monster').map(m => (
                               <Button key={m.id} variant="outline" size="sm" className="h-7 text-xs gap-1 hover:bg-destructive/10"
                                 onClick={() => importSheet(m, 'monster')}>
                                 <Plus className="w-3 h-3" />{m.name || 'Sem nome'}
@@ -304,9 +338,9 @@ const Initiative = () => {
                           </div>
                         </div>
                       )}
-                      {savedPlayers.length === 0 && savedMonsters.length === 0 && (
+                      {savedSheets.length === 0 && (
                         <p className="text-xs text-muted-foreground text-center py-2">
-                          Nenhuma ficha salva. Cadastre em Jogadores ou Monstros.
+                          {sheetsLoading ? 'Carregando fichas sincronizadas...' : 'Nenhuma ficha salva. Crie uma ficha em Characters.'}
                         </p>
                       )}
                     </div>

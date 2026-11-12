@@ -110,7 +110,10 @@ const Cast = () => {
     clearTimeout(saveTimer.current[id]);
     saveTimer.current[id] = setTimeout(() => {
       updateSheet(id, p)
-        .then(() => clearDraft('sheet', id))
+        .then(() => {
+          clearDraft('sheet', id);
+          window.dispatchEvent(new CustomEvent('arcanum:sheets-updated'));
+        })
         .catch(() => toast.error('Não consegui salvar. O rascunho local foi mantido.'));
     }, 500);
   };
@@ -121,6 +124,7 @@ const Cast = () => {
       const s = await createSheet(kind, newSystem);
       setSheets(prev => [...prev, s]);
       setSelectedId(s.id);
+      window.dispatchEvent(new CustomEvent('arcanum:sheets-updated'));
       toast.success(kind === 'monster' ? 'Criatura criada!' : 'Personagem criado!');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Não consegui criar a ficha.');
@@ -130,6 +134,7 @@ const Cast = () => {
   const remove = async (id: string) => {
     await deleteSheet(id).catch(() => toast.error('Não consegui apagar.'));
     setSheets(prev => prev.filter(s => s.id !== id));
+    window.dispatchEvent(new CustomEvent('arcanum:sheets-updated'));
     if (selectedId === id) setSelectedId(null);
   };
 
