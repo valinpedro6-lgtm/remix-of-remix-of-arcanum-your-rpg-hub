@@ -1,4 +1,4 @@
-import type { Sheet, SheetAttribute, SheetSkill } from '@/lib/sheets';
+import type { Sheet, SheetAbility, SheetAttribute, SheetSkill } from '@/lib/sheets';
 import type { Roll } from '@/components/DiceBar';
 
 export interface DerivedStat {
@@ -109,3 +109,42 @@ export const rollDerived = (sheet: Sheet, id: string): Roll => {
   const die = d20();
   return result(`d20 ${signed(stat.value)}`, die + stat.value, sheet.name, `${stat.label}: ${die} ${signed(stat.value)}`);
 };
+
+const formulaValue = (sheet: Sheet, name: string) => {
+  const key = normalize(name.trim());
+  const attr = sheet.attributes.find(a => normalize(a.label) === key || normalize(a.short) === key);
+  if (attr) return attr.value;
+  const skill = sheet.skills.find(s => normalize(s.name) === key);
+  if (skill) return skill.trained ? Math.max(5, skill.value) : skill.value;
+  const resource = sheet.resources.find(r => normalize(r.label) === key || normalize(r.short) === key);
+  return resource?.current ?? 0;
+};
+
+/** Interpreta expressões simples como 2d6 + Força ou 1d20 + AGI. */
+export const rollFormula = (sheet: Sheet, expression: string, label = 'Rolagem'): Roll => {
+  const source = expression.trim() || '1d20';
+  const detail: string[] = [];
+  let total = 0;
+  const tokens = source.replace(/\s+/g, '').match(/[+-]?[^+-]+/g) ?? ['1d20'];
+  for (const token of tokens) {
+    const sign = token.startsWith('-') ? -1 : 1;
+    const raw = token.replace(/^[+-]/, '');
+    const dice = raw.match(/^(\d*)d(\d+)$/i);
+    if (dice) {
+      const count = Math.min(20, Math.max(1, Number(dice[1] || 1)));
+      const sides = Math.min(1000, Math.max(2, Number(dice[2])));
+      const values = Array.from({ length: count }, () => 1 + Math.floor(Math.random() * sides));
+      const subtotal = values.reduce((sum, value) => sum + value, 0) * sign;
+      total += subtotal;
+      detail.push(`${sign < 0 ? '-' : ''}${values.join('+')}`);
+    } else {
+      const value = Number.isFinite(Number(raw)) ? Number(raw) : formulaValue(sheet, raw);
+      total += value * sign;
+      detail.push(`${sign < 0 ? '-' : ''}${value}`);
+    }
+  }
+  return result(source, total, sheet.name, `${label}: ${detail.join(' ')} = ${total}`);
+};
+
+export const rollAbility = (sheet: Sheet, ability: SheetAbility): Roll =>
+  rollFormula(sheet, ability.formula || '1d20', ability.name);

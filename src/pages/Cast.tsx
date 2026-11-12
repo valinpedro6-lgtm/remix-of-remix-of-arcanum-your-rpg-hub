@@ -322,6 +322,14 @@ const Cast = () => {
                 </>}
               </div>
 
+              {/* Progressão */}
+              <div className="grid gap-3 rounded-lg border border-primary/25 bg-primary/5 p-3 sm:grid-cols-3">
+                <div className="space-y-1.5"><Label>Nível</Label><NumberInput value={s.level} onChange={v => patch(s.id, { level: Math.max(1, v) })} /></div>
+                <div className="space-y-1.5"><Label>XP atual</Label><NumberInput value={s.xp} onChange={v => patch(s.id, { xp: Math.max(0, v) })} /></div>
+                <div className="space-y-1.5"><Label>XP para o próximo nível</Label><NumberInput value={s.xp_goal} onChange={v => patch(s.id, { xp_goal: Math.max(1, v) })} /></div>
+                <div className="sm:col-span-3"><div className="mb-1 flex justify-between text-[10px] uppercase tracking-wider text-muted-foreground"><span>Progressão</span><span>{Math.min(100, Math.round((s.xp / Math.max(1, s.xp_goal)) * 100))}%</span></div><div className="h-2 overflow-hidden rounded-full bg-background/70"><div className="h-full rounded-full bg-gradient-to-r from-primary to-[hsl(var(--ember))] transition-all" style={{ width: `${Math.min(100, Math.round((s.xp / Math.max(1, s.xp_goal)) * 100))}%` }} /></div></div>
+              </div>
+
               {/* Sistema */}
               <div className="space-y-1.5">
                 <Label>Sistema de RPG</Label>
@@ -494,18 +502,27 @@ const Cast = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>Habilidades / poderes</Label>
-                  <Button size="sm" variant="outline" className="gap-1" onClick={() => setAb([...s.abilities, { id: uid(), name: 'Nova habilidade', cost: '', description: '' }])}>
+                  <Button size="sm" variant="outline" className="gap-1" onClick={() => setAb([...s.abilities, { id: uid(), name: 'Nova habilidade', cost: '', description: '', type: 'damage', formula: '1d20', target: 'single' }])}>
                     <Plus className="w-3.5 h-3.5" /> Adicionar
                   </Button>
                 </div>
                 {s.abilities.map(ab => (
                   <div key={ab.id} className="space-y-2 bg-secondary/30 rounded-lg p-2">
-                    <div className="flex gap-2">
+                    <div className="grid gap-2 sm:grid-cols-[1fr_7rem_8rem_auto]">
                       <Input className="h-8 flex-1" value={ab.name} onChange={e => setAb(s.abilities.map(x => x.id === ab.id ? { ...x, name: e.target.value } : x))} placeholder="Nome" />
                       <Input className="h-8 w-24" value={ab.cost} onChange={e => setAb(s.abilities.map(x => x.id === ab.id ? { ...x, cost: e.target.value } : x))} placeholder="3 PD" />
+                      <Input className="h-8" value={ab.formula ?? ''} onChange={e => setAb(s.abilities.map(x => x.id === ab.id ? { ...x, formula: e.target.value } : x))} placeholder="2d6 + Força" />
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setAb(s.abilities.filter(x => x.id !== ab.id))}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <select className="h-8 rounded-md border border-border bg-background px-2 text-sm" value={ab.type ?? 'utility'} onChange={e => setAb(s.abilities.map(x => x.id === ab.id ? { ...x, type: e.target.value as SheetAbility['type'] } : x))}>
+                        <option value="damage">Dano</option><option value="heal">Cura</option><option value="passive">Passiva</option><option value="utility">Utilidade</option>
+                      </select>
+                      <select className="h-8 rounded-md border border-border bg-background px-2 text-sm" value={ab.target ?? 'single'} onChange={e => setAb(s.abilities.map(x => x.id === ab.id ? { ...x, target: e.target.value as SheetAbility['target'] } : x))}>
+                        <option value="single">Alvo único</option><option value="multiple">Múltiplos alvos</option><option value="area">Área</option>
+                      </select>
                     </div>
                     <Textarea rows={2} value={ab.description} onChange={e => setAb(s.abilities.map(x => x.id === ab.id ? { ...x, description: e.target.value } : x))} placeholder="O que essa habilidade faz" />
                   </div>

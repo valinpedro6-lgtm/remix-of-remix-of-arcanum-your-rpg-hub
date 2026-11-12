@@ -14,6 +14,7 @@ export interface SheetSkill {
   name: string;
   value: number;
   trained?: boolean;
+  attribute?: string;
 }
 
 export interface SheetResource {
@@ -30,6 +31,9 @@ export interface SheetAbility {
   name: string;
   cost: string;    // "3 PD"
   description: string;
+  type?: 'passive' | 'damage' | 'heal' | 'utility';
+  formula?: string;
+  target?: 'single' | 'multiple' | 'area';
 }
 
 export interface SheetRoll {
@@ -80,6 +84,9 @@ export interface Sheet {
   skills: SheetSkill[];
   resources: SheetResource[];
   abilities: SheetAbility[];
+  level: number;
+  xp: number;
+  xp_goal: number;
   notes: string;
   in_list: boolean;
   share_id: string;
@@ -135,6 +142,9 @@ export const emptySheet = (kind: SheetKind, system = 'ordemparanormal'): Omit<Sh
   skills: kind === 'monster' ? [] : t.skills,
   resources: t.resources,
   abilities: [],
+    level: 1,
+    xp: 0,
+    xp_goal: 100,
     notes: '',
     in_list: false,
     last_roll: null,
@@ -149,6 +159,9 @@ const parse = (row: Record<string, unknown>): Sheet => {
     skills: (source.skills ?? []) as SheetSkill[],
     resources: (source.resources ?? []) as SheetResource[],
     abilities: (source.abilities ?? []) as SheetAbility[],
+    level: Number(source.level ?? 1),
+    xp: Number(source.xp ?? 0),
+    xp_goal: Number(source.xp_goal ?? 100),
     style: (source.style ?? {}) as SheetStyle,
   } as Sheet;
 };

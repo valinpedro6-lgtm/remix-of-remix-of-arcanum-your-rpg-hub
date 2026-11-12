@@ -124,6 +124,11 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, onR
               {sheet.origin}
             </p>
           )}
+          <div className="mt-3 flex max-w-[280px] items-center gap-2 rounded-lg border border-white/15 bg-black/45 px-2.5 py-2 backdrop-blur-sm">
+            <span className="font-display text-sm font-black text-primary">NÍVEL {sheet.level}</span>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-primary to-[hsl(var(--ember))]" style={{ width: `${Math.min(100, Math.round((sheet.xp / Math.max(1, sheet.xp_goal)) * 100))}%` }} /></div>
+            <span className="text-[10px] text-white/60">{sheet.xp}/{sheet.xp_goal} XP</span>
+          </div>
           {sys.id === 'ordemparanormal2-alpha' && (sheet.age || sheet.occupation || sheet.profile) && (
             <div className="mt-3 flex flex-wrap gap-1.5 text-[10px] uppercase tracking-widest text-white/75">
               {sheet.age && <span className="rounded border border-white/15 bg-black/40 px-2 py-1">{sheet.age} anos</span>}
@@ -195,13 +200,15 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, onR
                   <div key={ab.id} className="bg-black/70 backdrop-blur-sm border-l-2 border-primary rounded-r-md overflow-hidden">
                     <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-white/10 to-transparent px-3 py-1.5">
                       <span className="font-display font-bold uppercase text-white text-sm tracking-wide">{ab.name}</span>
-                      {ab.cost && (
-                        <span className="font-display font-black text-primary text-sm whitespace-nowrap">{ab.cost}</span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {ab.type && <span className="text-[9px] uppercase tracking-widest text-white/50">{ab.type === 'damage' ? 'Dano' : ab.type === 'heal' ? 'Cura' : ab.type === 'passive' ? 'Passiva' : 'Utilidade'}</span>}
+                        {ab.cost && <span className="font-display font-black text-primary text-sm whitespace-nowrap">{ab.cost}</span>}
+                      </div>
                     </div>
                     {ab.description && (
                       <p className="px-3 py-1.5 text-xs text-white/75 leading-snug">{ab.description}</p>
                     )}
+                    {ab.formula && <p className="border-t border-white/10 px-3 py-1 text-[10px] font-mono text-primary/80">{ab.formula} · {ab.target === 'area' ? 'área' : ab.target === 'multiple' ? 'múltiplos' : 'alvo único'}</p>}
                   </div>
                 ))}
               </div>
