@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 // A névoa fica POR CIMA dos personagens (z-20) — cobre bonecos também.
 import { motion } from 'framer-motion';
 import {
-  Plus, Trash2, Map as MapIcon, ImagePlus, UserPlus, Maximize2, Minimize2,
+  Plus, Trash2, Map as MapIcon, ImagePlus, UserPlus, Maximize2, Minimize2, Link2,
   Grid3x3, Loader2, ZoomIn, ZoomOut, Users, Hand, MousePointer2, Square, Share2, Eye, ScrollText, RotateCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -322,7 +322,14 @@ const Tabletop = () => {
     if (!board?.share_id) return toast.error('Este mapa ainda não tem link. Salve uma alteração e tente de novo.');
     const url = `${window.location.origin}${window.location.pathname}#/mapa-ao-vivo/${board.share_id}`;
     navigator.clipboard?.writeText(url);
-    toast.success('Link copiado! Os jogadores veem e movem os bonecos em tempo real.');
+    toast.success('Link copiado! Este link é somente visualização. Gere um link de token para cada jogador.');
+  };
+
+  const shareToken = () => {
+    if (!board?.share_id || !selToken) return toast.info('Selecione um token primeiro.');
+    const url = `${window.location.origin}${window.location.pathname}?token=${encodeURIComponent(selToken)}#/mapa-ao-vivo/${board.share_id}`;
+    navigator.clipboard?.writeText(url);
+    toast.success('Link individual copiado: este jogador só poderá mover este token.');
   };
 
   const shareObserver = () => {
@@ -412,7 +419,8 @@ const Tabletop = () => {
             <Button size="sm" variant="outline" className="h-9" onClick={toggleFull}>{full ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</Button>
             <Button size="sm" variant={showSummary ? 'default' : 'outline'} className="h-9 gap-1" onClick={() => setShowSummary(v => !v)} title="Resumo das fichas na mesa"><ScrollText className="w-4 h-4" /><span className="hidden sm:inline">Fichas</span></Button>
             <Button size="sm" variant={combatOpen ? 'default' : 'outline'} className="h-9 gap-1" onClick={() => setCombatOpen(v => !v)} title="Ordem de turno e condições"><RotateCw className="w-4 h-4" /><span className="hidden sm:inline">Combate</span></Button>
-            <Button size="sm" variant="secondary" className="h-9 gap-1" onClick={share} title="Copiar link ao vivo para os jogadores"><Share2 className="w-4 h-4" /><span className="hidden sm:inline">Compartilhar</span></Button>
+              <Button size="sm" variant="secondary" className="h-9 gap-1" onClick={share} title="Copiar link ao vivo para os jogadores"><Share2 className="w-4 h-4" /><span className="hidden sm:inline">Compartilhar</span></Button>
+              <Button size="sm" variant="outline" className="h-9 gap-1" onClick={shareToken} disabled={!selToken} title="Copiar link do token selecionado"><Link2 className="w-4 h-4" /><span className="hidden sm:inline">Link do token</span></Button>
             <Button size="sm" variant="outline" className="h-9 gap-1" onClick={shareObserver} title="Copiar link somente leitura"><Eye className="w-4 h-4" /><span className="hidden sm:inline">Observador</span></Button>
             <Button size="sm" variant="outline" className="h-9 text-destructive" onClick={remove}><Trash2 className="w-4 h-4" /></Button>
           </div>

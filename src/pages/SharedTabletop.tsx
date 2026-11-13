@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Map as MapIcon, Loader2 } from 'lucide-react';
-import { useStageZoom, StageZoomFocus } from '@/hooks/useStageZoom';
+import { StageZoomFocus } from '@/hooks/useStageZoom';
 import { DiceBar, DiceAnimation, Roll } from '@/components/DiceBar';
 import { invokeResilient } from '@/lib/network';
 
@@ -30,11 +30,10 @@ const SharedTabletop = () => {
   const lastUpdatedAt = useRef('');
   const loadingRef = useRef(false);
   const stageRef = useRef<HTMLDivElement>(null);
-  const [myZoom, setMyZoom] = useState<number | null>(null);
   const [connection, setConnection] = useState<'online' | 'retrying' | 'offline'>('retrying');
   const observer = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mode') === 'observer';
-  const zoom = myZoom ?? board?.zoom ?? 1;
-  const zoomCtl = useStageZoom(stageRef, zoom, setMyZoom, () => { drag.current = null; setDragId(null); });
+  const playerTokenId = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') : null;
+  const zoom = board?.zoom ?? 1;
   const pending = useRef<{ tokens?: Token[]; last_roll?: Roll } | null>(null);
 
   const centerOnCamera = (focus?: StageZoomFocus) => {
@@ -50,17 +49,17 @@ const SharedTabletop = () => {
   const cameraX = board?.camera?.x;
   const cameraY = board?.camera?.y;
   useEffect(() => {
-    if (myZoom !== null || cameraX === undefined || cameraY === undefined) return;
+    if (cameraX === undefined || cameraY === undefined) return;
     const frame = requestAnimationFrame(() => centerOnCamera({ x: cameraX, y: cameraY }));
     return () => cancelAnimationFrame(frame);
-  }, [board?.updated_at, cameraX, cameraY, myZoom]);
+  }, [board?.updated_at, cameraX, cameraY]);
 
   const flushPending = async () => {
     if (!shareId || !pending.current) return;
     const payload = { ...pending.current };
     setConnection('retrying');
     const { error } = await invokeResilient('shared-tabletop', {
-      action: 'shared-update', shareId, ...payload,
+      action: 'shared-update', shareId, tokenId: playerTokenId, ...payload,
     }, { attempts: 4 });
     if (error) {
       setConnection('offline');
@@ -132,7 +131,7 @@ const SharedTabletop = () => {
   };
 
   const onTokenDown = (e: React.PointerEvent, t: Token) => {
-    if (observer) return;
+    if (observer || !playerTokenId || t.id !== playerTokenId) return;
     e.stopPropagation();
     const p = pct(e);
     drag.current = { id: t.id, dx: p.x - t.x, dy: p.y - t.y };
@@ -170,11 +169,7 @@ const SharedTabletop = () => {
       <header className="flex items-center gap-2 px-4 py-2 border-b border-border/40">
         <MapIcon className="w-4 h-4 text-primary" />
         <h1 className="font-display font-bold truncate">{board.name}</h1>
-        <div className="ml-auto flex items-center gap-1">
-          <button type="button" aria-label="Diminuir zoom" onClick={() => zoomCtl.zoomOut()} className="w-8 h-8 rounded-md border border-border/60 text-lg leading-none">−</button>
-          <button type="button" onClick={() => setMyZoom(null)} className="h-8 px-2 rounded-md border border-border/60 text-[10px] tabular-nums" title="Voltar ao zoom do mestre">{myZoom === null ? 'Mestre' : `${Math.round(zoom * 100)}%`}</button>
-          <button type="button" aria-label="Aumentar zoom" onClick={() => zoomCtl.zoomIn()} className="w-8 h-8 rounded-md border border-border/60 text-lg leading-none">+</button>
-        </div>
+        <span className="ml-auto rounded-md border border-border/60 px-2 py-1 text-[10px] tabular-nums">Zoom do mestre {Math.round(zoom * 100)}%</span>
         <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
           {observer ? 'Observador' : connection === 'online' ? 'Salvo e ao vivo' : connection === 'retrying' ? 'Reconectando…' : 'Offline · tentando salvar'}
         </span>
@@ -183,10 +178,10 @@ const SharedTabletop = () => {
       <div className="px-4 py-1.5 border-b border-border/30 text-xs text-muted-foreground">
         Rodada {board.round ?? 1} · turno {board.turn_order?.length ? (board.tokens.find(t => t.id === board.turn_order?.[board.active_turn ?? 0])?.name ?? '—') : 'não definido'}
       </div>
-      <div ref={stageRef} className="relative flex-1 overflow-auto pb-20 overscroll-contain">
+      <div ref={stageRef} className="relative flex-1 overflow-hidden pb-20 overscroll-none touch-none">
         <div
           ref={mapRef}
-          className="relative mx-auto select-none touch-pan-x touch-pan-y"
+          className="relative mx-auto select-none touch-none"
           style={{ width: `${zoom * 100}%`, transition: myZoom === null ? 'width 300ms ease-out' : undefined }}
           onPointerMove={onMove}
           onPointerUp={onUp}

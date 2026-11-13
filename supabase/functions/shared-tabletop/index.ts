@@ -31,21 +31,18 @@ Deno.serve(async (req) => {
     // Névoa, mapa, grade e zoom NUNCA podem ser alterados por aqui.
     if (body.action === "shared-update") {
       const values: Record<string, unknown> = {};
-      if (Array.isArray(body.tokens)) {
-        values.tokens = body.tokens.slice(0, 200).map((t: Record<string, unknown>) => ({
-          id: String(t.id ?? "").slice(0, 32),
-          name: String(t.name ?? "").slice(0, 60),
-          image: String(t.image ?? ""),
-          x: Math.max(0, Math.min(100, Number(t.x) || 0)),
-          y: Math.max(0, Math.min(100, Number(t.y) || 0)),
-          size: Math.max(1, Math.min(40, Number(t.size) || 8)),
-          rotation: Number(t.rotation) || 0,
-          conditions: Array.isArray(t.conditions) ? t.conditions.slice(0, 12).map((c: Record<string, unknown>) => ({
-            id: String(c.id ?? "").slice(0, 32),
-            name: String(c.name ?? "").slice(0, 40),
-            rounds: Math.max(1, Math.min(99, Number(c.rounds) || 1)),
-          })).filter((c: { id: string; name: string }) => c.id && c.name) : [],
-        })).filter((t: { id: string }) => t.id);
+      const tokenId = String(body.tokenId ?? "").slice(0, 32);
+      if (Array.isArray(body.tokens) && tokenId) {
+        const { data: current } = await admin.from("tabletops").select("tokens").eq("share_id", shareId).maybeSingle();
+        const currentTokens = Array.isArray(current?.tokens) ? current.tokens as Record<string, unknown>[] : [];
+        const requested = body.tokens.find((t: Record<string, unknown>) => String(t.id ?? "") === tokenId) as Record<string, unknown> | undefined;
+        if (requested) {
+          values.tokens = currentTokens.map((token) => token.id === tokenId ? {
+            ...token,
+            x: Math.max(0, Math.min(100, Number(requested.x) || 0)),
+            y: Math.max(0, Math.min(100, Number(requested.y) || 0)),
+          } : token);
+        }
       }
       if (body.last_roll && typeof body.last_roll === "object") {
         const r = body.last_roll as Record<string, unknown>;
