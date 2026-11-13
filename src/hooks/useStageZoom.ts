@@ -3,13 +3,14 @@ import { RefObject, useEffect, useLayoutEffect, useRef } from 'react';
 export const MIN_ZOOM = 0.5;
 export const MAX_ZOOM = 4;
 const clamp = (z: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(z * 100) / 100));
+export interface StageZoomFocus { x: number; y: number }
 
 /** Zoom suave num container com rolagem: roda do mouse, pinça no trackpad e dois dedos no celular.
  *  O ponto embaixo do cursor/dedos fica parado. O conteúdo deve ter largura = zoom * 100%. */
 export function useStageZoom(
   stageRef: RefObject<HTMLDivElement>,
   zoom: number,
-  onZoom: (z: number) => void,
+  onZoom: (z: number, focus?: StageZoomFocus) => void,
   onPinchStart?: () => void,
 ) {
   const zoomRef = useRef(zoom);
@@ -30,7 +31,7 @@ export function useStageZoom(
     const ox = c?.offsetLeft ?? 0, oy = c?.offsetTop ?? 0;
     anchor.current = { fx: (st.scrollLeft + px - ox) / w, fy: (st.scrollTop + py - oy) / h, px, py };
     zoomRef.current = z;
-    cb.current.onZoom(z);
+    cb.current.onZoom(z, { x: Math.min(1, Math.max(0, anchor.current.fx)), y: Math.min(1, Math.max(0, anchor.current.fy)) });
   };
 
   // Depois do novo tamanho, rola para manter o ponto parado.

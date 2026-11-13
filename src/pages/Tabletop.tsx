@@ -1,4 +1,4 @@
-import { useStageZoom } from '@/hooks/useStageZoom';
+import { useStageZoom, StageZoomFocus } from '@/hooks/useStageZoom';
 import { useEffect, useRef, useState } from 'react';
 // A névoa fica POR CIMA dos personagens (z-20) — cobre bonecos também.
 import { motion } from 'framer-motion';
@@ -37,6 +37,7 @@ interface Board {
   fog: FogRect[];
   share_id?: string;
   zoom?: number;
+  camera?: StageZoomFocus;
   last_roll?: Roll | null;
   turn_order?: string[];
   active_turn?: number;
@@ -107,7 +108,7 @@ const Tabletop = () => {
         if (drag.current || Date.now() < busyUntil.current) return;
         const f = list.find(b => b.id === activeId);
         if (!f) return;
-        setBoards(prev => prev.map(b => b.id === f.id ? { ...b, tokens: f.tokens, last_roll: f.last_roll } : b));
+        setBoards(prev => prev.map(b => b.id === f.id ? { ...b, tokens: f.tokens, last_roll: f.last_roll, zoom: f.zoom, camera: f.camera } : b));
         const lr = f.last_roll;
         if (lr && lr.at > lastSeenRoll.current) { lastSeenRoll.current = lr.at; if (lr.by !== 'Mestre') setAnimRoll(lr); }
       }).then(() => setConnection('online')).catch(() => setConnection('offline')).finally(() => { syncing.current = false; });
@@ -118,7 +119,7 @@ const Tabletop = () => {
 
   const board = boards.find(b => b.id === activeId) ?? null;
   const zoom = board?.zoom ?? 1;
-  const zoomCtl = useStageZoom(stageRef, zoom, z => patch({ zoom: z }), () => { drag.current = null; pan.current = null; fogStart.current = null; setDraftFog(null); });
+  const zoomCtl = useStageZoom(stageRef, zoom, (z, camera) => patch({ zoom: z, camera }), () => { drag.current = null; pan.current = null; fogStart.current = null; setDraftFog(null); });
 
   const patch = (p: Partial<Board>, now = false) => {
     if (!board) return;

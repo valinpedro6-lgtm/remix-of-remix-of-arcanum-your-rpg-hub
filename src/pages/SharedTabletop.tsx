@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Map as MapIcon, Loader2 } from 'lucide-react';
-import { useStageZoom } from '@/hooks/useStageZoom';
+import { useStageZoom, StageZoomFocus } from '@/hooks/useStageZoom';
 import { DiceBar, DiceAnimation, Roll } from '@/components/DiceBar';
 import { invokeResilient } from '@/lib/network';
 
@@ -10,7 +10,7 @@ interface Token { id: string; name: string; image: string; x: number; y: number;
 interface FogRect { id: string; x: number; y: number; w: number; h: number }
 interface SharedBoard {
   id: string; name: string; map_url: string; tokens: Token[]; grid: boolean;
-  fog: FogRect[]; zoom: number; last_roll: Roll | null; updated_at: string;
+  fog: FogRect[]; zoom: number; camera?: StageZoomFocus; last_roll: Roll | null; updated_at: string;
   turn_order?: string[]; active_turn?: number; round?: number; vision_mode?: 'all' | 'token';
 }
 
@@ -36,6 +36,24 @@ const SharedTabletop = () => {
   const zoom = myZoom ?? board?.zoom ?? 1;
   const zoomCtl = useStageZoom(stageRef, zoom, setMyZoom, () => { drag.current = null; setDragId(null); });
   const pending = useRef<{ tokens?: Token[]; last_roll?: Roll } | null>(null);
+
+  const centerOnCamera = (focus?: StageZoomFocus) => {
+    const stage = stageRef.current;
+    const content = stage?.firstElementChild as HTMLElement | null;
+    if (!stage || !content || !focus) return;
+    const maxLeft = Math.max(0, stage.scrollWidth - stage.clientWidth);
+    const maxTop = Math.max(0, stage.scrollHeight - stage.clientHeight);
+    stage.scrollLeft = Math.min(maxLeft, Math.max(0, focus.x * content.offsetWidth - stage.clientWidth / 2));
+    stage.scrollTop = Math.min(maxTop, Math.max(0, focus.y * content.offsetHeight - stage.clientHeight / 2));
+  };
+
+  const cameraX = board?.camera?.x;
+  const cameraY = board?.camera?.y;
+  useEffect(() => {
+    if (myZoom !== null || cameraX === undefined || cameraY === undefined) return;
+    const frame = requestAnimationFrame(() => centerOnCamera({ x: cameraX, y: cameraY }));
+    return () => cancelAnimationFrame(frame);
+  }, [board?.updated_at, cameraX, cameraY, myZoom]);
 
   const flushPending = async () => {
     if (!shareId || !pending.current) return;
@@ -175,7 +193,7 @@ const SharedTabletop = () => {
           onPointerCancel={onUp}
         >
           {board.map_url ? (
-            <img src={board.map_url} alt={board.name} draggable={false} className="w-full block pointer-events-none" />
+            <img src={board.map_url} alt={board.name} draggable={false} onLoad={() => centerOnCamera(board.camera)} className="w-full block pointer-events-none" />
           ) : (
             <div className="aspect-video flex items-center justify-center text-muted-foreground subtle-pattern">
               <p className="text-sm">O mestre ainda não carregou o mapa</p>
