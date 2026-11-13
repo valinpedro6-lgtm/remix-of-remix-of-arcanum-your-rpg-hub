@@ -69,3 +69,5 @@ Ampliar o Tabletop sem quebrar fichas, mapas, links públicos ou a separação p
 A ficha continua usando o Supabase atual como fonte de dados. O motor `src/lib/sheetAutomation.ts` calcula valores derivados sem sobrescrever atributos ou recursos existentes, enquanto `SheetAutomation` oferece rolagens de atributos, perícias, iniciativa e percepção. O último resultado é salvo no campo `last_roll` e aparece tanto na ficha do jogador quanto na visão do mestre. O endpoint `user-data` valida e limita esse payload antes de persistir.
 
 Os cálculos derivados agora usam perfis por sistema para Ordem Paranormal, D&D 5e, Tormenta20, Pathfinder 2e, Call of Cthulhu, Cyberpunk RED e um fallback genérico para os demais sistemas. A rolagem de atributos e perícias permanece universal.
+
+Na próxima evolução, o modelo comum preserva `ruleset_id`, versão/edição, dados de atributo, atributo ligado à perícia, grau/proficiência, especialização, modificadores e overrides. A implementação atual já usa o catálogo e o modelo de rolagem próprios de cada sistema, sem converter automaticamente uma ficha entre edições.

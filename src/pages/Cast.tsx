@@ -19,7 +19,7 @@ import { SheetPoster } from '@/components/sheet/SheetPoster';
 import {
   Sheet, SheetAbility, SheetAttribute, SheetResource, SheetSkill, SheetStyle,
   createSheet, deleteSheet, listSheets, updateSheet, uid, shareUrl,
-  DEFAULT_SKILLS, OP_SKILLS, SheetKind, STYLE_COLORS,
+  SheetKind, STYLE_COLORS,
 } from '@/lib/sheets';
 import { SHEET_SYSTEMS, getSystem, systemTemplate } from '@/lib/sheetSystems';
 import { compressImage } from '@/lib/image';
@@ -28,6 +28,17 @@ import { clearDraft, readDraft, saveDraft } from '@/lib/drafts';
 const TONES: SheetResource['tone'][] = ['life', 'sanity', 'effort', 'neutral'];
 const TONE_LABEL: Record<SheetResource['tone'], string> = {
   life: 'Vermelho', sanity: 'Azul', effort: 'Dourado', neutral: 'Cinza',
+};
+
+const degreeOptions = (system?: string) => {
+  if (system === 'ordemparanormal') return [['destreinado', 'Destreinado'], ['treinado', 'Treinado'], ['veterano', 'Veterano'], ['expert', 'Expert']];
+  if (system === 'ordemparanormal2-alpha') return [['d4', 'd4'], ['d6', 'd6'], ['d8', 'd8'], ['d10', 'd10'], ['d12', 'd12']];
+  if (system === 'dnd5e') return [['untrained', 'Sem proficiência'], ['proficient', 'Proficiência'], ['expertise', 'Expertise']];
+  if (system === 'tormenta20') return [['untrained', 'Não treinada'], ['trained', 'Treinada']];
+  if (system === 'pf2e') return [['untrained', 'Destreinado'], ['trained', 'Treinado'], ['expert', 'Expert'], ['master', 'Mestre'], ['legendary', 'Lendário']];
+  if (system === 'cthulhu') return [['regular', 'Regular / valor %'], ['hard', 'Difícil / metade'], ['extreme', 'Extremo / quinto']];
+  if (system === 'savageworlds') return [['d4', 'd4'], ['d6', 'd6'], ['d8', 'd8'], ['d10', 'd10'], ['d12', 'd12']];
+  return [['0', '0'], ['1', '1'], ['2', '2'], ['3', '3'], ['4', '4'], ['5', '5']];
 };
 
 const sendToInitiative = (sheet: Sheet) => {
@@ -461,13 +472,18 @@ const Cast = () => {
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {s.attributes.map(a => (
-                    <div key={a.id} className="flex items-center gap-2 bg-secondary/30 rounded-lg p-2">
+                    <div key={a.id} className="grid grid-cols-2 gap-2 bg-secondary/30 rounded-lg p-2">
                       <Input className="h-8" value={a.label} onChange={e => setAttr(s.attributes.map(x => x.id === a.id ? { ...x, label: e.target.value } : x))} placeholder="Nome" />
-                      <Input className="h-8 w-20" value={a.short} onChange={e => setAttr(s.attributes.map(x => x.id === a.id ? { ...x, short: e.target.value.toUpperCase().slice(0, 4) } : x))} placeholder="SIGLA" />
-                      <NumberInput className="h-8 w-16" value={a.value} onChange={v => setAttr(s.attributes.map(x => x.id === a.id ? { ...x, value: v } : x))} />
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={() => setAttr(s.attributes.filter(x => x.id !== a.id))}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+                      <Input className="h-8" value={a.short} onChange={e => setAttr(s.attributes.map(x => x.id === a.id ? { ...x, short: e.target.value.toUpperCase().slice(0, 4) } : x))} placeholder="SIGLA" />
+                      <NumberInput className="h-8" value={a.value} onChange={v => setAttr(s.attributes.map(x => x.id === a.id ? { ...x, value: v } : x))} />
+                      <Input className="h-8" value={a.die ?? ''} onChange={e => setAttr(s.attributes.map(x => x.id === a.id ? { ...x, die: e.target.value } : x))} placeholder="Dado (ex: d6)" />
+                      <NumberInput className="h-8" value={a.modifier ?? 0} onChange={v => setAttr(s.attributes.map(x => x.id === a.id ? { ...x, modifier: v } : x))} />
+                      <div className="flex gap-2">
+                        <Input className="h-8 flex-1" value={a.notes ?? ''} onChange={e => setAttr(s.attributes.map(x => x.id === a.id ? { ...x, notes: e.target.value } : x))} placeholder="Nota / fonte" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={() => setAttr(s.attributes.filter(x => x.id !== a.id))}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -564,8 +580,8 @@ const Cast = () => {
                   <Label>Perícias</Label>
                   <div className="flex gap-2">
                     {s.skills.length === 0 && (
-                      <Button size="sm" variant="outline" onClick={() => setSkills(DEFAULT_SKILLS())}>
-                        Usar lista de Ordem Paranormal
+                      <Button size="sm" variant="outline" onClick={() => setSkills(systemTemplate(s.style.system ?? 'custom').skills)}>
+                        Usar lista de {getSystem(s.style.system).name}
                       </Button>
                     )}
                     <Button size="sm" variant="outline" className="gap-1" onClick={() => setSkills([...s.skills, { id: uid(), name: 'Nova perícia', value: 0 }])}>
@@ -573,16 +589,32 @@ const Cast = () => {
                     </Button>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">Só aparecem na ficha as perícias treinadas ou com valor acima de zero.</p>
+                <p className="text-xs text-muted-foreground">Cada perícia mantém o atributo, grau, dado, especialização e modificadores próprios do sistema selecionado.</p>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {s.skills.map(sk => (
-                    <div key={sk.id} className="flex items-center gap-2 bg-secondary/30 rounded-lg p-2">
-                      <Input className="h-8 flex-1" value={sk.name} onChange={e => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, name: e.target.value } : x))} />
-                      <NumberInput className="h-8 w-16" value={sk.value} onChange={v => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, value: v } : x))} />
-                      <Switch checked={!!sk.trained} onCheckedChange={c => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, trained: c } : x))} />
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setSkills(s.skills.filter(x => x.id !== sk.id))}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+                    <div key={sk.id} className="space-y-2 bg-secondary/30 rounded-lg p-2">
+                      <div className="flex items-center gap-2">
+                        <Input className="h-8 flex-1" value={sk.name} onChange={e => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, name: e.target.value } : x))} />
+                        <NumberInput className="h-8 w-16" value={sk.value} onChange={v => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, value: v } : x))} />
+                        <Switch checked={!!sk.trained} onCheckedChange={c => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, trained: c } : x))} />
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setSkills(s.skills.filter(x => x.id !== sk.id))}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <select aria-label={`Atributo de ${sk.name}`} className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={sk.attribute ?? ''} onChange={e => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, attribute: e.target.value || undefined } : x))}>
+                          <option value="">Atributo ligado</option>
+                          {s.attributes.map(attribute => <option key={attribute.id} value={attribute.short}>{attribute.short} — {attribute.label}</option>)}
+                        </select>
+                        <select aria-label={`Grau de ${sk.name}`} className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={sk.degree ?? ''} onChange={e => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, degree: e.target.value || undefined, proficiency: e.target.value || undefined, die: /^d\\d+$/.test(e.target.value) ? e.target.value : x.die } : x))}>
+                          <option value="">Grau / dado</option>
+                          {degreeOptions(s.style.system).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                        </select>
+                      </div>
+                      <div className="grid grid-cols-[1fr_5rem] gap-2">
+                        <Input className="h-8" value={sk.specialization ?? ''} onChange={e => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, specialization: e.target.value } : x))} placeholder="Especialização / observação" />
+                        <NumberInput className="h-8" value={sk.modifiers ?? 0} onChange={v => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, modifiers: v } : x))} />
+                      </div>
                     </div>
                   ))}
                 </div>

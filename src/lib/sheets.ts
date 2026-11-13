@@ -7,6 +7,9 @@ export interface SheetAttribute {
   label: string;   // AGILIDADE
   short: string;   // AGI
   value: number;
+  die?: string;    // d4, d6, d8... para sistemas baseados em dados
+  modifier?: number;
+  notes?: string;
 }
 
 export interface SheetSkill {
@@ -14,7 +17,14 @@ export interface SheetSkill {
   name: string;
   value: number;
   trained?: boolean;
-  attribute?: string;
+  attribute?: string;       // sigla do atributo ligado
+  degree?: string;          // grau/rating próprio do sistema
+  proficiency?: string;     // untrained, trained, expert etc.
+  die?: string;             // dado da perícia, quando aplicável
+  category?: string;
+  specialization?: string;
+  modifiers?: number;
+  notes?: string;
 }
 
 export interface SheetResource {
@@ -54,6 +64,9 @@ export interface SheetStyle {
   uppercase?: boolean;
   inventory?: InventoryItem[];
   system?: string;      // id em SHEET_SYSTEMS
+  rulesetVersion?: string;
+  edition?: string;
+  houseRules?: string;
   blockOrder?: string[]; // ordem visual dos blocos da ficha
 }
 

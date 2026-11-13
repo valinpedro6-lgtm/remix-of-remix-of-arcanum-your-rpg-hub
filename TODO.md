@@ -29,4 +29,5 @@
 - [x] A última rolagem é salva no Supabase, aparece para o mestre e é validada no endpoint público.
 - [x] A automação funciona na ficha privada e no link público compartilhado.
 - [x] A rolagem de atributos e perícias funciona em todos os sistemas disponíveis, com derivados adaptados por sistema quando aplicável.
+- [x] Cada sistema possui catálogo, atributo ligado, grau/dado e modelo de rolagem próprios; esses campos podem ser editados pelo mestre.
 - [ ] Adicionar ataques, dano, crítico, inventário mecânico e efeitos configuráveis na próxima fase.

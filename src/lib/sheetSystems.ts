@@ -100,11 +100,44 @@ export const SHEET_SYSTEMS: SheetSystem[] = [
 
 export const getSystem = (id?: string) => SHEET_SYSTEMS.find(s => s.id === id) ?? SHEET_SYSTEMS[0];
 
+const normalize = (value: string) => value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+const skillAttribute = (system: string, name: string) => {
+  const n = normalize(name);
+  const groups: Record<string, string[]> = {
+    forca: ['atletismo', 'luta', 'fortitude', 'forca', 'golpear', 'esmagar'],
+    agilidade: ['acrobacia', 'crime', 'furtividade', 'iniciativa', 'pilotagem', 'pontaria', 'reflexos', 'esquiva', 'evasion'],
+    intelecto: ['atualidades', 'ciencias', 'ciencia', 'investigacao', 'medicina', 'ocultismo', 'profissao', 'tatic', 'tecnologia', 'conhecimento', 'guerra', 'pesquisar'],
+    presenca: ['adestramento', 'artes', 'diplomacia', 'enganacao', 'intimidacao', 'intuicao', 'percepcao', 'religiao', 'vontade', 'persuasao', 'charme'],
+    destreza: ['acrobacia', 'furtividade', 'ladinagem', 'pilotagem', 'pontaria', 'reflexos', 'iniciativa', 'esquiva'],
+    sabedoria: ['percepcao', 'intuicao', 'medicina', 'sobrevivencia', 'vontade', 'cura', 'natureza', 'religiao'],
+    carisma: ['diplomacia', 'enganacao', 'intimidacao', 'atuacao', 'persuasao', 'jogatina', 'nobreza'],
+    inteligencia: ['arcanismo', 'historia', 'investigacao', 'natureza', 'religiao', 'conhecimento', 'ocultismo', 'sociedade', 'tecnologia'],
+  };
+  const ordered = system === 'ordemparanormal' ? [['forca', 'FOR'], ['agilidade', 'AGI'], ['intelecto', 'INT'], ['presenca', 'PRE']] : [['forca', 'FOR'], ['destreza', 'DES'], ['constituicao', 'CON'], ['inteligencia', 'INT'], ['sabedoria', 'SAB'], ['carisma', 'CAR']];
+  const match = ordered.find(([key]) => groups[key]?.some(alias => n.includes(alias)));
+  return match?.[1];
+};
+
+const skillDefaults = (system: string, name: string): Partial<SheetSkill> => {
+  if (system === 'ordemparanormal') return { attribute: skillAttribute(system, name), degree: 'destreinado', proficiency: 'destreinado' };
+  if (system === 'ordemparanormal2-alpha') return { degree: 'd4', die: 'd4' };
+  if (system === 'dnd5e') return { attribute: skillAttribute(system, name), degree: 'untrained', proficiency: 'untrained' };
+  if (system === 'tormenta20') return { attribute: skillAttribute(system, name), degree: 'untrained', proficiency: 'untrained' };
+  if (system === 'pf2e') return { attribute: skillAttribute(system, name), degree: 'untrained', proficiency: 'untrained' };
+  if (system === 'cthulhu') return { degree: 'regular' };
+  if (system === 'vtm5') return { degree: '0', category: 'custom' };
+  if (system === 'cpred') return { attribute: 'REF', degree: '0', category: 'custom' };
+  if (system === 'savageworlds') return { die: 'd4', degree: 'untrained' };
+  if (system === 'shadowrun5') return { degree: '0', category: 'active' };
+  return { attribute: skillAttribute(system, name) };
+};
+
 export const systemTemplate = (id: string): { attributes: SheetAttribute[]; resources: SheetResource[]; skills: SheetSkill[] } => {
   const s = getSystem(id);
   return {
-    attributes: s.attrs.map(([label, short, value]) => ({ id: rid(), label, short, value })),
+    attributes: s.attrs.map(([label, short, value]) => ({ id: rid(), label, short, value, ...(id === 'ordemparanormal2-alpha' ? { die: 'd6' } : {}), ...(id === 'savageworlds' ? { die: 'd4' } : {}) })),
     resources: s.resources.map(([label, short, max, tone]) => ({ id: rid(), label, short, current: max, max, tone })),
-    skills: s.skills.map(name => ({ id: rid(), name, value: 0, trained: false })),
+    skills: s.skills.map(name => ({ id: rid(), name, value: 0, trained: false, ...skillDefaults(id, name) })),
   };
 };
