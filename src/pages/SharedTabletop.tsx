@@ -38,12 +38,19 @@ const SharedTabletop = () => {
 
   const centerOnCamera = (focus?: StageZoomFocus) => {
     const stage = stageRef.current;
-    const content = stage?.firstElementChild as HTMLElement | null;
+    const content = mapRef.current;
     if (!stage || !content || !focus) return;
+    // Use the rendered rect instead of assuming that the map starts at (0, 0).
+    // This matters on narrow mobile viewports, where `mx-auto` and overflow can
+    // add an offset and otherwise move the master's focal point for players.
+    const stageRect = stage.getBoundingClientRect();
+    const contentRect = content.getBoundingClientRect();
+    const targetLeft = contentRect.left - stageRect.left + focus.x * contentRect.width - stage.clientWidth / 2;
+    const targetTop = contentRect.top - stageRect.top + focus.y * contentRect.height - stage.clientHeight / 2;
     const maxLeft = Math.max(0, stage.scrollWidth - stage.clientWidth);
     const maxTop = Math.max(0, stage.scrollHeight - stage.clientHeight);
-    stage.scrollLeft = Math.min(maxLeft, Math.max(0, focus.x * content.offsetWidth - stage.clientWidth / 2));
-    stage.scrollTop = Math.min(maxTop, Math.max(0, focus.y * content.offsetHeight - stage.clientHeight / 2));
+    stage.scrollLeft = Math.min(maxLeft, Math.max(0, stage.scrollLeft + targetLeft));
+    stage.scrollTop = Math.min(maxTop, Math.max(0, stage.scrollTop + targetTop));
   };
 
   const cameraX = board?.camera?.x;
