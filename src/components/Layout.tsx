@@ -63,14 +63,14 @@ export const Layout = ({ children }: { children: ReactNode }) => {
   return (
     <div className="min-h-screen flex">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-[88px] flex-col border-r border-border/50 bg-card/35 backdrop-blur-2xl fixed h-full z-40">
+      <aside className="hidden md:flex w-[88px] min-w-[88px] flex-col overflow-hidden border-r border-border/50 bg-card/35 backdrop-blur-2xl fixed h-full z-40">
         <div className="p-4 border-b border-border/50">
           <div className="flex flex-col items-center gap-2"><div className="brand-mark w-11 h-11 rounded-2xl grid place-items-center text-primary-foreground"><Dices className="w-5 h-5" /></div><span className="text-[9px] font-display font-black tracking-[0.28em] gradient-text">ARC</span></div>
         </div>
         <nav className="desktop-nav flex flex-col gap-1 p-3 flex-1 overflow-y-auto">
           <NavLinks />
         </nav>
-        <div className="desktop-nav-footer p-3 border-t border-border/50 space-y-2">
+        <div className="desktop-nav-footer min-w-0 p-2 border-t border-border/50 space-y-2">
           <ThemeSwitcher />
           <CampaignBackup />
           <Button variant="ghost" size="sm" className="w-full justify-center text-muted-foreground" title="Sair da conta" onClick={() => confirm('Sair da conta neste aparelho?') && logout()}>

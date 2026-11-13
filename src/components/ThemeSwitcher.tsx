@@ -28,16 +28,16 @@ export const ThemeSwitcher = () => {
   }, [theme, setTheme]);
 
   return (
-    <div className="flex items-start gap-2 px-3 py-1.5">
+    <div className="flex min-w-0 items-start gap-1.5 px-2 py-1.5">
       <Palette className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
-      <div className="flex flex-wrap gap-1.5">
+      <div className="grid min-w-0 flex-1 grid-cols-3 gap-1">
         {THEMES.map(t => (
           <button
             key={t.id}
             onClick={() => setTheme(t.id)}
             title={t.label}
             aria-label={`Tema ${t.label}`}
-            className={`w-5 h-5 rounded-full ${t.color} border-2 transition-all ${
+            className={`h-5 w-5 justify-self-center rounded-full ${t.color} border-2 transition-all ${
               theme === t.id ? 'border-foreground scale-110' : 'border-transparent opacity-60 hover:opacity-100'
             }`}
           />

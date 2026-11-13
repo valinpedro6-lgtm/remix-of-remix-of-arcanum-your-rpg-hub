@@ -109,6 +109,35 @@ export interface Sheet {
   last_roll?: SheetRoll | null;
 }
 
+export interface SheetTemplate {
+  id: string;
+  name: string;
+  system?: string;
+  kind: SheetKind;
+  source: Partial<Sheet>;
+  createdAt: number;
+}
+
+const TEMPLATE_KEY = 'arcanum-sheet-templates-v1';
+
+export const listSheetTemplates = (): SheetTemplate[] => {
+  try { return JSON.parse(localStorage.getItem(TEMPLATE_KEY) ?? '[]') as SheetTemplate[]; } catch { return []; }
+};
+
+export const saveSheetTemplate = (sheet: Sheet, name: string): SheetTemplate => {
+  const template: SheetTemplate = {
+    id: uid(), name: name.trim() || `${sheet.name || 'Ficha'} — modelo`, system: sheet.style?.system, kind: sheet.kind,
+    source: JSON.parse(JSON.stringify({ ...sheet, id: undefined, share_id: undefined, created_at: undefined, updated_at: undefined, last_roll: null, in_list: false, name: '' })),
+    createdAt: Date.now(),
+  };
+  localStorage.setItem(TEMPLATE_KEY, JSON.stringify([template, ...listSheetTemplates()]));
+  return template;
+};
+
+export const deleteSheetTemplate = (id: string) => {
+  localStorage.setItem(TEMPLATE_KEY, JSON.stringify(listSheetTemplates().filter(template => template.id !== id)));
+};
+
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
 /** Atributos padrão de Ordem Paranormal */

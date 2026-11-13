@@ -18,7 +18,7 @@ import { NumberInput } from '@/components/NumberInput';
 import { SheetPoster } from '@/components/sheet/SheetPoster';
 import {
   Sheet, SheetAbility, SheetAttribute, SheetResource, SheetSkill, SheetStyle,
-  createSheet, deleteSheet, listSheets, updateSheet, uid, shareUrl,
+  createSheet, deleteSheet, listSheets, updateSheet, uid, shareUrl, listSheetTemplates, saveSheetTemplate, deleteSheetTemplate, SheetTemplate,
   SheetKind, STYLE_COLORS,
 } from '@/lib/sheets';
 import { SHEET_SYSTEMS, getSystem, systemTemplate } from '@/lib/sheetSystems';
@@ -40,6 +40,8 @@ const degreeOptions = (system?: string) => {
   if (system === 'savageworlds') return [['d4', 'd4'], ['d6', 'd6'], ['d8', 'd8'], ['d10', 'd10'], ['d12', 'd12']];
   return [['0', '0'], ['1', '1'], ['2', '2'], ['3', '3'], ['4', '4'], ['5', '5']];
 };
+
+const kindFromTemplate = (template: SheetTemplate): SheetKind => template.kind === 'monster' ? 'monster' : template.kind === 'story' ? 'story' : 'player';
 
 const sendToInitiative = (sheet: Sheet) => {
   const life = sheet.resources.find(r => r.tone === 'life' || /vida|pv|hp/i.test(`${r.label} ${r.short}`));
@@ -66,6 +68,7 @@ const Cast = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState(() => searchParams.get('t') === 'monstros' ? 'monster' : searchParams.get('t') === 'projetar' ? 'table' : 'player');
   const [full, setFull] = useState(false);
+  const [templates, setTemplates] = useState<SheetTemplate[]>(() => listSheetTemplates());
   const stageRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
@@ -142,6 +145,20 @@ const Cast = () => {
     }
   };
 
+  const addFromTemplate = async (template: SheetTemplate) => {
+    try {
+      const kind = kindFromTemplate(template);
+      const system = template.system ?? newSystem;
+      const created = await createSheet(kind, system);
+      const source = JSON.parse(JSON.stringify(template.source)) as Partial<Sheet>;
+      const patchData: Partial<Sheet> = { ...source, kind, style: { ...(source.style ?? {}), system }, name: source.name || template.name.replace(/\s+—\s+modelo$/i, ''), in_list: false, last_roll: null };
+      await updateSheet(created.id, patchData);
+      setSheets(prev => [...prev, { ...created, ...patchData } as Sheet]);
+      setSelectedId(created.id);
+      toast.success(`Ficha criada a partir de “${template.name}”.`);
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Não consegui usar o modelo.'); }
+  };
+
   const remove = async (id: string) => {
     await deleteSheet(id).catch(() => toast.error('Não consegui apagar.'));
     setSheets(prev => prev.filter(s => s.id !== id));
@@ -193,6 +210,14 @@ const Cast = () => {
         <Plus className="w-4 h-4" />
         {kind === 'monster' ? 'Nova criatura' : kind === 'story' ? 'Novo personagem da história' : 'Novo jogador'}
       </Button>
+      </div>
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <BookOpen className="h-4 w-4 text-primary" />
+          <div className="mr-auto"><p className="text-sm font-semibold">Modelos reutilizáveis</p><p className="text-xs text-muted-foreground">Salve uma ficha original e use a mesma estrutura quantas vezes quiser.</p></div>
+          {templates.map(template => <div key={template.id} className="flex items-center gap-1 rounded-md border border-border bg-background/60 px-2 py-1"><span className="max-w-32 truncate text-xs">{template.name}</span><Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => addFromTemplate(template)}>Usar</Button><Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => { deleteSheetTemplate(template.id); setTemplates(listSheetTemplates()); }}>×</Button></div>)}
+          <span className="text-xs text-muted-foreground">Abra uma ficha para salvar um novo modelo.</span>
+        </div>
       </div>
 
       {loading ? (
@@ -289,6 +314,9 @@ const Cast = () => {
             toast.success('Link copiado! O jogador só vê essa ficha.');
           }}>
             <Link2 className="w-3.5 h-3.5" /> Link do jogador
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1" onClick={() => { const name = window.prompt('Nome do modelo:', `${s.name || 'Ficha'} — modelo`); if (!name) return; saveSheetTemplate(s, name); setTemplates(listSheetTemplates()); toast.success('Modelo salvo.'); }}>
+            <BookOpen className="w-3.5 h-3.5" /> Salvar modelo
           </Button>
           <Button variant="outline" size="sm" className="gap-1" onClick={toggleFull}>
             {full ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />} Projetor
