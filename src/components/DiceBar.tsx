@@ -4,7 +4,7 @@ import { Dices } from 'lucide-react';
 
 export interface Roll { expr: string; total: number; by: string; at: number; detail?: string }
 
-const DICE = [4, 6, 8, 10, 12, 20, 100];
+const DICE = [2, 4, 6, 8, 10, 12, 20, 100];
 const BURST = Array.from({ length: 12 }, (_, i) => i);
 
 /** Barra de dados do tabletop: rola, anima e avisa quem rolou. */
@@ -17,7 +17,7 @@ export const DiceBar = ({ onRoll, compact }: { onRoll: (roll: Roll) => void; com
     <div className={`flex items-center gap-1.5 rounded-full border border-border/60 bg-card/80 backdrop-blur px-3 py-1.5 shadow-lg ${compact ? 'flex-wrap justify-center rounded-xl' : ''}`}>
       <Dices className="w-4 h-4 text-primary shrink-0" />
       {DICE.map(d => (
-        <button key={d} onClick={() => roll(d)}
+        <button key={d} aria-label={`Rolar um d${d}`} onClick={() => roll(d)}
           className="text-xs font-bold px-2 py-1 rounded-md hover:bg-primary/20 hover:text-primary transition-colors">
           d{d}
         </button>

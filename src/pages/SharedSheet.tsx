@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Loader2, Pencil, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SheetPoster } from '@/components/sheet/SheetPoster';
+import { DiceAnimation, DiceBar, Roll } from '@/components/DiceBar';
 import { Sheet, getSheetByShareId, updateSharedSheet } from '@/lib/sheets';
 
 /** Página pública: o jogador vê e edita só a ficha dele. */
@@ -11,6 +12,7 @@ const SharedSheet = () => {
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [localRoll, setLocalRoll] = useState<Roll | null>(null);
   const dirty = useRef(false);
   const saveT = useRef<ReturnType<typeof setTimeout>>();
   const loadingRef = useRef(false);
@@ -47,7 +49,7 @@ const SharedSheet = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background p-3 md:p-8">
+    <div className="min-h-[100dvh] bg-background p-3 pb-24 md:p-8 md:pb-24">
       <div className="max-w-5xl mx-auto">
         {loading ? (
           <div className="flex items-center gap-2 text-muted-foreground text-sm py-20 justify-center">
@@ -66,7 +68,12 @@ const SharedSheet = () => {
                 {editing ? 'Só olhar' : 'Editar minha ficha'}
               </Button>
             </div>
-            <SheetPoster sheet={sheet} editable={editing} onPatch={patch} onRoll={roll => patch({ last_roll: roll })} />
+            <SheetPoster
+              sheet={sheet}
+              editable={editing}
+              onPatch={patch}
+              onRoll={roll => { setLocalRoll(roll); patch({ last_roll: roll }); }}
+            />
             <p className="text-center text-xs text-muted-foreground mt-4">
               {editing
                 ? 'Suas alterações salvam sozinhas e aparecem para o mestre.'
@@ -75,6 +82,19 @@ const SharedSheet = () => {
           </>
         )}
       </div>
+      {sheet && (
+        <div className="fixed inset-x-2 bottom-2 z-40 flex justify-center pb-[env(safe-area-inset-bottom)]">
+          <DiceBar
+            compact
+            onRoll={roll => {
+              const playerRoll = { ...roll, by: sheet.name };
+              setLocalRoll(playerRoll);
+              patch({ last_roll: playerRoll });
+            }}
+          />
+        </div>
+      )}
+      <DiceAnimation roll={localRoll ?? sheet?.last_roll ?? null} />
     </div>
   );
 };
