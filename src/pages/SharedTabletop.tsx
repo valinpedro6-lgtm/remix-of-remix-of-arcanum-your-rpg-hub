@@ -55,10 +55,24 @@ const SharedTabletop = () => {
 
   const cameraX = board?.camera?.x;
   const cameraY = board?.camera?.y;
+  const scheduleCameraFocus = (focus?: StageZoomFocus) => {
+    if (!focus) return () => {};
+    let cancelled = false;
+    let frame = 0;
+    let rafId = 0;
+    const apply = () => {
+      if (cancelled) return;
+      centerOnCamera(focus);
+      frame += 1;
+      if (frame < 4) rafId = requestAnimationFrame(apply);
+    };
+    rafId = requestAnimationFrame(apply);
+    const timer = window.setTimeout(() => centerOnCamera(focus), 150);
+    return () => { cancelled = true; window.cancelAnimationFrame(rafId); window.clearTimeout(timer); };
+  };
   useEffect(() => {
     if (cameraX === undefined || cameraY === undefined) return;
-    const frame = requestAnimationFrame(() => centerOnCamera({ x: cameraX, y: cameraY }));
-    return () => cancelAnimationFrame(frame);
+    return scheduleCameraFocus({ x: cameraX, y: cameraY });
   }, [board?.updated_at, cameraX, cameraY]);
 
   const flushPending = async () => {
@@ -195,7 +209,7 @@ const SharedTabletop = () => {
           onPointerCancel={onUp}
         >
           {board.map_url ? (
-            <img src={board.map_url} alt={board.name} draggable={false} onLoad={() => centerOnCamera(board.camera)} className="w-full block pointer-events-none" />
+            <img src={board.map_url} alt={board.name} draggable={false} onLoad={() => scheduleCameraFocus(board.camera)} className="w-full block pointer-events-none" />
           ) : (
             <div className="aspect-video flex items-center justify-center text-muted-foreground subtle-pattern">
               <p className="text-sm">O mestre ainda não carregou o mapa</p>
