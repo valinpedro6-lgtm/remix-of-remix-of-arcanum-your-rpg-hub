@@ -186,7 +186,7 @@ const SharedTabletop = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen min-h-screen overflow-hidden bg-background flex flex-col">
       <header className="flex items-center gap-2 px-4 py-2 border-b border-border/40">
         <MapIcon className="w-4 h-4 text-primary" />
         <h1 className="font-display font-bold truncate">{board.name}</h1>
