@@ -199,7 +199,7 @@ const SharedTabletop = () => {
       <div className="px-4 py-1.5 border-b border-border/30 text-xs text-muted-foreground">
         Rodada {board.round ?? 1} · turno {board.turn_order?.length ? (board.tokens.find(t => t.id === board.turn_order?.[board.active_turn ?? 0])?.name ?? '—') : 'não definido'}
       </div>
-      <div ref={stageRef} className="relative flex-1 overflow-hidden pb-20 overscroll-none touch-none">
+      <div ref={stageRef} onWheel={e => e.preventDefault()} className="relative min-h-0 flex-1 overflow-auto pb-20 overscroll-none touch-none">
         <div
           ref={mapRef}
           className="relative mx-auto select-none touch-none"
