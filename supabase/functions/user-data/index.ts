@@ -19,7 +19,7 @@ const admin = createClient(
 
 const SHEET_FIELDS = [
   "kind", "style", "name", "subtitle", "origin", "age", "occupation", "profile", "background", "image_url", "accent",
-  "attributes", "skills", "resources", "abilities", "notes", "in_list", "last_roll",
+  "attributes", "skills", "resources", "abilities", "level", "xp", "xp_goal", "initiative", "notes", "in_list", "last_roll",
 ];
 const BOARD_FIELDS = ["name", "map_url", "tokens", "grid", "fog", "zoom", "camera", "last_roll", "turn_order", "active_turn", "round", "vision_mode"];
 const TABLES: Record<string, string[]> = { sheets: SHEET_FIELDS, tabletops: BOARD_FIELDS };
