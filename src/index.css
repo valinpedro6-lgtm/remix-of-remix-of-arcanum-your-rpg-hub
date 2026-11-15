@@ -479,3 +479,25 @@ body {
 .theme-swatch-moss { background: linear-gradient(135deg, hsl(145 65% 45%), hsl(86 60% 40%)); }
 .theme-swatch-shadow { background: linear-gradient(135deg, hsl(275 75% 60%), hsl(230 55% 42%)); }
 .theme-swatch-blood { background: linear-gradient(135deg, hsl(0 75% 55%), hsl(340 70% 42%)); }
+
+@media (max-width: 767px) {
+  .shell-content { padding: 5.25rem .85rem 5.9rem; }
+  .mobile-drawer { box-shadow: 18px 0 60px -28px hsl(0 0% 0% / .95); }
+  .mobile-drawer .nav-section-label { padding-left: .6rem; padding-top: 1.15rem; }
+  .mobile-drawer .nav-item { min-height: 44px; padding: .48rem .65rem; }
+  .mobile-drawer .nav-caption { font-size: .61rem; }
+  .mobile-drawer .theme-picker { margin-top: .65rem; }
+  .hub-header { display: block; }
+  .hub-header .page-title { font-size: 2rem; line-height: 1.08; }
+  .hub-tabs-scroll { margin-inline: -.15rem; padding-inline: .15rem; }
+  .hub-tabs-list { min-width: max-content; }
+  .hub-tab { padding-inline: .8rem; }
+  .hub-tab span { font-size: .72rem; }
+  .embedded-page { margin-top: .75rem; }
+  .page-title { font-size: 2rem; line-height: 1.08; }
+  .section-heading { align-items: center; }
+  .section-title { font-size: 1.2rem; }
+  .action-card > div { padding: 1rem; }
+  .tool-row { min-height: 3.65rem; }
+  .mobile-bottom-nav { min-height: 4.1rem; }
+}
