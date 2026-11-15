@@ -70,30 +70,26 @@ const Index = () => {
         </div>
       </motion.div>
 
-      {/* Feature Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-        {features.map((f, i) => (
-          <motion.div
-            key={f.path}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + i * 0.04, duration: 0.4 }}
-          >
-            <Link to={f.path}>
-              <Card className="card-hover h-full group border-border/30 bg-card/40 backdrop-blur-sm overflow-hidden relative">
-                <div className={`absolute inset-0 bg-gradient-to-br ${f.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-                <CardContent className="p-4 md:p-5 relative">
-                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300 w-fit mb-3">
-                    <f.icon className="w-5 h-5 md:w-6 md:h-6" />
-                  </div>
-                  <h3 className="font-display text-sm md:text-base font-semibold group-hover:text-primary transition-colors leading-tight">{f.label}</h3>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed hidden sm:block">{f.desc}</p>
-                </CardContent>
-              </Card>
-            </Link>
-          </motion.div>
-        ))}
-      </div>
+      <section className="space-y-4">
+        <div className="section-heading"><div><p className="eyebrow">Comece por aqui</p><h2 className="section-title">Comando da campanha</h2></div><span className="section-rule" /></div>
+        <div className="grid gap-3 md:grid-cols-3">
+          {features.slice(0, 3).map((f, i) => (
+            <motion.div key={f.path} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.08 }}>
+              <Link to={f.path} className="action-card group block h-full">
+                <div className={`action-card-glow bg-gradient-to-br ${f.accent}`} />
+                <div className="relative flex items-start gap-4 p-5"><div className="action-icon"><f.icon className="h-5 w-5" /></div><div className="min-w-0"><h3 className="font-display text-base font-bold transition-colors group-hover:text-primary">{f.label}</h3><p className="mt-1 text-xs leading-relaxed text-muted-foreground">{f.desc}</p></div><ArrowRight className="ml-auto mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" /></div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div className="section-heading"><div><p className="eyebrow">Ferramentas</p><h2 className="section-title">Acesso rápido</h2></div><span className="section-rule" /></div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {features.slice(3).map(f => <Link key={f.path} to={f.path} className="tool-row group"><span className="tool-row-icon"><f.icon className="h-4 w-4" /></span><span className="min-w-0"><span className="block truncate text-sm font-semibold group-hover:text-primary">{f.label}</span><span className="block truncate text-[11px] text-muted-foreground">{f.desc}</span></span><ArrowRight className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground/60 group-hover:text-primary" /></Link>)}
+        </div>
+      </section>
     </div>
   );
 };

@@ -31,3 +31,10 @@
 - [x] A rolagem de atributos e perícias funciona em todos os sistemas disponíveis, com derivados adaptados por sistema quando aplicável.
 - [x] Cada sistema possui catálogo, atributo ligado, grau/dado e modelo de rolagem próprios; esses campos podem ser editados pelo mestre.
 - [ ] Adicionar ataques, dano, crítico, inventário mecânico e efeitos configuráveis na próxima fase.
+
+## Redesign profissional do produto
+- [ ] A navegação agrupa claramente Visão geral, Preparar, Mesa ao vivo, Biblioteca e Administração, mantendo as rotas existentes funcionais.
+- [ ] O desktop apresenta um shell de produto profissional com sidebar legível, estado ativo evidente e hierarquia de ações consistente.
+- [ ] O mobile apresenta apenas ações principais no rodapé e acesso contextual às demais áreas pelo menu, sem uma lista confusa de ferramentas.
+- [ ] O sistema visual usa azul-petróleo para estado ativo, âmbar para atenção e vermelho reservado para perigo, mantendo a identidade de cada sistema de ficha dentro da casca do produto.
+- [ ] As telas principais apresentam cabeçalhos, espaçamento e superfícies consistentes, sem alterar dados de fichas, tabletop, biblioteca ou acesso do mestre.
