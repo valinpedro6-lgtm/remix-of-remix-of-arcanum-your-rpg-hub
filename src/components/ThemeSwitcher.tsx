@@ -1,21 +1,19 @@
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { Palette } from 'lucide-react';
+import { Check, Palette } from 'lucide-react';
 import { useEffect } from 'react';
 
 const THEMES = [
-  { id: 'red', label: 'Sangue', color: 'bg-red-500' },
-  { id: 'orange', label: 'Brasa', color: 'bg-orange-500' },
-  { id: 'gold', label: 'Ouro', color: 'bg-amber-400' },
-  { id: 'green', label: 'Veneno', color: 'bg-green-500' },
-  { id: 'cyan', label: 'Gelo', color: 'bg-cyan-400' },
-  { id: 'blue', label: 'Arcano', color: 'bg-blue-500' },
-  { id: 'purple', label: 'Sombra', color: 'bg-purple-500' },
-  { id: 'pink', label: 'Feitiço', color: 'bg-pink-500' },
-  { id: 'white', label: 'Prata', color: 'bg-white' },
+  { id: 'blue', label: 'Arcano', tone: 'theme-swatch-arcane' },
+  { id: 'cyan', label: 'Gelo', tone: 'theme-swatch-ice' },
+  { id: 'gold', label: 'Âmbar', tone: 'theme-swatch-amber' },
+  { id: 'green', label: 'Musgo', tone: 'theme-swatch-moss' },
+  { id: 'purple', label: 'Sombra', tone: 'theme-swatch-shadow' },
+  { id: 'red', label: 'Sangue', tone: 'theme-swatch-blood' },
 ] as const;
 
 export const ThemeSwitcher = () => {
   const [theme, setTheme] = useLocalStorage<string>('arcanum-theme', 'blue');
+  const activeTheme = THEMES.find(item => item.id === theme) ?? THEMES[0];
 
   useEffect(() => {
     const refreshKey = 'arcanum-visual-refresh-v1';
@@ -28,20 +26,13 @@ export const ThemeSwitcher = () => {
   }, [theme, setTheme]);
 
   return (
-    <div className="flex min-w-0 items-start gap-1.5 px-2 py-1.5">
-      <Palette className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
-      <div className="grid min-w-0 flex-1 grid-cols-3 gap-1">
-        {THEMES.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTheme(t.id)}
-            title={t.label}
-            aria-label={`Tema ${t.label}`}
-            className={`h-5 w-5 justify-self-center rounded-full ${t.color} border-2 transition-all ${
-              theme === t.id ? 'border-foreground scale-110' : 'border-transparent opacity-60 hover:opacity-100'
-            }`}
-          />
-        ))}
+    <div className="theme-picker">
+      <div className="theme-picker-heading"><span className="theme-picker-title"><Palette className="h-3.5 w-3.5" /> Paleta</span><span className="theme-picker-active">{activeTheme.label}</span></div>
+      <div className="theme-picker-options" role="group" aria-label="Escolher paleta visual">
+        {THEMES.map(item => {
+          const selected = theme === item.id;
+          return <button key={item.id} type="button" onClick={() => setTheme(item.id)} title={`Usar paleta ${item.label}`} aria-label={`Usar paleta ${item.label}`} aria-pressed={selected} className={`theme-option ${selected ? 'is-selected' : ''}`}><span className={`theme-swatch ${item.tone}`} aria-hidden="true">{selected && <Check className="h-3 w-3" />}</span><span>{item.label}</span></button>;
+        })}
       </div>
     </div>
   );
