@@ -36,7 +36,7 @@ export const SHEET_SYSTEMS: SheetSystem[] = [
     id: 'ordemparanormal2-vigilia', name: 'Ordem Paranormal II — Playtest 2: A Vigília', color: '38 78% 55%', font: 'serif', frame: 'parchment',
     attrs: [['Físico', 'FIS', 6], ['Mente', 'MEN', 6], ['Emoção', 'EMO', 6]],
     resources: [['Vida', 'VIDA', 10, 'life'], ['Pontos de Determinação', 'PD', 3, 'effort']],
-    skills: ['Acrobacia', 'Aptidão', 'Atletismo', 'Crime', 'Disciplina', 'Enganação', 'Furtividade', 'Intimidar', 'Intuição', 'Luta', 'Máquinas', 'Medicina', 'Ocultismo', 'Percepção', 'Persuasão', 'Pesquisar', 'Pontaria', 'Sobrevivência', 'Tecnologia', 'Vigor'],
+    skills: ['Acrobacia', 'Animais', 'Aptidão', 'Atletismo', 'Bruxaria', 'Carisma', 'Crime', 'Disciplina', 'Enganação', 'Furtividade', 'Inspecionar', 'Intimidar', 'Intuição', 'Luta', 'Medicina', 'Metalurgia', 'Percepção', 'Pontaria', 'Sobrevivência', 'Vigor'],
   },
   {
     id: 'dnd5e', name: 'D&D 5e', color: '0 65% 42%', font: 'serif', frame: 'parchment',
