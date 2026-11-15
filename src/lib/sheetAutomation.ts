@@ -48,6 +48,13 @@ export const derivedStats = (sheet: Sheet): DerivedStat[] => {
       { id: 'load', label: 'Carga', value: 5 + attributeValue(sheet.attributes, ['forca', 'força', 'for']) },
     ];
   }
+  if (system === 'ordemparanormal2-alpha' || system === 'ordemparanormal2-vigilia') {
+    return [
+      { id: 'initiative', label: 'Iniciativa', value: attributeValue(sheet.attributes, ['fisico', 'físico', 'fis']) + skillValue(sheet.skills, ['iniciativa']), rollable: true },
+      { id: 'perception', label: 'Percepção', value: attributeValue(sheet.attributes, ['mente', 'men']) + skillValue(sheet.skills, ['percepcao', 'percepção']), rollable: true },
+      { id: 'determination', label: 'Determinação', value: resourceValue(sheet, ['pd', 'pontos de determinacao', 'pontos de determinação']) },
+    ];
+  }
   if (system === 'dnd5e') {
     return [
       { id: 'armor', label: 'Classe de Armadura', value: resourceValue(sheet, ['ca', 'classe de armadura']) || 10 + attributeValue(sheet.attributes, ['destreza', 'des']) },

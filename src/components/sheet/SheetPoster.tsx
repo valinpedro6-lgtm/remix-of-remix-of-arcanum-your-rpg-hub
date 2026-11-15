@@ -129,7 +129,7 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, onR
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-primary to-[hsl(var(--ember))]" style={{ width: `${Math.min(100, Math.round((sheet.xp / Math.max(1, sheet.xp_goal)) * 100))}%` }} /></div>
             <span className="text-[10px] text-white/60">{sheet.xp}/{sheet.xp_goal} XP</span>
           </div>
-          {sys.id === 'ordemparanormal2-alpha' && (sheet.age || sheet.occupation || sheet.profile) && (
+          {(sys.id === 'ordemparanormal2-alpha' || sys.id === 'ordemparanormal2-vigilia') && (sheet.age || sheet.occupation || sheet.profile) && (
             <div className="mt-3 flex flex-wrap gap-1.5 text-[10px] uppercase tracking-widest text-white/75">
               {sheet.age && <span className="rounded border border-white/15 bg-black/40 px-2 py-1">{sheet.age} anos</span>}
               {sheet.occupation && <span className="rounded border border-white/15 bg-black/40 px-2 py-1">{sheet.occupation}</span>}

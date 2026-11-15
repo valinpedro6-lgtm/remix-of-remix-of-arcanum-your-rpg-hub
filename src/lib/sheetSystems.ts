@@ -31,6 +31,14 @@ export const SHEET_SYSTEMS: SheetSystem[] = [
     skills: ['Acrobacia', 'Aptidão', 'Atletismo', 'Crime', 'Disciplina', 'Enganação', 'Furtividade', 'Intimidar', 'Intuição', 'Luta', 'Máquinas', 'Medicina', 'Ocultismo', 'Percepção', 'Persuasão', 'Pesquisar', 'Pontaria', 'Sobrevivência', 'Tecnologia', 'Vigor'],
   },
   {
+    // Opção separada para a mesa de A Vigília. Mantém o núcleo confirmado do
+    // Playtest 2 e só muda a apresentação/identidade da campanha medieval.
+    id: 'ordemparanormal2-vigilia', name: 'Ordem Paranormal II — Playtest 2: A Vigília', color: '38 78% 55%', font: 'serif', frame: 'parchment',
+    attrs: [['Físico', 'FIS', 6], ['Mente', 'MEN', 6], ['Emoção', 'EMO', 6]],
+    resources: [['Vida', 'VIDA', 10, 'life'], ['Pontos de Determinação', 'PD', 3, 'effort']],
+    skills: ['Acrobacia', 'Aptidão', 'Atletismo', 'Crime', 'Disciplina', 'Enganação', 'Furtividade', 'Intimidar', 'Intuição', 'Luta', 'Máquinas', 'Medicina', 'Ocultismo', 'Percepção', 'Persuasão', 'Pesquisar', 'Pontaria', 'Sobrevivência', 'Tecnologia', 'Vigor'],
+  },
+  {
     id: 'dnd5e', name: 'D&D 5e', color: '0 65% 42%', font: 'serif', frame: 'parchment',
     attrs: [['Força', 'FOR', 10], ['Destreza', 'DES', 10], ['Constituição', 'CON', 10], ['Inteligência', 'INT', 10], ['Sabedoria', 'SAB', 10], ['Carisma', 'CAR', 10]],
     resources: [['Pontos de Vida', 'PV', 10, 'life'], ['Classe de Armadura', 'CA', 10, 'neutral'], ['Dados de Vida', 'DV', 1, 'effort']],
