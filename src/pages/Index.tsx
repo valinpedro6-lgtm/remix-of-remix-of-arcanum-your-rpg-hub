@@ -4,7 +4,7 @@ import {
   Dices, Clock, Swords, Users, Skull, FlaskConical,
   Gamepad2, UserPlus, StickyNote, CloudSun, Sword, Sparkles, Coins, Gauge, ArrowRight, Drama, ScrollText
 } from 'lucide-react';
-import heroBanner from '@/assets/hero-banner-v2.jpg';
+import arcanumLogo from '@/assets/arcanum-logo.png';
 import { motion } from 'framer-motion';
 
 const features = [
@@ -36,15 +36,10 @@ const Index = () => {
         transition={{ duration: 0.6 }}
         className="relative rounded-3xl overflow-hidden border border-primary/30 shadow-[0_0_70px_hsl(var(--primary)/0.16)] group"
       >
-        <img
-          src={heroBanner}
-          alt="Dragão ancestral sobre ruínas vulcânicas — Arcanum"
-          className="w-full h-[21rem] md:h-[32rem] object-cover object-center transition-transform duration-1000 group-hover:scale-[1.025]"
-          loading="eager"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/65 to-transparent" />
+        <div className="flex h-[21rem] items-center justify-center bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/.16),transparent_58%),linear-gradient(135deg,hsl(var(--card)),hsl(var(--background)))] md:h-[32rem]"><img src={arcanumLogo} alt="Arcanum" className="w-[78%] max-w-[720px] object-contain drop-shadow-[0_0_28px_hsl(var(--primary)/.22)] transition-transform duration-1000 group-hover:scale-[1.025]" loading="eager" /></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-background/85 via-background/15 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_35%,hsl(var(--primary)/0.16),transparent_35%)] mix-blend-screen" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_35%,hsl(var(--primary)/0.12),transparent_35%)] mix-blend-screen" />
         <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent opacity-80" />
         <div className="absolute inset-0 flex items-end p-6 md:p-12">
           <div className="max-w-xl">
