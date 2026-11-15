@@ -19,7 +19,7 @@ export interface SheetSystem {
 
 export const SHEET_SYSTEMS: SheetSystem[] = [
   {
-    id: 'ordemparanormal', name: 'O Sistema Normal de Ordem', color: '0 78% 55%', font: 'display', frame: 'paranormal',
+    id: 'ordemparanormal', name: 'Sistema de Ordem', color: '0 78% 55%', font: 'display', frame: 'paranormal',
     attrs: [['Agilidade', 'AGI', 1], ['Força', 'FOR', 1], ['Intelecto', 'INT', 1], ['Presença', 'PRE', 1], ['Vigor', 'VIG', 1]],
     resources: [['Vida', 'PV', 12, 'life'], ['Sanidade', 'SAN', 12, 'sanity'], ['Esforço', 'PE', 2, 'effort']],
     skills: ['Acrobacia', 'Adestramento', 'Artes', 'Atletismo', 'Atualidades', 'Ciências', 'Crime', 'Diplomacia', 'Enganação', 'Fortitude', 'Furtividade', 'Iniciativa', 'Intimidação', 'Intuição', 'Investigação', 'Luta', 'Medicina', 'Ocultismo', 'Percepção', 'Pilotagem', 'Pontaria', 'Profissão', 'Reflexos', 'Religião', 'Sobrevivência', 'Tática', 'Tecnologia', 'Vontade'],
@@ -33,7 +33,7 @@ export const SHEET_SYSTEMS: SheetSystem[] = [
   {
     // Opção separada para a mesa de A Vigília. Mantém o núcleo confirmado do
     // Playtest 2 e só muda a apresentação/identidade da campanha medieval.
-    id: 'ordemparanormal2-vigilia', name: 'Os Murmúrios', color: '38 78% 55%', font: 'serif', frame: 'parchment',
+    id: 'ordemparanormal2-vigilia', name: 'Ordem: A Vigília', color: '38 78% 55%', font: 'serif', frame: 'parchment',
     attrs: [['Físico', 'FIS', 6], ['Mente', 'MEN', 6], ['Emoção', 'EMO', 6]],
     resources: [['Vida', 'VIDA', 10, 'life'], ['Pontos de Determinação', 'PD', 3, 'effort']],
     skills: ['Acrobacia', 'Animais', 'Aptidão', 'Atletismo', 'Bruxaria', 'Carisma', 'Crime', 'Disciplina', 'Enganação', 'Furtividade', 'Inspecionar', 'Intimidar', 'Intuição', 'Luta', 'Medicina', 'Metalurgia', 'Percepção', 'Pontaria', 'Sobrevivência', 'Vigor'],
