@@ -11,7 +11,7 @@ import {
 import {
   Plus, Trash2, Link2, ZoomIn, ZoomOut, Crosshair, Pencil, Network, Download, Upload,
   Maximize2, Minimize2, Image as ImageIcon, Undo2, Redo2, Search, Grid3x3, Copy,
-  Lightbulb, User, MapPin, Skull, ScrollText, KeyRound, X, Layers, MoreHorizontal,
+  Lightbulb, User, MapPin, Skull, ScrollText, KeyRound, X, Layers, MoreHorizontal, WandSparkles,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -438,6 +438,16 @@ const MindMap = () => {
     setPan({ x: r.width / 2 - ((minX + maxX) / 2) * z, y: r.height / 2 - ((minY + maxY) / 2) * z });
   }, [data.nodes]);
 
+  const organizeMap = useCallback(() => {
+    if (!data.nodes.length) { toast({ title: 'O mapa ainda está vazio', description: 'Adicione blocos antes de organizar.' }); return; }
+    const order: NodeKind[] = ['trama', 'pista', 'npc', 'local', 'ameaca', 'ideia'];
+    const grouped = order.flatMap(kind => data.nodes.filter(node => (node.kind ?? 'ideia') === kind));
+    commit(prev => ({ ...prev, nodes: grouped.map((node, index) => ({ ...node, x: Math.floor(index / 4) * 250, y: (index % 4) * 145 })) }));
+    setSelected(null);
+    window.setTimeout(fitView, 80);
+    toast({ title: 'Mapa organizado', description: 'Os blocos foram agrupados por tipo sem apagar conexões.' });
+  }, [commit, data.nodes, fitView]);
+
   const centerOn = (n: MapNode) => {
     const r = wrapRef.current?.getBoundingClientRect();
     if (!r) return;
@@ -691,6 +701,7 @@ const MindMap = () => {
       <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Refazer"
         disabled={!history.current.future.length} onClick={redo}><Redo2 className="w-4 h-4" /></Button>
       <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Enquadrar tudo" onClick={fitView}><Crosshair className="w-4 h-4" /></Button>
+      <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title="Organizar mapa" onClick={organizeMap}><WandSparkles className="w-4 h-4" /></Button>
       <Button variant={searchOpen ? 'default' : 'outline'} size="icon" className={`${iconBtn} shrink-0`} title="Buscar"
         onClick={() => setSearchOpen(o => !o)}><Search className="w-4 h-4" /></Button>
       <Button variant="outline" size="icon" className={`${iconBtn} shrink-0`} title={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
@@ -711,6 +722,7 @@ const MindMap = () => {
             <DropdownMenuItem onClick={() => setSnap(s => !s)}>
               <Grid3x3 className="w-4 h-4 mr-2" />{snap ? 'Desligar encaixe' : 'Encaixar na grade'}
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={organizeMap}><WandSparkles className="w-4 h-4 mr-2" />Organizar mapa</DropdownMenuItem>
             <DropdownMenuItem onClick={exportPng}><ImageIcon className="w-4 h-4 mr-2" />Exportar imagem</DropdownMenuItem>
             <DropdownMenuItem onClick={exportJson}><Download className="w-4 h-4 mr-2" />Exportar arquivo</DropdownMenuItem>
             <DropdownMenuItem onSelect={e => e.preventDefault()} asChild>

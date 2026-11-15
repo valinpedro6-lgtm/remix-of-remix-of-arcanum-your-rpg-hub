@@ -510,3 +510,8 @@ body {
   .mobile-drawer .theme-picker-options { gap: .28rem; }
   .mobile-drawer .theme-option { padding: .35rem .3rem; }
 }
+
+.note-stat { display: grid; min-width: 3.8rem; border: 1px solid hsl(var(--border) / .7); border-radius: .75rem; background: hsl(var(--card) / .4); padding: .45rem .6rem; }
+.note-stat strong { font-family: 'Cinzel', serif; font-size: 1.1rem; line-height: 1; color: hsl(var(--primary)); }
+.note-stat span { margin-top: .25rem; color: hsl(var(--muted-foreground)); font-size: .58rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+@media (max-width: 767px) { .note-stat { min-width: 3.2rem; padding: .4rem .45rem; } }

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, StickyNote, Search, Pin, PinOff, Copy } from 'lucide-react';
+import { Plus, Trash2, StickyNote, Search, Pin, PinOff, Copy, ListFilter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Note {
@@ -33,6 +33,7 @@ const Notes = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
+  const [filter, setFilter] = useState<'all' | 'pinned' | string>('all');
 
   const save = () => {
     if (!title.trim()) return;
@@ -55,22 +56,25 @@ const Notes = () => {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    const list = notes.filter(n =>
-      !q || n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q)
-    );
+    const list = notes.filter(n => {
+      const matchesQuery = !q || n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q);
+      const matchesFilter = filter === 'all' || (filter === 'pinned' ? n.pinned : n.color === filter);
+      return matchesQuery && matchesFilter;
+    });
     // Pinned first, then by date
     return list.sort((a, b) => {
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
       return b.createdAt - a.createdAt;
     });
-  }, [notes, search]);
+  }, [notes, search, filter]);
 
   return (
     <div className="space-y-6">
-      <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="page-title">
-        Notas
-      </motion.h1>
+      <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-wrap items-end justify-between gap-3">
+        <div><p className="eyebrow">Memória da campanha</p><h1 className="page-title mt-1">Bloco de notas</h1><p className="mt-2 text-sm text-muted-foreground">Capture pistas, decisões e ideias sem perder o fio da sessão.</p></div>
+        <div className="flex gap-2 text-center"><div className="note-stat"><strong>{notes.length}</strong><span>notas</span></div><div className="note-stat"><strong>{notes.filter(n => n.pinned).length}</strong><span>fixadas</span></div></div>
+      </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <Card className="card-hover glow-border">
@@ -101,14 +105,9 @@ const Notes = () => {
 
       {/* Search */}
       {notes.length > 0 && (
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar notas..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9"
-          />
+        <div className="space-y-3">
+          <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder="Buscar por título ou conteúdo..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" /></div>
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar"><ListFilter className="h-4 w-4 shrink-0 text-primary" />{[{ label: 'Todas', value: 'all' }, { label: 'Fixadas', value: 'pinned' }, ...COLORS.filter(c => c.value).map(c => ({ label: c.label, value: c.value }))].map(item => <Button key={item.value} type="button" size="sm" variant={filter === item.value ? 'default' : 'outline'} className="h-8 shrink-0 rounded-full text-xs" onClick={() => setFilter(item.value)}>{item.label}</Button>)}</div>
         </div>
       )}
 
