@@ -22,10 +22,10 @@ export const HubTabs = ({ title, subtitle, tabs }: HubTabsProps) => {
   const current = tabs.some(t => t.value === params.get('t')) ? params.get('t')! : tabs[0].value;
 
   return (
-    <div className="space-y-5 min-w-0">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="page-title">{title}</h1>
-        {subtitle && <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>}
+    <div className="hub-shell min-w-0 space-y-6">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="hub-header">
+        <div><p className="eyebrow">Arcanum workspace</p><h1 className="page-title mt-1">{title}</h1>{subtitle && <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{subtitle}</p>}</div>
+        <div className="hub-meta hidden sm:flex"><span className="status-pulse" /> Área ativa</div>
       </motion.div>
 
       <Tabs
@@ -33,13 +33,13 @@ export const HubTabs = ({ title, subtitle, tabs }: HubTabsProps) => {
         onValueChange={v => setParams(v === tabs[0].value ? {} : { t: v }, { replace: true })}
         className="w-full min-w-0"
       >
-        <div className="w-full max-w-full overflow-x-auto no-scrollbar">
-        <TabsList className="w-max min-w-full flex justify-start h-auto p-1 bg-card/60 backdrop-blur-md border border-border/50">
+        <div className="hub-tabs-scroll w-full max-w-full overflow-x-auto no-scrollbar">
+        <TabsList className="hub-tabs-list w-max min-w-full flex justify-start h-auto p-1">
           {tabs.map(t => (
             <TabsTrigger
               key={t.value}
               value={t.value}
-              className="flex-1 min-w-fit gap-2 py-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary"
+              className="hub-tab flex-1 min-w-fit gap-2 py-2.5 data-[state=active]:bg-primary/12 data-[state=active]:text-primary"
             >
               <t.icon className="w-4 h-4" />
               <span className="text-sm font-semibold">{t.label}</span>
