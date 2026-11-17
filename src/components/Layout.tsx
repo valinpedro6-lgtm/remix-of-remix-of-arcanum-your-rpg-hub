@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
   StickyNote, LayoutDashboard, Menu, Gauge, Dices, Wand2, BookOpen, Network,
-  Drama, Map as MapIcon, Shield, LogOut, ScrollText,
+  Drama, Map as MapIcon, Shield, LogOut, ScrollText, LibraryBig,
 } from 'lucide-react';
 import { GlobalTimerBar } from '@/components/GlobalTimerBar';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
@@ -26,6 +26,7 @@ const navGroups: NavGroup[] = [
     label: 'Preparar',
     items: [
       { path: '/historias', label: 'Histórias', caption: 'Campanha e capítulos', icon: ScrollText },
+      { path: '/sistemas', label: 'Sistemas', caption: 'Crie suas próprias regras', icon: LibraryBig },
       { path: '/elenco', label: 'Elenco', caption: 'Fichas e personagens', icon: Drama },
       { path: '/geradores', label: 'Geradores', caption: 'Ideias e conteúdo', icon: Wand2 },
       { path: '/mapa', label: 'Mapa mental', caption: 'Conexões do mundo', icon: Network },
