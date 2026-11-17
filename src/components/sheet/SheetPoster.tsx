@@ -5,32 +5,41 @@ import { Minus, Plus, UserRound } from 'lucide-react';
 import { getSystem, SheetFrame } from '@/lib/sheetSystems';
 
 /** Visual de cada sistema: moldura, caixas e efeitos. */
-const FRAMES: Record<SheetFrame, { wrap: string; box: string; tag: string; bg?: React.CSSProperties; fx?: React.CSSProperties; rounded: string }> = {
-  paranormal: { wrap: 'border border-primary/25 rounded-2xl', box: 'bg-black/70 border border-primary/20 rounded-lg', tag: 'Ordem', rounded: 'rounded-2xl' },
+const FRAMES: Record<SheetFrame, { wrap: string; box: string; tag: string; bg?: React.CSSProperties; fx?: React.CSSProperties; rounded: string; mark: string }> = {
+  paranormal: {
+    wrap: 'border border-primary/35 rounded-2xl', box: 'bg-black/70 border border-primary/25 rounded-lg', tag: 'Ordem · Dossiê', rounded: 'rounded-2xl', mark: '◆ // CASO CLASSIFICADO',
+    bg: { background: 'radial-gradient(100% 80% at 18% 0%, hsl(0 70% 22% / .42), #050507 68%)' },
+    fx: { backgroundImage: 'linear-gradient(105deg, transparent 0 48%, hsl(var(--primary)/.07) 49% 50%, transparent 51%), repeating-linear-gradient(0deg, transparent 0 6px, hsl(0 0% 100%/.025) 7px)' },
+  },
+  paranormal2: {
+    wrap: 'border border-primary/60 rounded-xl shadow-[0_0_34px_hsl(var(--primary)/.16)]', box: 'bg-[#120b16]/85 border border-primary/35 rounded-md', tag: 'Ordem Paranormal II · Playtest Alpha', rounded: 'rounded-xl', mark: 'ALPHA // REGISTRO DE CAMPO',
+    bg: { background: 'radial-gradient(90% 70% at 78% 8%, hsl(190 90% 55% / .16), transparent 32%), radial-gradient(100% 80% at 15% 0%, hsl(330 82% 58% / .3), #08070d 70%)' },
+    fx: { backgroundImage: 'repeating-linear-gradient(0deg, transparent 0 5px, hsl(190 90% 55%/.035) 6px), linear-gradient(115deg, transparent 0 44%, hsl(330 82% 58%/.10) 45% 46%, transparent 47%)' },
+  },
   parchment: {
-    wrap: 'border-4 border-double border-primary/50 rounded-md', box: 'bg-[hsl(30_25%_10%/0.85)] border border-primary/40 rounded-sm shadow-[inset_0_0_12px_hsl(var(--primary)/0.15)]', tag: 'Grimório', rounded: 'rounded-md',
+    wrap: 'border-4 border-double border-primary/50 rounded-md', box: 'bg-[hsl(30_25%_10%/0.85)] border border-primary/40 rounded-sm shadow-[inset_0_0_12px_hsl(var(--primary)/0.15)]', tag: 'Grimório', rounded: 'rounded-md', mark: '✦ CRÔNICA DE AVENTURA',
     bg: { background: 'radial-gradient(120% 80% at 30% 20%, hsl(32 35% 16%), hsl(25 30% 6%))' },
     fx: { backgroundImage: 'repeating-linear-gradient(45deg, hsl(40 40% 60% / 0.035) 0 2px, transparent 2px 6px)' },
   },
   gothic: {
-    wrap: 'border-2 border-primary/50 rounded-t-[2.5rem] rounded-b-md', box: 'bg-black/75 border-y border-primary/40 rounded-none', tag: 'Linhagem', rounded: 'rounded-t-[2.5rem] rounded-b-md',
+    wrap: 'border-2 border-primary/50 rounded-t-[2.5rem] rounded-b-md', box: 'bg-black/75 border-y border-primary/40 rounded-none', tag: 'Linhagem', rounded: 'rounded-t-[2.5rem] rounded-b-md', mark: '☾ REGISTRO DE SANGUE',
     bg: { background: 'radial-gradient(90% 70% at 50% 0%, hsl(var(--primary)/0.35), black 70%)' },
   },
   neon: {
     wrap: 'border border-primary/60 rounded-none [clip-path:polygon(0_0,calc(100%-24px)_0,100%_24px,100%_100%,24px_100%,0_calc(100%-24px))]', box: 'bg-black/80 border border-primary/50 rounded-none [clip-path:polygon(0_0,calc(100%-10px)_0,100%_10px,100%_100%,0_100%)]', tag: 'NET//ID', rounded: '',
-    fx: { backgroundImage: 'repeating-linear-gradient(0deg, hsl(var(--primary)/0.06) 0 1px, transparent 1px 3px)' },
+    fx: { backgroundImage: 'repeating-linear-gradient(0deg, hsl(var(--primary)/0.06) 0 1px, transparent 1px 3px)' }, mark: 'NET//IDENTIDADE',
   },
   horror: {
     wrap: 'border border-primary/30 rounded-sm', box: 'bg-[hsl(60_10%_6%/0.85)] border border-dashed border-primary/40 rounded-sm', tag: 'Dossiê', rounded: 'rounded-sm',
     bg: { background: 'radial-gradient(100% 80% at 20% 10%, hsl(80 15% 12%), hsl(0 0% 3%))' },
-    fx: { backgroundImage: 'radial-gradient(hsl(0 0% 100% / 0.04) 1px, transparent 1px)', backgroundSize: '4px 4px' },
+    fx: { backgroundImage: 'radial-gradient(hsl(0 0% 100% / 0.04) 1px, transparent 1px)', backgroundSize: '4px 4px' }, mark: 'ARQUIVO // NÃO OLHE PARA TRÁS',
   },
   punk: {
-    wrap: 'border-4 border-primary rounded-none', box: 'bg-black border-2 border-primary rounded-none -skew-x-2', tag: 'MALDITO', rounded: '',
+    wrap: 'border-4 border-primary rounded-none', box: 'bg-black border-2 border-primary rounded-none -skew-x-2', tag: 'MALDITO', rounded: '', mark: '⚠ FIM DO MUNDO',
   },
   heroic: {
     wrap: 'border-2 border-primary/50 rounded-xl', box: 'bg-black/70 border border-primary/30 rounded-lg shadow-[0_0_14px_hsl(var(--primary)/0.15)]', tag: 'Herói', rounded: 'rounded-xl',
-    fx: { background: 'linear-gradient(180deg, hsl(var(--primary)/0.18), transparent 30%)' },
+    fx: { background: 'linear-gradient(180deg, hsl(var(--primary)/0.18), transparent 30%)' }, mark: '✧ REGISTRO DE HERÓI',
   },
 };
 
@@ -79,10 +88,14 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, onR
   const imgPos = layout === 'full' ? 'inset-0 w-full' : layout === 'left' ? 'left-0 top-0 w-full sm:w-[58%]' : 'right-0 top-0 w-full sm:w-[58%]';
   const overlay = (st.overlay ?? 50) / 100;
   const vars = { '--primary': st.color ?? sys.color, ...(fr.bg ?? {}) } as React.CSSProperties;
+  const isAlpha = sys.id === 'ordemparanormal2-alpha';
 
   return (
     <div style={vars} className={`relative w-full overflow-hidden bg-black shadow-[0_0_40px_hsl(var(--primary)/0.15)] ${fr.wrap}`}>
       {fr.fx && <div className="absolute inset-0 pointer-events-none z-0" style={fr.fx} />}
+      <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-3 px-4 py-2 text-[8px] font-mono uppercase tracking-[0.22em] text-primary/70 border-b border-primary/20 bg-black/30 backdrop-blur-sm">
+        <span>{fr.mark}</span><span className="hidden sm:inline">ARCANUM // {isAlpha ? 'FIS · MEN · EMO' : sys.frame}</span>
+      </div>
       {/* Arte de fundo */}
       {sheet.image_url ? (
         <img
@@ -102,15 +115,15 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, onR
         style={{ background: 'radial-gradient(60% 50% at 20% 40%, hsl(var(--primary)/0.25), transparent 70%)' }}
       />
 
-      <div className={`relative z-10 ${compact ? 'p-4' : 'p-5 md:p-8'}`}>
+      <div className={`relative z-10 ${compact ? 'p-4 pt-12' : 'p-5 pt-14 md:p-8 md:pt-16'}`}>
         {/* Cabeçalho */}
         <div className={layout === 'left' ? 'max-w-[60%] sm:max-w-[55%] ml-auto text-right' : 'max-w-[60%] sm:max-w-[55%]'}>
-          <p className={`${fontClass} text-[10px] tracking-[0.3em] uppercase text-primary/70 mb-1`}>{fr.tag} · {sys.name}</p>
+            <p className={`${fontClass} text-[10px] tracking-[0.3em] uppercase text-primary/80 mb-1`}>{fr.tag}</p>
           <h2
             className={`${fontClass} font-black ${st.uppercase === false ? '' : 'uppercase'} tracking-tight text-primary leading-none ${
               compact ? 'text-2xl' : 'text-4xl md:text-6xl'
             }`}
-            style={{ textShadow: '0 0 18px hsl(var(--primary)/0.75), 0 0 42px hsl(var(--primary)/0.4)' }}
+            style={{ textShadow: isAlpha ? '3px 0 hsl(190 90% 55%/.35), -3px 0 hsl(330 82% 58%/.35), 0 0 22px hsl(var(--primary)/.7)' : '0 0 18px hsl(var(--primary)/0.75), 0 0 42px hsl(var(--primary)/0.4)' }}
           >
             {sheet.name}
           </h2>
@@ -215,7 +228,7 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, onR
             )}
 
             {trained.length > 0 && (
-              <div className={`backdrop-blur-sm p-3 ${fr.box}`} style={{ order: blockIndex('skills') }}>
+                    <div className={`backdrop-blur-sm p-3 ${fr.box}`} style={{ order: blockIndex('skills') }}>
                 <p className="font-display font-bold text-primary text-[11px] tracking-widest uppercase mb-2">{sys.id === 'cthulhu' ? 'Perícias (%)' : 'Perícias'}</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1">
                   {trained.map(s => (

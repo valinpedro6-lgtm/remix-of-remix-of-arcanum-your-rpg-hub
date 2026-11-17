@@ -3,7 +3,7 @@ import type { SheetAttribute, SheetResource, SheetSkill } from './sheets';
 const rid = () => Math.random().toString(36).slice(2, 10);
 
 /** Como a ficha se parece em cada sistema. */
-export type SheetFrame = 'paranormal' | 'parchment' | 'gothic' | 'neon' | 'horror' | 'punk' | 'heroic';
+export type SheetFrame = 'paranormal' | 'paranormal2' | 'parchment' | 'gothic' | 'neon' | 'horror' | 'punk' | 'heroic';
 
 export interface SheetSystem {
   id: string;
@@ -25,7 +25,7 @@ export const SHEET_SYSTEMS: SheetSystem[] = [
     skills: ['Acrobacia', 'Adestramento', 'Artes', 'Atletismo', 'Atualidades', 'Ciências', 'Crime', 'Diplomacia', 'Enganação', 'Fortitude', 'Furtividade', 'Iniciativa', 'Intimidação', 'Intuição', 'Investigação', 'Luta', 'Medicina', 'Ocultismo', 'Percepção', 'Pilotagem', 'Pontaria', 'Profissão', 'Reflexos', 'Religião', 'Sobrevivência', 'Tática', 'Tecnologia', 'Vontade'],
   },
   {
-    id: 'ordemparanormal2-alpha', name: 'OP PLAYTEST', color: '350 82% 58%', font: 'display', frame: 'paranormal',
+    id: 'ordemparanormal2-alpha', name: 'OP PLAYTEST', color: '350 82% 58%', font: 'display', frame: 'paranormal2',
     attrs: [['Físico', 'FIS', 6], ['Mente', 'MEN', 6], ['Emoção', 'EMO', 6]],
     resources: [['Vida', 'VIDA', 10, 'life'], ['Pontos de Determinação', 'PD', 3, 'effort']],
     skills: ['Acrobacia', 'Aptidão', 'Atletismo', 'Crime', 'Disciplina', 'Enganação', 'Furtividade', 'Intimidar', 'Intuição', 'Luta', 'Máquinas', 'Medicina', 'Ocultismo', 'Percepção', 'Persuasão', 'Pesquisar', 'Pontaria', 'Sobrevivência', 'Tecnologia', 'Vigor'],
