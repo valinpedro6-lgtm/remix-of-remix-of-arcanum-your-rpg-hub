@@ -1,0 +1,18 @@
+{
+  "name": "arcanum-neon-backup-import",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Validação e importação transacional do backup Arcanum para um destino Neon explicitamente autorizado.",
+  "scripts": {
+    "dry-run": "node import-backup.mjs",
+    "apply": "node import-backup.mjs --apply"
+  },
+  "dependencies": {
+    "pg": "^8.16.3",
+    "pg-copy-streams": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

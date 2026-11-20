@@ -1,5 +1,4 @@
 import { ReactNode, useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,6 +8,7 @@ import { motion } from 'framer-motion';
 
 import { GRANT_KEY, LOCK_KEY, EMAIL_KEY, deviceId, callGate, becomeMaster, grantTestAccess, testAccessLeft, expireTestAccess } from '@/lib/access';
 import { currentOwnerToken, setOwnerToken } from '@/lib/userData';
+import { invokeResilient } from '@/lib/network';
 
 /** avisa o servidor, de tempos em tempos, que este aparelho continua na mesa */
 /** vigia o acesso de teste: acabou o tempo, volta pra tela do código */
@@ -34,7 +34,7 @@ const TestExpiry = () => {
 const Heartbeat = () => {
   useEffect(() => {
     const ping = () => {
-      supabase.functions.invoke('access-gate', { body: { action: 'heartbeat', device: deviceId() } }).catch(() => {});
+      void invokeResilient('access-gate', { action: 'heartbeat', device: deviceId() }, { attempts: 1 });
     };
     ping();
     const id = setInterval(ping, 60000);

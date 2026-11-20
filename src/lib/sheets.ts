@@ -1,6 +1,6 @@
 import { systemTemplate } from './sheetSystems';
-import { supabase } from '@/integrations/supabase/client';
 import { listRows, createRow, updateRow, deleteRow } from '@/lib/userData';
+import { invokeResilient } from '@/lib/network';
 
 export interface SheetAttribute {
   id: string;
@@ -216,7 +216,7 @@ export async function listSheets(): Promise<Sheet[]> {
 }
 
 export async function getSheetByShareId(shareId: string): Promise<Sheet | null> {
-  const { data, error } = await supabase.functions.invoke('user-data', { body: { action: 'shared', shareId } });
+  const { data, error } = await invokeResilient<{ sheet?: Record<string, unknown> }>('user-data', { action: 'shared', shareId });
   if (error) throw error;
   const response = data as { sheet?: Record<string, unknown> } | null;
   return response?.sheet ? parse(response.sheet) : null;
@@ -224,7 +224,7 @@ export async function getSheetByShareId(shareId: string): Promise<Sheet | null> 
 
 /** Jogador salva a própria ficha pelo link compartilhado. */
 export async function updateSharedSheet(shareId: string, patch: Partial<Sheet>): Promise<void> {
-  const { error } = await supabase.functions.invoke('user-data', { body: { action: 'shared-update', shareId, values: patch } });
+  const { error } = await invokeResilient('user-data', { action: 'shared-update', shareId, values: patch });
   if (error) throw error;
 }
 

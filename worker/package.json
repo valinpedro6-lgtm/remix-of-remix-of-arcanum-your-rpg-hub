@@ -1,0 +1,19 @@
+{
+  "name": "arcanum-neon-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "typecheck": "tsc --noEmit",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.17.2",
+    "@types/pg": "^8.15.6",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.0.0"
+  }
+}

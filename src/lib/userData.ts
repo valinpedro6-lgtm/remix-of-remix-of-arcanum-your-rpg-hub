@@ -21,8 +21,9 @@ export const clearOwnerToken = () => localStorage.removeItem(OWNER_KEY);
 
 export async function userData<T = unknown>(payload: Record<string, unknown>): Promise<T> {
   const body = { ...payload, token: ownerToken() };
-  const response = payload.action !== 'create'
-    ? await invokeResilient<T>('user-data', body)
+  const useNewApi = Boolean(import.meta.env.VITE_API_BASE_URL);
+  const response = payload.action !== 'create' || useNewApi
+    ? await invokeResilient<T>('user-data', body, { attempts: payload.action === 'create' ? 1 : undefined })
     : await supabase.functions.invoke('user-data', { body });
   const { data, error } = response;
   if (error) throw error;
