@@ -2,35 +2,18 @@ import { useEffect, useRef, useState } from 'react';
 import { Archive, Download, Smartphone, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-
-const CAMPAIGN_KEYS = [
-  'arcanum-calendar', 'arcanum-current-region', 'arcanum-current-weather', 'arcanum-dice-history',
-  'arcanum-environment', 'arcanum-event-overrides', 'arcanum-extra-timers', 'arcanum-initiative',
-  'arcanum-initiative-round', 'arcanum-initiative-turn', 'arcanum-loot-favorites', 'arcanum-loot-history',
-  'arcanum-mindmap', 'arcanum-mindmap-active', 'arcanum-mindmaps', 'arcanum-monster-templates',
-  'arcanum-monsters', 'arcanum-notes', 'arcanum-npcs', 'arcanum-player-templates', 'arcanum-players',
-  'arcanum-potions', 'arcanum-potions-overrides', 'arcanum-sheet-system', 'arcanum-spells',
-  'arcanum-tesouro', 'arcanum-time-of-day', 'arcanum-timer', 'arcanum-weapons-custom',
-  'arcanum-weapons-overrides', 'arcanum-weather-overrides',
-] as const;
-
-interface CampaignBackupFile {
-  app: 'arcanum';
-  version: 1;
-  exportedAt: string;
-  data: Record<string, string>;
-}
+import {
+  collectCampaignBackupData,
+  collectCampaignDrafts,
+  createCampaignBackup,
+  parseCampaignBackup,
+  restoreCampaignBackup,
+} from '@/lib/campaignBackup';
 
 interface InstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
-
-const isBackupFile = (value: unknown): value is CampaignBackupFile => {
-  if (!value || typeof value !== 'object') return false;
-  const candidate = value as Partial<CampaignBackupFile>;
-  return candidate.app === 'arcanum' && candidate.version === 1 && typeof candidate.data === 'object' && candidate.data !== null;
-};
 
 export const CampaignBackup = () => {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
@@ -46,34 +29,53 @@ export const CampaignBackup = () => {
   }, []);
 
   const exportCampaign = () => {
-    const data: Record<string, string> = {};
-    CAMPAIGN_KEYS.forEach(key => {
-      const value = localStorage.getItem(key);
-      if (value !== null) data[key] = value;
-    });
-    const backup: CampaignBackupFile = { app: 'arcanum', version: 1, exportedAt: new Date().toISOString(), data };
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `arcanum-campanha-${new Date().toISOString().slice(0, 10)}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    toast.success('Backup da campanha baixado.');
+    try {
+      const data = collectCampaignBackupData(localStorage);
+      const drafts = collectCampaignDrafts(localStorage);
+      if (!Object.keys(data).length && !drafts.length) {
+        toast.info('Ainda não há dados locais da campanha para salvar.');
+        return;
+      }
+
+      const now = new Date();
+      const backup = createCampaignBackup(data, now.toISOString(), drafts);
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `arcanum-backup-local-${now.toISOString().slice(0, 10)}.json`;
+      anchor.style.display = 'none';
+      try {
+        document.body.appendChild(anchor);
+        anchor.click();
+      } finally {
+        anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+      }
+      toast.success('Backup local baixado.');
+    } catch {
+      toast.error('Não foi possível gerar o backup local neste navegador.');
+    }
   };
 
   const importCampaign = async (file: File) => {
     try {
-      const parsed: unknown = JSON.parse(await file.text());
-      if (!isBackupFile(parsed)) throw new Error('arquivo inválido');
-      const entries = Object.entries(parsed.data).filter(([key, value]) => CAMPAIGN_KEYS.includes(key as typeof CAMPAIGN_KEYS[number]) && typeof value === 'string');
-      if (!entries.length) throw new Error('backup vazio');
-      if (!confirm(`Importar ${entries.length} dados da campanha? Isso substituirá os dados locais atuais.`)) return;
-      entries.forEach(([key, value]) => localStorage.setItem(key, value));
-      toast.success('Campanha restaurada. Recarregando...');
+      const parsed = parseCampaignBackup(JSON.parse(await file.text()) as unknown);
+      const backupDate = new Date(parsed.exportedAt).toLocaleString('pt-BR');
+      const itemCount = parsed.entries.length + parsed.drafts.length;
+      const restoreDescription = parsed.restoreMode === 'replace'
+        ? 'Os dados locais listados e os rascunhos incluídos serão restaurados como estavam no arquivo.'
+        : 'Este backup antigo aplicará os dados presentes sem apagar outros dados locais.';
+      const confirmed = window.confirm(
+        `Backup de ${backupDate}, com ${itemCount} itens locais. ${restoreDescription} Credenciais e dados da nuvem não serão alterados. Continuar?`,
+      );
+      if (!confirmed) return;
+
+      restoreCampaignBackup(localStorage, parsed);
+      toast.success('Backup local restaurado. Recarregando...');
       window.setTimeout(() => window.location.reload(), 500);
-    } catch {
-      toast.error('Não consegui importar esse arquivo. Use um backup JSON da ARCANUM.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não consegui importar esse backup local.');
     } finally {
       if (fileRef.current) fileRef.current.value = '';
     }
@@ -81,35 +83,40 @@ export const CampaignBackup = () => {
 
   const install = async () => {
     if (!installPrompt) return;
-    await installPrompt.prompt();
-    const choice = await installPrompt.userChoice;
-    if (choice.outcome === 'accepted') toast.success('ARCANUM instalada como aplicativo.');
-    setInstallPrompt(null);
+    try {
+      await installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      if (choice.outcome === 'accepted') toast.success('ARCANUM instalada como aplicativo.');
+    } catch {
+      toast.error('Não foi possível iniciar a instalação neste navegador.');
+    } finally {
+      setInstallPrompt(null);
+    }
   };
 
   return (
-    <div className="space-y-2">
+    <div className="mobile-backup-tools w-full min-w-0 space-y-2.5">
       <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-        <Archive className="w-3.5 h-3.5 text-primary" /> Backup da campanha
+        <Archive className="h-4 w-4 shrink-0 text-primary" /> Backup local
       </div>
-      <div className="grid grid-cols-2 gap-1.5">
-        <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={exportCampaign}>
-          <Download className="w-3.5 h-3.5" /> Baixar
+      <div className="grid grid-cols-2 gap-2">
+        <Button variant="outline" size="sm" className="min-w-0 gap-1.5 text-xs" onClick={exportCampaign}>
+          <Download className="h-3.5 w-3.5 shrink-0" /> <span>Baixar</span>
         </Button>
-        <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => fileRef.current?.click()}>
-          <Upload className="w-3.5 h-3.5" /> Restaurar
+        <Button variant="outline" size="sm" className="min-w-0 gap-1.5 text-xs" onClick={() => fileRef.current?.click()}>
+          <Upload className="h-3.5 w-3.5 shrink-0" /> <span>Restaurar</span>
         </Button>
       </div>
       {installPrompt && (
-        <Button variant="secondary" size="sm" className="w-full text-xs gap-1.5" onClick={install}>
-          <Smartphone className="w-3.5 h-3.5" /> Instalar aplicativo
+        <Button variant="secondary" size="sm" className="w-full gap-1.5 text-xs" onClick={install}>
+          <Smartphone className="h-3.5 w-3.5" /> Instalar aplicativo
         </Button>
       )}
       <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={event => {
         const file = event.target.files?.[0];
         if (file) void importCampaign(file);
-      }} />
-      <p className="text-[10px] leading-relaxed text-muted-foreground/70">Inclui dados locais da campanha. Senhas, tokens e acesso não entram no arquivo.</p>
+      }} aria-label="Selecionar arquivo de backup local" />
+      <p className="text-[11px] leading-relaxed text-muted-foreground/75">Inclui dados e rascunhos locais selecionados e preferências. Não inclui fichas/tabletop sincronizados na nuvem nem credenciais.</p>
     </div>
   );
 };

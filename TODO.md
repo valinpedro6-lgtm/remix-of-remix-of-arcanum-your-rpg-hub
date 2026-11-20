@@ -45,3 +45,10 @@
 - [x] No editor de Ordem Paranormal, o número exibe o mesmo bônus final do pôster, o grau é a única configuração de treinamento e “Treinar todas” promove as destreinadas a Treinado sem reduzir Veterano/Expert, em uma única atualização da ficha.
 - [x] Em Ordem Paranormal, iniciativa e percepção mostram o bônus da perícia sem somar Agilidade/Presença como bônus fixo (o exemplo correto é +5, não +6/+7); grau, lista, botões e rolagens usam valores coerentes.
 - [x] As validações foram executadas localmente sem ler, gravar ou carregar dados do banco.
+
+## Preferências desktop e backup local
+
+- [x] No desktop, tema e backup abrem em um painel amplo e legível; o menu mobile mantém seu fluxo.
+- [x] Exportação/restauração local aceita backups v1 como mesclagem conservadora e gera v2 com manifesto para restauração exata, sem apagar credenciais nem dados da nuvem.
+- [x] O backup inclui preferências, dados locais selecionados e rascunhos de ficha/tabletop; os rascunhos são exportados sem o token de proprietário e os dados sincronizados na nuvem ficam explicitamente fora.
+- [x] Os 16 testes passaram com armazenamento em memória; lint sem erros (9 avisos preexistentes), TypeScript e build passaram sem conexão com o banco.

@@ -3,13 +3,15 @@ import { isMaster, logout } from '@/lib/access';
 import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
   StickyNote, LayoutDashboard, Menu, Gauge, Dices, Wand2, BookOpen, Network,
-  Drama, Map as MapIcon, Shield, LogOut, ScrollText, LibraryBig,
+  Drama, Map as MapIcon, Shield, LogOut, ScrollText, LibraryBig, Settings2,
 } from 'lucide-react';
 import { GlobalTimerBar } from '@/components/GlobalTimerBar';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { CampaignBackup } from '@/components/CampaignBackup';
+import { useTheme } from '@/hooks/useTheme';
 
 type NavItem = { path: string; label: string; caption: string; icon: typeof LayoutDashboard };
 type NavGroup = { label: string; items: NavItem[] };
@@ -52,7 +54,9 @@ const allItems = navGroups.flatMap(group => group.items);
 
 export const Layout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
+  useTheme();
   const [open, setOpen] = useState(false);
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [master, setMaster] = useState(isMaster);
   useEffect(() => {
     const h = () => setMaster(isMaster());
@@ -93,7 +97,32 @@ export const Layout = ({ children }: { children: ReactNode }) => {
         <nav className="flex-1 overflow-y-auto px-3 py-4"><NavLinks /></nav>
         <div className="border-t border-border/60 p-3">
           <div className="mb-3 flex items-center gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2"><span className="status-pulse" /><div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Sistema online</p><p className="truncate text-[11px] text-muted-foreground">Workspace sincronizado</p></div></div>
-          <div className="flex items-center gap-1"><ThemeSwitcher /><CampaignBackup /><Button variant="ghost" size="icon" className="ml-auto text-muted-foreground" title="Sair da conta" onClick={() => confirm('Sair da conta neste aparelho?') && logout()}><LogOut className="h-4 w-4" /></Button></div>
+          <div className="flex items-center gap-2">
+            <Dialog open={preferencesOpen} onOpenChange={setPreferencesOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="min-w-0 flex-1 justify-start gap-2">
+                  <Settings2 className="h-4 w-4 shrink-0" /><span className="truncate">Tema e backup</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>Preferências e backup local</DialogTitle>
+                  <DialogDescription>Escolha a aparência e salve dados e rascunhos que ficam neste aparelho. O backup não copia fichas/tabletop sincronizados na nuvem nem credenciais.</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <section className="min-w-0 rounded-xl border border-border/70 bg-card/40 p-3">
+                    <h3 className="text-sm font-semibold">Aparência</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">A paleta fica salva neste navegador.</p>
+                    <ThemeSwitcher className="theme-picker-roomy" />
+                  </section>
+                  <section className="min-w-0 rounded-xl border border-border/70 bg-card/40 p-3">
+                    <CampaignBackup />
+                  </section>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground" title="Sair da conta" aria-label="Sair da conta" onClick={() => confirm('Sair da conta neste aparelho?') && logout()}><LogOut className="h-4 w-4" /></Button>
+          </div>
           <GlobalTimerBar /><div className="mt-2 text-center text-[9px] uppercase tracking-[0.2em] text-muted-foreground/45">Arcanum · v2.0</div>
         </div>
       </aside>
