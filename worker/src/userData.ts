@@ -13,6 +13,20 @@ const BOARD_FIELDS = [
 const TABLES = { sheets: SHEET_FIELDS, tabletops: BOARD_FIELDS } as const;
 type DataTable = keyof typeof TABLES;
 
+const JSON_FIELDS: Record<DataTable, ReadonlySet<string>> = {
+  sheets: new Set(['style', 'attributes', 'skills', 'resources', 'abilities', 'last_roll']),
+  tabletops: new Set(['tokens', 'fog', 'camera', 'last_roll', 'turn_order']),
+};
+
+function encodeJsonFields(table: DataTable, source: Record<string, unknown>) {
+  const values = { ...source };
+  for (const key of JSON_FIELDS[table]) {
+    const value = values[key];
+    if (value !== null && value !== undefined) values[key] = JSON.stringify(value);
+  }
+  return values;
+}
+
 const SHARED_EDIT_FIELDS = [
   'name', 'subtitle', 'origin', 'image_url', 'attributes', 'skills', 'resources', 'abilities',
   'notes', 'last_roll',
@@ -66,8 +80,9 @@ export async function handleUserData(client: Client, body: Record<string, unknow
   if (action === 'shared-update') {
     const shareId = asString(body.shareId).slice(0, 64);
     if (!/^[a-zA-Z0-9_-]{4,64}$/.test(shareId)) return json({ ok: false }, 400);
-    const values = pick(asRecord(body.values), SHARED_EDIT_FIELDS);
+    let values = pick(asRecord(body.values), SHARED_EDIT_FIELDS);
     if ('last_roll' in values) values.last_roll = safeRoll(values.last_roll);
+    values = encodeJsonFields('sheets', values);
     const keys = Object.keys(values);
     if (keys.length === 0) return json({ ok: true });
     const params = keys.map((key) => values[key]);
@@ -106,7 +121,7 @@ export async function handleUserData(client: Client, body: Record<string, unknow
   }
 
   if (action === 'create') {
-    const values: Record<string, unknown> = { ...pick(asRecord(body.values), fields), owner };
+    const values = encodeJsonFields(table, { ...pick(asRecord(body.values), fields), owner });
     const keys = Object.keys(values);
     const columns = keys.map((key) => `"${key}"`).join(', ');
     const placeholders = keys.map((_, index) => `$${index + 1}`).join(', ');
@@ -118,8 +133,9 @@ export async function handleUserData(client: Client, body: Record<string, unknow
   }
 
   if (action === 'update') {
-    const values = pick(asRecord(body.values), fields);
+    let values = pick(asRecord(body.values), fields);
     if ('last_roll' in values) values.last_roll = safeRoll(values.last_roll);
+    values = encodeJsonFields(table, values);
     const keys = Object.keys(values);
     if (!id || keys.length === 0) return json({ ok: true });
     const assignments = keys.map((key, index) => `"${key}" = $${index + 1}`).join(', ');

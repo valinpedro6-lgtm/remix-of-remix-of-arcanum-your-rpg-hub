@@ -4,6 +4,7 @@ import { asString, json } from './db';
 const SELECT = `id, name, map_url, tokens, grid, fog, zoom, camera, last_roll,
   turn_order, active_turn, round, vision_mode, share_id, updated_at`;
 const validId = (value: string) => /^[a-zA-Z0-9_-]{4,64}$/.test(value);
+const jsonParam = (value: unknown) => value === null || value === undefined ? value : JSON.stringify(value);
 
 export async function handleSharedTabletop(client: Client, body: Record<string, unknown>) {
   const shareId = asString(body.shareId).slice(0, 64);
@@ -49,7 +50,7 @@ export async function handleSharedTabletop(client: Client, body: Record<string, 
           const assignments = keys.map((key, index) => `"${key}" = $${index + 1}`).join(', ');
           await client.query(
             `UPDATE public.tabletops SET ${assignments} WHERE share_id = $${keys.length + 1}`,
-            [...keys.map((key) => values[key]), shareId],
+            [...keys.map((key) => jsonParam(values[key])), shareId],
           );
         }
         await client.query('COMMIT');
@@ -74,7 +75,7 @@ export async function handleSharedTabletop(client: Client, body: Record<string, 
     const assignments = keys.map((key, index) => `"${key}" = $${index + 1}`).join(', ');
     await client.query(
       `UPDATE public.tabletops SET ${assignments} WHERE share_id = $${keys.length + 1}`,
-      [...keys.map((key) => values[key]), shareId],
+      [...keys.map((key) => jsonParam(values[key])), shareId],
     );
     return json({ ok: true });
   }
