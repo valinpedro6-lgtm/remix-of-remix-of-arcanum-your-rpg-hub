@@ -42,5 +42,6 @@
 ## Correção visual e cálculos da ficha
 
 - [x] No modo “Projetor”, o topo da ficha — incluindo nome e origem/classe — permanece visível e legível; em telas móveis, a ficha inteira pode ser rolada e o modo pode ser encerrado mesmo quando o navegador não oferece tela cheia nativa.
+- [x] No editor de Ordem Paranormal, o número exibe o mesmo bônus final do pôster, o grau é a única configuração de treinamento e “Treinar todas” promove as destreinadas a Treinado sem reduzir Veterano/Expert, em uma única atualização da ficha.
 - [x] Em Ordem Paranormal, iniciativa e percepção mostram o bônus da perícia sem somar Agilidade/Presença como bônus fixo (o exemplo correto é +5, não +6/+7); grau, lista, botões e rolagens usam valores coerentes.
 - [x] As validações foram executadas localmente sem ler, gravar ou carregar dados do banco.

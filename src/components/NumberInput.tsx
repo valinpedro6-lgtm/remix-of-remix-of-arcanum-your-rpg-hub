@@ -8,6 +8,7 @@ interface NumberInputProps {
   min?: number;
   className?: string;
   placeholder?: string;
+  ariaLabel?: string;
 }
 
 /**
@@ -15,7 +16,7 @@ interface NumberInputProps {
  * don't dismiss on every keystroke and you can freely clear/type values.
  * Commits the final number on blur.
  */
-export const NumberInput = ({ value, onChange, min, className, placeholder }: NumberInputProps) => {
+export const NumberInput = ({ value, onChange, min, className, placeholder, ariaLabel }: NumberInputProps) => {
   const [text, setText] = useState(String(value));
   const isFocused = useRef(false);
 
@@ -47,6 +48,7 @@ export const NumberInput = ({ value, onChange, min, className, placeholder }: Nu
       pattern="[0-9\-]*"
       className={cn(className)}
       placeholder={placeholder}
+      aria-label={ariaLabel}
       value={text}
       onFocus={() => { isFocused.current = true; }}
       onChange={e => setText(e.target.value)}

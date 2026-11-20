@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Sheet, SheetSkill } from '@/lib/sheets';
-import { derivedStats, rollDerived, rollSkill, skillDisplayValue } from '@/lib/sheetAutomation';
+import { derivedStats, getOrdemSkillDegree, rollDerived, rollSkill, skillDisplayValue, trainAllOrdemSkills, withSkillDisplayValue } from '@/lib/sheetAutomation';
 
 const makeSheet = (system = 'ordemparanormal', skills: SheetSkill[] = []): Sheet => ({
   id: 'test-sheet',
@@ -67,7 +67,32 @@ describe('automação da ficha de Ordem Paranormal', () => {
   it('mantém compatibilidade com fichas antigas em que treinado está marcado, mas o grau ainda diz destreinado', () => {
     const sheet = makeSheet();
 
+    expect(getOrdemSkillDegree({ ...initiativeSkill, degree: 'destreinado', trained: true })).toBe('treinado');
     expect(skillDisplayValue(sheet, { ...initiativeSkill, degree: 'destreinado', trained: true })).toBe(5);
+  });
+
+  it('edita o bônus final que aparece no pôster, sem mostrar zero quando a perícia já tem grau', () => {
+    const sheet = makeSheet();
+    const skill = { ...initiativeSkill, degree: 'veterano', modifiers: 0 };
+
+    expect(skillDisplayValue(sheet, skill)).toBe(10);
+    const edited = withSkillDisplayValue(sheet, skill, 13);
+    expect(edited.modifiers).toBe(3);
+    expect(skillDisplayValue(sheet, edited)).toBe(13);
+  });
+
+  it('treina todas em uma transformação, preservando Veterano e Expert', () => {
+    const skills = [
+      { ...initiativeSkill, degree: 'destreinado', trained: false },
+      { ...perceptionSkill, degree: 'veterano' },
+      { ...initiativeSkill, id: 'expert', degree: 'expert' },
+      { ...initiativeSkill, id: 'legacy-expert', degree: 'destreinado', proficiency: 'expert', trained: true },
+    ];
+
+    const trained = trainAllOrdemSkills(skills);
+    expect(trained.map(skill => skill.degree)).toEqual(['treinado', 'veterano', 'expert', 'expert']);
+    expect(trained.every(skill => skill.trained)).toBe(true);
+    expect(skills[0].degree).toBe('destreinado');
   });
 
   it('mostra o mesmo bônus na perícia e nas rolagens de Iniciativa e Percepção', () => {

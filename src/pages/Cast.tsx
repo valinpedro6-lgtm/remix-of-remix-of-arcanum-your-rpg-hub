@@ -22,6 +22,7 @@ import {
   SheetKind, STYLE_COLORS,
 } from '@/lib/sheets';
 import { SHEET_SYSTEMS, getSystem, systemTemplate } from '@/lib/sheetSystems';
+import { getOrdemSkillDegree, skillDisplayValue, trainAllOrdemSkills, withSkillDisplayValue } from '@/lib/sheetAutomation';
 import { compressImage } from '@/lib/image';
 import { clearDraft, readDraft, saveDraft } from '@/lib/drafts';
 
@@ -267,6 +268,7 @@ const Cast = () => {
   /* ---------- Editor ---------- */
   if (selected) {
     const s = selected;
+    const isOrdem = s.style.system === 'ordemparanormal';
     const setAttr = (list: SheetAttribute[]) => patch(s.id, { attributes: list });
     const setSkills = (list: SheetSkill[]) => patch(s.id, { skills: list });
     const setRes = (list: SheetResource[]) => patch(s.id, { resources: list });
@@ -621,24 +623,39 @@ const Cast = () => {
                         Usar lista de {getSystem(s.style.system).name}
                       </Button>
                     )}
+                    {isOrdem && s.skills.length > 0 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        title="Marca as destreinadas como Treinadas (+5) e preserva Veterano/Expert."
+                        disabled={s.skills.every(skill => getOrdemSkillDegree(skill) !== 'destreinado')}
+                        onClick={() => setSkills(trainAllOrdemSkills(s.skills))}
+                      >
+                        Treinar todas
+                      </Button>
+                    )}
                     <Button size="sm" variant="outline" className="gap-1" onClick={() => setSkills([...s.skills, { id: uid(), name: 'Nova perícia', value: 0 }])}>
                       <Plus className="w-3.5 h-3.5" /> Adicionar
                     </Button>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">Cada perícia mantém o atributo, grau, dado, especialização e modificadores próprios do sistema selecionado.</p>
+                <p className="text-xs text-muted-foreground">
+                  {isOrdem
+                    ? 'O número mostra o bônus final (grau + ajuste). O grau é a única configuração de treinamento; “Treinar todas” aplica uma atualização única.'
+                    : 'Cada perícia mantém o atributo, grau, dado, especialização e modificadores próprios do sistema selecionado.'}
+                </p>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {s.skills.map(sk => (
                     <div key={sk.id} className="space-y-2 bg-secondary/30 rounded-lg p-2">
                       <div className="flex items-center gap-2">
                         <Input className="h-8 flex-1" value={sk.name} onChange={e => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, name: e.target.value } : x))} />
-                        <NumberInput className="h-8 w-16" value={sk.value} onChange={v => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, value: v } : x))} />
-                        <Switch checked={!!sk.trained} onCheckedChange={c => setSkills(s.skills.map(x => {
-                          if (x.id !== sk.id) return x;
-                          if (s.style.system !== 'ordemparanormal') return { ...x, trained: c };
-                          const degree = c ? (x.degree === 'veterano' || x.degree === 'expert' ? x.degree : 'treinado') : 'destreinado';
-                          return { ...x, trained: c, degree, proficiency: degree };
-                        }))} />
+                        <NumberInput
+                          className="h-8 w-16"
+                          value={isOrdem ? skillDisplayValue(s, sk) : sk.value}
+                          ariaLabel={isOrdem ? `Bônus final de ${sk.name}` : `Valor de ${sk.name}`}
+                          onChange={v => setSkills(s.skills.map(x => x.id === sk.id ? (isOrdem ? withSkillDisplayValue(s, x, v) : { ...x, value: v }) : x))}
+                        />
+                        {!isOrdem && <Switch checked={!!sk.trained} aria-label={`Treinada: ${sk.name}`} onCheckedChange={c => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, trained: c } : x))} />}
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setSkills(s.skills.filter(x => x.id !== sk.id))}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
@@ -648,19 +665,19 @@ const Cast = () => {
                           <option value="">Atributo ligado</option>
                           {s.attributes.map(attribute => <option key={attribute.id} value={attribute.short}>{attribute.short} — {attribute.label}</option>)}
                         </select>
-                        <select aria-label={`Grau de ${sk.name}`} className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={sk.degree ?? ''} onChange={e => setSkills(s.skills.map(x => {
+                        <select aria-label={`Grau de ${sk.name}`} className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={isOrdem ? getOrdemSkillDegree(sk) : sk.degree ?? ''} onChange={e => setSkills(s.skills.map(x => {
                           if (x.id !== sk.id) return x;
                           const degree = e.target.value || undefined;
                           const base = { ...x, degree, proficiency: degree, die: /^d\\d+$/.test(e.target.value) ? e.target.value : x.die };
-                          return s.style.system === 'ordemparanormal' ? { ...base, trained: !!degree && degree !== 'destreinado' } : base;
+                          return isOrdem ? { ...base, trained: !!degree && degree !== 'destreinado' } : base;
                         }))}>
                           <option value="">Grau / dado</option>
                           {degreeOptions(s.style.system).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                         </select>
                       </div>
-                      <div className="grid grid-cols-[1fr_5rem] gap-2">
+                      <div className={`grid gap-2 ${isOrdem ? 'grid-cols-1' : 'grid-cols-[1fr_5rem]'}`}>
                         <Input className="h-8" value={sk.specialization ?? ''} onChange={e => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, specialization: e.target.value } : x))} placeholder="Especialização / observação" />
-                        <NumberInput className="h-8" value={sk.modifiers ?? 0} onChange={v => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, modifiers: v } : x))} />
+                        {!isOrdem && <NumberInput className="h-8" value={sk.modifiers ?? 0} ariaLabel={`Modificador de ${sk.name}`} onChange={v => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, modifiers: v } : x))} />}
                       </div>
                     </div>
                   ))}

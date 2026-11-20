@@ -25,17 +25,34 @@ const degreeBonus = (degree?: string) => ({
   untrained: 0, trained: 2, expert_dnd: 4, master: 6, legendary: 8,
 }[String(degree ?? '').toLowerCase()] ?? 0);
 
-const ordemSkillDegree = (skill: SheetSkill) => {
-  const degree = normalize(skill.degree ?? skill.proficiency ?? '');
-  if (degree === 'veterano' || degree === 'expert' || degree === 'treinado') return degree;
+export const getOrdemSkillDegree = (skill: SheetSkill) => {
+  const priority: Record<string, number> = { treinado: 1, veterano: 2, expert: 3 };
+  const savedDegrees = [skill.degree, skill.proficiency]
+    .map(value => normalize(value ?? ''))
+    .filter(degree => degree in priority)
+    .sort((a, b) => priority[b] - priority[a]);
+  if (savedDegrees[0]) return savedDegrees[0];
   return skill.trained ? 'treinado' : 'destreinado';
 };
 
 /** Bônus numérico usado pela rolagem e mostrado junto à perícia. */
 export const skillDisplayValue = (sheet: Sheet, skill: SheetSkill) =>
   sheet.style?.system === 'ordemparanormal'
-    ? degreeBonus(ordemSkillDegree(skill)) + (skill.modifiers ?? skill.value)
+    ? degreeBonus(getOrdemSkillDegree(skill)) + (skill.modifiers ?? skill.value)
     : skill.value;
+
+/** Converte o bônus final editado pelo usuário no ajuste manual armazenado. */
+export const withSkillDisplayValue = (sheet: Sheet, skill: SheetSkill, value: number): SheetSkill => {
+  if (sheet.style?.system !== 'ordemparanormal') return { ...skill, value };
+  return { ...skill, modifiers: value - degreeBonus(getOrdemSkillDegree(skill)) };
+};
+
+/** Promove as perícias destreinadas sem reduzir graus Veterano ou Expert. */
+export const trainAllOrdemSkills = (skills: SheetSkill[]): SheetSkill[] => skills.map(skill => {
+  const current = getOrdemSkillDegree(skill);
+  const degree = current === 'veterano' || current === 'expert' ? current : 'treinado';
+  return { ...skill, trained: true, degree, proficiency: degree };
+});
 
 export const skillIsVisible = (sheet: Sheet, skill: SheetSkill) =>
   skill.trained === true || skill.value !== 0 || (skill.modifiers ?? 0) !== 0 || skillDisplayValue(sheet, skill) !== 0;
@@ -251,7 +268,7 @@ const formulaValue = (sheet: Sheet, name: string) => {
   const attr = sheet.attributes.find(a => normalize(a.label) === key || normalize(a.short) === key);
   if (attr) return attr.value;
   const skill = sheet.skills.find(s => normalize(s.name) === key);
-  if (skill) return skill.trained ? Math.max(5, skill.value) : skill.value;
+  if (skill) return skillDisplayValue(sheet, skill);
   const resource = sheet.resources.find(r => normalize(r.label) === key || normalize(r.short) === key);
   return resource?.current ?? 0;
 };
