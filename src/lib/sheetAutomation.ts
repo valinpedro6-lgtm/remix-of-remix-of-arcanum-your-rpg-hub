@@ -20,11 +20,36 @@ const attributeValue = (attributes: SheetAttribute[], names: string[]) => {
   return found?.value ?? 0;
 };
 
+const degreeBonus = (degree?: string) => ({
+  destreinado: 0, treinado: 5, veterano: 10, expert: 15,
+  untrained: 0, trained: 2, expert_dnd: 4, master: 6, legendary: 8,
+}[String(degree ?? '').toLowerCase()] ?? 0);
+
+const ordemSkillDegree = (skill: SheetSkill) => {
+  const degree = normalize(skill.degree ?? skill.proficiency ?? '');
+  if (degree === 'veterano' || degree === 'expert' || degree === 'treinado') return degree;
+  return skill.trained ? 'treinado' : 'destreinado';
+};
+
+/** Bônus numérico usado pela rolagem e mostrado junto à perícia. */
+export const skillDisplayValue = (sheet: Sheet, skill: SheetSkill) =>
+  sheet.style?.system === 'ordemparanormal'
+    ? degreeBonus(ordemSkillDegree(skill)) + (skill.modifiers ?? skill.value)
+    : skill.value;
+
+export const skillIsVisible = (sheet: Sheet, skill: SheetSkill) =>
+  skill.trained === true || skill.value !== 0 || (skill.modifiers ?? 0) !== 0 || skillDisplayValue(sheet, skill) !== 0;
+
+const skillForOrdem = (sheet: Sheet, names: string[]) => {
+  const wanted = names.map(normalize);
+  const skill = sheet.skills.find(entry => wanted.some(name => normalize(entry.name).includes(name)));
+  return skill ? skillDisplayValue(sheet, skill) : 0;
+};
+
 const skillValue = (skills: SheetSkill[], names: string[]) => {
   const wanted = names.map(normalize);
   const found = skills.find(skill => wanted.some(name => normalize(skill.name).includes(name)));
-  if (!found) return 0;
-  return found.trained ? Math.max(5, found.value) : found.value;
+  return found?.value ?? 0;
 };
 
 const resourceValue = (sheet: Sheet, shorts: string[]) => {
@@ -43,8 +68,8 @@ export const derivedStats = (sheet: Sheet): DerivedStat[] => {
   if (system === 'ordemparanormal') {
     return [
       { id: 'defense', label: 'Defesa', value: 10 + attributeValue(sheet.attributes, ['agilidade', 'agi']) },
-      { id: 'initiative', label: 'Iniciativa', value: attributeValue(sheet.attributes, ['agilidade', 'agi']) + skillValue(sheet.skills, ['iniciativa']), rollable: true },
-      { id: 'perception', label: 'Percepção', value: attributeValue(sheet.attributes, ['presenca', 'presença', 'pre']) + skillValue(sheet.skills, ['percepcao', 'percepção']), rollable: true },
+      { id: 'initiative', label: 'Iniciativa', value: skillForOrdem(sheet, ['iniciativa']), rollable: true },
+      { id: 'perception', label: 'Percepção', value: skillForOrdem(sheet, ['percepcao', 'percepção']), rollable: true },
       { id: 'load', label: 'Carga', value: 5 + attributeValue(sheet.attributes, ['forca', 'força', 'for']) },
     ];
   }
@@ -112,11 +137,6 @@ const d20 = () => rollDie('d20');
 const signed = (value: number) => value >= 0 ? `+${value}` : String(value);
 const result = (expr: string, total: number, by: string, detail: string): Roll => ({ expr, total, by, at: Date.now(), detail });
 
-const degreeBonus = (degree?: string) => ({
-  destreinado: 0, treinado: 5, veterano: 10, expert: 15,
-  untrained: 0, trained: 2, expert_dnd: 4, master: 6, legendary: 8,
-}[String(degree ?? '').toLowerCase()] ?? 0);
-
 const dndModifier = (value: number) => Math.floor((value - 10) / 2);
 const attributeForSkill = (sheet: Sheet, skill: SheetSkill) => {
   const requested = normalize(skill.attribute ?? '');
@@ -168,7 +188,7 @@ export const rollSkill = (sheet: Sheet, skill: SheetSkill): Roll => {
   const attr = linked?.value ?? 0;
   if (system === 'ordemparanormal') {
     const pool = rollCount(attr || 2, 'd20', attr > 0 ? 'highest' : 'lowest');
-    const bonus = degreeBonus(skill.degree ?? (skill.trained ? 'treinado' : 'destreinado')) + (skill.modifiers ?? skill.value);
+    const bonus = skillDisplayValue(sheet, skill);
     return result(`${attr || 2}d20 (maior) ${signed(bonus)}`, pool.total + bonus, sheet.name, `${skill.name}: [${pool.results.join(', ')}] ${signed(bonus)} → ${pool.total + bonus}`);
   }
   if (system === 'ordemparanormal2-alpha') {
@@ -216,6 +236,11 @@ export const rollSkill = (sheet: Sheet, skill: SheetSkill): Roll => {
 };
 
 export const rollDerived = (sheet: Sheet, id: string): Roll => {
+  if (sheet.style?.system === 'ordemparanormal' && (id === 'initiative' || id === 'perception')) {
+    const name = id === 'initiative' ? 'iniciativa' : 'percepcao';
+    const skill = sheet.skills.find(entry => normalize(entry.name).includes(name));
+    if (skill) return rollSkill(sheet, skill);
+  }
   const stat = derivedStats(sheet).find(entry => entry.id === id) ?? genericStats(sheet)[0];
   const die = d20();
   return result(`d20 ${signed(stat.value)}`, die + stat.value, sheet.name, `${stat.label}: ${die} ${signed(stat.value)}`);

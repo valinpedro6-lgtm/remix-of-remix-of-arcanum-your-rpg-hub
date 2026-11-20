@@ -3,6 +3,7 @@ import { AttributeWheel } from './AttributeWheel';
 import { SheetAutomation } from './SheetAutomation';
 import { Minus, Plus, UserRound } from 'lucide-react';
 import { getSystem, SheetFrame } from '@/lib/sheetSystems';
+import { skillDisplayValue, skillIsVisible } from '@/lib/sheetAutomation';
 
 /** Visual de cada sistema: moldura, caixas e efeitos. */
 const FRAMES: Record<SheetFrame, { wrap: string; box: string; tag: string; bg?: React.CSSProperties; fx?: React.CSSProperties; rounded: string; mark: string }> = {
@@ -77,7 +78,7 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, onR
     });
   };
 
-  const trained = sheet.skills.filter(s => s.trained || s.value > 0);
+  const trained = sheet.skills.filter(s => skillIsVisible(sheet, s));
   const st = sheet.style ?? {};
   const sys = getSystem(st.system);
   const fr = FRAMES[sys.frame];
@@ -117,10 +118,10 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, onR
 
       <div className={`relative z-10 ${compact ? 'p-4 pt-12' : 'p-5 pt-14 md:p-8 md:pt-16'}`}>
         {/* Cabeçalho */}
-        <div className={layout === 'left' ? 'max-w-[60%] sm:max-w-[55%] ml-auto text-right' : 'max-w-[60%] sm:max-w-[55%]'}>
+        <div className={`w-full max-w-full sm:max-w-[55%] break-words [overflow-wrap:anywhere] ${layout === 'left' ? 'ml-auto text-right' : ''}`}>
             <p className={`${fontClass} text-[10px] tracking-[0.3em] uppercase text-primary/80 mb-1`}>{fr.tag}</p>
           <h2
-            className={`${fontClass} font-black ${st.uppercase === false ? '' : 'uppercase'} tracking-tight text-primary leading-none ${
+            className={`${fontClass} font-black ${st.uppercase === false ? '' : 'uppercase'} tracking-tight text-primary leading-none break-words [overflow-wrap:anywhere] ${
               compact ? 'text-2xl' : 'text-4xl md:text-6xl'
             }`}
             style={{ textShadow: isAlpha ? '3px 0 hsl(190 90% 55%/.35), -3px 0 hsl(330 82% 58%/.35), 0 0 22px hsl(var(--primary)/.7)' : '0 0 18px hsl(var(--primary)/0.75), 0 0 42px hsl(var(--primary)/0.4)' }}
@@ -133,7 +134,7 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, onR
             </p>
           )}
           {sheet.origin && (
-            <p className="mt-1 text-primary/80 text-xs md:text-sm font-semibold uppercase tracking-widest">
+            <p className="mt-1 break-words [overflow-wrap:anywhere] text-primary/80 text-xs md:text-sm font-semibold uppercase tracking-widest">
               {sheet.origin}
             </p>
           )}
@@ -231,14 +232,15 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, onR
                     <div className={`backdrop-blur-sm p-3 ${fr.box}`} style={{ order: blockIndex('skills') }}>
                 <p className="font-display font-bold text-primary text-[11px] tracking-widest uppercase mb-2">{sys.id === 'cthulhu' ? 'Perícias (%)' : 'Perícias'}</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1">
-                  {trained.map(s => (
-                    <div key={s.id} className="flex items-center justify-between text-xs border-b border-white/5 py-0.5">
-                      <span className={s.trained ? 'text-white font-semibold' : 'text-white/60'}>{s.name}</span>
+                  {trained.map(s => {
+                    const value = skillDisplayValue(sheet, s);
+                    return <div key={s.id} className="flex items-center justify-between text-xs border-b border-white/5 py-0.5">
+                      <span className={value !== 0 ? 'text-white font-semibold' : 'text-white/60'}>{s.name}</span>
                       <span className="font-display font-bold text-primary tabular-nums">
-                        {s.value >= 0 ? `+${s.value}` : s.value}
+                        {value >= 0 ? `+${value}` : value}
                       </span>
-                    </div>
-                  ))}
+                    </div>;
+                  })}
                 </div>
               </div>
             )}

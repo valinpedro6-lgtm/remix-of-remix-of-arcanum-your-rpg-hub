@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Dices } from 'lucide-react';
 import { Sheet, SheetAttribute, SheetRoll, SheetSkill } from '@/lib/sheets';
-import { derivedStats, rollAbility, rollAttribute, rollDerived, rollSkill } from '@/lib/sheetAutomation';
+import { derivedStats, rollAbility, rollAttribute, rollDerived, rollSkill, skillDisplayValue, skillIsVisible } from '@/lib/sheetAutomation';
 import { DiceAnimation, Roll } from '@/components/DiceBar';
 
 interface Props {
@@ -12,7 +12,7 @@ interface Props {
 export const SheetAutomation = ({ sheet, onRoll }: Props) => {
   const [roll, setRoll] = useState<Roll | null>(null);
   const stats = derivedStats(sheet);
-  const trained = sheet.skills.filter(skill => skill.trained || skill.value > 0).slice(0, 12);
+  const trained = sheet.skills.filter(skill => skillIsVisible(sheet, skill)).slice(0, 12);
 
   const emit = (next: Roll) => {
     setRoll(next);
@@ -45,7 +45,7 @@ export const SheetAutomation = ({ sheet, onRoll }: Props) => {
       <div className="flex flex-wrap gap-1.5">
         {sheet.attributes.map(attribute => <button key={attribute.id} type="button" onClick={() => attr(attribute)} className="rounded-full border border-primary/30 bg-background/60 px-2 py-1 text-[11px] hover:border-primary">{attribute.short} {attribute.value}</button>)}
       </div>
-      {trained.length > 0 && <div className="flex flex-wrap gap-1.5">{trained.map(entry => <button key={entry.id} type="button" onClick={() => skill(entry)} className="rounded-full border border-border/60 bg-background/60 px-2 py-1 text-[11px] hover:border-primary">{entry.name} {entry.trained ? `+${Math.max(5, entry.value)}` : `+${entry.value}`}</button>)}</div>}
+      {trained.length > 0 && <div className="flex flex-wrap gap-1.5">{trained.map(entry => { const value = skillDisplayValue(sheet, entry); return <button key={entry.id} type="button" onClick={() => skill(entry)} className="rounded-full border border-border/60 bg-background/60 px-2 py-1 text-[11px] hover:border-primary">{entry.name} {value >= 0 ? `+${value}` : value}</button>; })}</div>}
       {sheet.abilities.some(ability => ability.formula) && <div className="grid gap-1.5 sm:grid-cols-2">{sheet.abilities.filter(ability => ability.formula).map(ability => <button key={ability.id} type="button" onClick={() => emit(rollAbility(sheet, ability))} className="flex items-center justify-between rounded-md border border-primary/25 bg-background/60 px-2 py-2 text-left text-[11px] hover:border-primary"><span><strong className="block">{ability.name}</strong><span className="text-muted-foreground">{ability.formula}</span></span><Dices className="h-3.5 w-3.5 shrink-0 text-primary" /></button>)}</div>}
       {sheet.last_roll && <p className="text-xs text-muted-foreground">Última rolagem: <strong className="text-foreground">{sheet.last_roll.total}</strong> · {sheet.last_roll.detail ?? sheet.last_roll.expr}</p>}
       <DiceAnimation roll={roll} />

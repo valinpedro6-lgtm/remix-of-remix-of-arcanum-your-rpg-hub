@@ -167,17 +167,19 @@ const Cast = () => {
   };
 
   const toggleFull = async () => {
-    if (!document.fullscreenElement) {
-      await stageRef.current?.requestFullscreen?.().catch(() => {});
+    if (!full) {
+      const stage = stageRef.current;
+      await stage?.requestFullscreen?.().catch(() => {});
       setFull(true);
+      requestAnimationFrame(() => stageRef.current?.scrollTo({ top: 0, left: 0 }));
     } else {
-      await document.exitFullscreen().catch(() => {});
+      if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
       setFull(false);
     }
   };
 
   useEffect(() => {
-    const h = () => setFull(!!document.fullscreenElement);
+    const h = () => setFull(document.fullscreenElement === stageRef.current);
     document.addEventListener('fullscreenchange', h);
     return () => document.removeEventListener('fullscreenchange', h);
   }, []);
@@ -326,7 +328,14 @@ const Cast = () => {
           </Button>
         </div>
 
-        <div ref={stageRef} className={full ? 'bg-black p-4 flex items-center overflow-auto' : ''}>
+        <div
+          ref={stageRef}
+          className={full ? 'fixed inset-0 z-[100] overflow-y-auto overscroll-contain bg-black px-3 pb-3 sm:px-6' : ''}
+          style={full ? { height: '100dvh', paddingTop: 'max(0.75rem, env(safe-area-inset-top))', paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' } : undefined}
+        >
+          {full && <div className="sticky top-0 z-30 -mx-3 mb-3 flex justify-end bg-black/90 px-3 py-2 backdrop-blur-sm sm:-mx-6 sm:px-6">
+            <Button variant="outline" size="sm" className="gap-1" onClick={toggleFull}><Minimize2 className="h-3.5 w-3.5" /> Sair do projetor</Button>
+          </div>}
           <div className="w-full">
             <SheetPoster
               sheet={s}
@@ -624,7 +633,12 @@ const Cast = () => {
                       <div className="flex items-center gap-2">
                         <Input className="h-8 flex-1" value={sk.name} onChange={e => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, name: e.target.value } : x))} />
                         <NumberInput className="h-8 w-16" value={sk.value} onChange={v => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, value: v } : x))} />
-                        <Switch checked={!!sk.trained} onCheckedChange={c => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, trained: c } : x))} />
+                        <Switch checked={!!sk.trained} onCheckedChange={c => setSkills(s.skills.map(x => {
+                          if (x.id !== sk.id) return x;
+                          if (s.style.system !== 'ordemparanormal') return { ...x, trained: c };
+                          const degree = c ? (x.degree === 'veterano' || x.degree === 'expert' ? x.degree : 'treinado') : 'destreinado';
+                          return { ...x, trained: c, degree, proficiency: degree };
+                        }))} />
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setSkills(s.skills.filter(x => x.id !== sk.id))}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
@@ -634,7 +648,12 @@ const Cast = () => {
                           <option value="">Atributo ligado</option>
                           {s.attributes.map(attribute => <option key={attribute.id} value={attribute.short}>{attribute.short} — {attribute.label}</option>)}
                         </select>
-                        <select aria-label={`Grau de ${sk.name}`} className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={sk.degree ?? ''} onChange={e => setSkills(s.skills.map(x => x.id === sk.id ? { ...x, degree: e.target.value || undefined, proficiency: e.target.value || undefined, die: /^d\\d+$/.test(e.target.value) ? e.target.value : x.die } : x))}>
+                        <select aria-label={`Grau de ${sk.name}`} className="h-8 rounded-md border border-input bg-background px-2 text-xs" value={sk.degree ?? ''} onChange={e => setSkills(s.skills.map(x => {
+                          if (x.id !== sk.id) return x;
+                          const degree = e.target.value || undefined;
+                          const base = { ...x, degree, proficiency: degree, die: /^d\\d+$/.test(e.target.value) ? e.target.value : x.die };
+                          return s.style.system === 'ordemparanormal' ? { ...base, trained: !!degree && degree !== 'destreinado' } : base;
+                        }))}>
                           <option value="">Grau / dado</option>
                           {degreeOptions(s.style.system).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                         </select>

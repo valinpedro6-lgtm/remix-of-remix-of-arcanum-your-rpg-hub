@@ -38,3 +38,9 @@
 - [x] O mobile apresenta apenas ações principais no rodapé e acesso contextual às demais áreas pelo menu, sem uma lista confusa de ferramentas.
 - [x] O sistema visual usa azul-petróleo para estado ativo, âmbar para atenção e vermelho reservado para perigo, mantendo a identidade de cada sistema de ficha dentro da casca do produto.
 - [x] As telas principais apresentam cabeçalhos, espaçamento e superfícies consistentes, sem alterar dados de fichas, tabletop, biblioteca ou acesso do mestre.
+
+## Correção visual e cálculos da ficha
+
+- [x] No modo “Projetor”, o topo da ficha — incluindo nome e origem/classe — permanece visível e legível; em telas móveis, a ficha inteira pode ser rolada e o modo pode ser encerrado mesmo quando o navegador não oferece tela cheia nativa.
+- [x] Em Ordem Paranormal, iniciativa e percepção mostram o bônus da perícia sem somar Agilidade/Presença como bônus fixo (o exemplo correto é +5, não +6/+7); grau, lista, botões e rolagens usam valores coerentes.
+- [x] As validações foram executadas localmente sem ler, gravar ou carregar dados do banco.
