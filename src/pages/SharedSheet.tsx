@@ -8,6 +8,7 @@ import { NumberInput } from '@/components/NumberInput';
 import { SheetPoster } from '@/components/sheet/SheetPoster';
 import { DiceAnimation, DiceBar, Roll } from '@/components/DiceBar';
 import { Sheet, getSheetByShareId, updateSharedSheet } from '@/lib/sheets';
+import { observeSharedRoll, type SharedRollCursor } from '@/lib/sharedSheetRolls';
 
 /** Página pública: o jogador vê e edita só a ficha dele. */
 const SharedSheet = () => {
@@ -17,6 +18,7 @@ const SharedSheet = () => {
   const [editing, setEditing] = useState(false);
   const [localRoll, setLocalRoll] = useState<Roll | null>(null);
   const dirty = useRef(false);
+  const rollCursor = useRef<SharedRollCursor>({ initialized: false, lastSeenKey: null });
   const saveT = useRef<ReturnType<typeof setTimeout>>();
   const loadingRef = useRef(false);
 
@@ -28,7 +30,14 @@ const SharedSheet = () => {
       loadingRef.current = true;
       try {
         const s = await getSheetByShareId(shareId);
-        if (alive && !dirty.current) setSheet(s);
+        if (alive && !dirty.current) {
+          setSheet(s);
+          if (s) {
+            const observation = observeSharedRoll(rollCursor.current, s.last_roll);
+            rollCursor.current = observation.cursor;
+            if (observation.rollToAnimate) setLocalRoll(observation.rollToAnimate);
+          }
+        }
       } catch { /* mantém a última versão visível durante uma falha breve */ }
       finally {
         loadingRef.current = false;
@@ -49,6 +58,13 @@ const SharedSheet = () => {
     saveT.current = setTimeout(() => {
       updateSharedSheet(shareId, p).catch(() => {}).finally(() => { dirty.current = false; });
     }, 600);
+  };
+
+  const handleRoll = (roll: Roll) => {
+    const observation = observeSharedRoll(rollCursor.current, roll);
+    rollCursor.current = observation.cursor;
+    setLocalRoll(roll);
+    patch({ last_roll: roll });
   };
 
   return (
@@ -75,7 +91,8 @@ const SharedSheet = () => {
               sheet={sheet}
               editable={editing}
               onPatch={patch}
-              onRoll={roll => { setLocalRoll(roll); patch({ last_roll: roll }); }}
+              onRoll={handleRoll}
+              showRollAnimation={false}
             />
             {editing && (
               <div className="mt-4 space-y-4 rounded-xl border border-primary/20 bg-card/70 p-4">
@@ -105,15 +122,11 @@ const SharedSheet = () => {
         <div className="fixed inset-x-2 bottom-2 z-40 flex justify-center pb-[env(safe-area-inset-bottom)]">
           <DiceBar
             compact
-            onRoll={roll => {
-              const playerRoll = { ...roll, by: sheet.name };
-              setLocalRoll(playerRoll);
-              patch({ last_roll: playerRoll });
-            }}
+            onRoll={roll => handleRoll({ ...roll, by: sheet.name })}
           />
         </div>
       )}
-      <DiceAnimation roll={localRoll ?? sheet?.last_roll ?? null} />
+      <DiceAnimation roll={localRoll} />
     </div>
   );
 };

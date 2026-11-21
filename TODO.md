@@ -51,4 +51,10 @@
 - [x] No desktop, tema e backup abrem em um painel amplo e legível; o menu mobile mantém seu fluxo.
 - [x] Exportação/restauração local aceita backups v1 como mesclagem conservadora e gera v2 com manifesto para restauração exata, sem apagar credenciais nem dados da nuvem.
 - [x] O backup inclui preferências, dados locais selecionados e rascunhos de ficha/tabletop; os rascunhos são exportados sem o token de proprietário e os dados sincronizados na nuvem ficam explicitamente fora.
-- [x] Os 16 testes passaram com armazenamento em memória; lint sem erros (9 avisos preexistentes), TypeScript e build passaram sem conexão com o banco.
+- [x] Os 20 testes passaram com armazenamento em memória; lint sem erros (9 avisos preexistentes), TypeScript e build passaram sem conexão com o banco.
+
+## Rolagem em ficha compartilhada
+
+- [x] Abrir o link trata a última rolagem salva como estado inicial, sem animá-la automaticamente.
+- [x] Atualizações repetidas não reanimam o mesmo resultado; novas rolagens continuam sendo animadas uma única vez, sem duplicar a animação.
+- [x] A validação foi feita localmente, sem consultar ficha de usuário nem acessar o banco.

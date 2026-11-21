@@ -50,6 +50,7 @@ interface Props {
   onPatch?: (patch: Partial<Sheet>) => void;
   onReorderAttributes?: (fromId: string, toId: string) => void;
   onRoll?: (roll: SheetRoll) => void;
+  showRollAnimation?: boolean;
   compact?: boolean;
 }
 
@@ -61,7 +62,7 @@ const toneClass: Record<SheetResource['tone'], string> = {
 };
 
 /** Ficha em formato "pôster": arte do personagem ao fundo, roda de atributos e perícias. */
-export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, onRoll, compact }: Props) => {
+export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, onRoll, showRollAnimation = true, compact }: Props) => {
   const patchResource = (id: string, delta: number) => {
     if (!onPatch) return;
     onPatch({
@@ -203,7 +204,7 @@ export const SheetPoster = ({ sheet, editable, onPatch, onReorderAttributes, onR
                 );
               })}
             </div>
-            <SheetAutomation sheet={sheet} onRoll={onRoll} />
+            <SheetAutomation sheet={sheet} onRoll={onRoll} showRollAnimation={showRollAnimation} />
           </div>
 
           {/* Habilidades + perícias */}
