@@ -25,6 +25,7 @@ import { SHEET_SYSTEMS, getSystem, systemTemplate } from '@/lib/sheetSystems';
 import { getOrdemSkillDegree, skillDisplayValue, trainAllOrdemSkills, withSkillDisplayValue } from '@/lib/sheetAutomation';
 import { compressImage } from '@/lib/image';
 import { clearDraft, readDraft, saveDraft } from '@/lib/drafts';
+import { isProUnlocked } from '@/components/ProGate';
 
 const TONES: SheetResource['tone'][] = ['life', 'sanity', 'effort', 'neutral'];
 const TONE_LABEL: Record<SheetResource['tone'], string> = {
@@ -64,6 +65,7 @@ const sendToInitiative = (sheet: Sheet) => {
 
 const Cast = () => {
   const [searchParams] = useSearchParams();
+  const [proUnlocked, setProUnlocked] = useState(isProUnlocked);
   const [newSystem, setNewSystem] = useState(FREE_SHEET_SYSTEM);
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +75,12 @@ const Cast = () => {
   const [templates, setTemplates] = useState<SheetTemplate[]>(() => listSheetTemplates());
   const stageRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  useEffect(() => {
+    const refreshPro = () => setProUnlocked(isProUnlocked());
+    window.addEventListener('arcanum-pro-change', refreshPro);
+    return () => window.removeEventListener('arcanum-pro-change', refreshPro);
+  }, []);
 
   useEffect(() => {
     listSheets()
@@ -136,8 +144,9 @@ const Cast = () => {
 
   const add = async (kind: SheetKind) => {
     try {
-      localStorage.setItem('arcanum-sheet-system', FREE_SHEET_SYSTEM);
-      const s = await createSheet(kind, FREE_SHEET_SYSTEM);
+      const system = proUnlocked ? newSystem : FREE_SHEET_SYSTEM;
+      localStorage.setItem('arcanum-sheet-system', system);
+      const s = await createSheet(kind, system);
       setSheets(prev => [...prev, s]);
       setSelectedId(s.id);
       window.dispatchEvent(new CustomEvent('arcanum:sheets-updated'));
@@ -151,7 +160,7 @@ const Cast = () => {
     try {
       const kind = kindFromTemplate(template);
       const system = template.system ?? FREE_SHEET_SYSTEM;
-      if (system !== FREE_SHEET_SYSTEM) {
+      if (system !== FREE_SHEET_SYSTEM && !proUnlocked) {
         toast.info('Modelos de sistemas prontos ficam disponíveis no Pro. Crie uma ficha Livre para continuar.');
         return;
       }
@@ -210,9 +219,9 @@ const Cast = () => {
   const grid = (items: Sheet[], kind: SheetKind) => (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-      <select value={newSystem} onChange={() => setNewSystem(FREE_SHEET_SYSTEM)} aria-label="Sistema da ficha"
+      <select value={newSystem} onChange={event => setNewSystem(event.target.value)} aria-label="Sistema da ficha"
         className="h-10 rounded-md border border-input bg-background px-3 text-sm max-w-full">
-        {SHEET_SYSTEMS.map(sys => <option key={sys.id} value={sys.id} disabled={sys.id !== FREE_SHEET_SYSTEM}>{sys.id === FREE_SHEET_SYSTEM ? `${sys.name} · grátis` : `${sys.name} · Pro`}</option>)}
+        {SHEET_SYSTEMS.map(sys => <option key={sys.id} value={sys.id} disabled={!proUnlocked && sys.id !== FREE_SHEET_SYSTEM}>{sys.id === FREE_SHEET_SYSTEM ? `${sys.name} · grátis` : `${sys.name} · Pro`}</option>)}
       </select>
       <Button onClick={() => add(kind)} className="gap-2">
         <Plus className="w-4 h-4" />
@@ -223,7 +232,7 @@ const Cast = () => {
         <div className="flex flex-wrap items-center gap-2">
           <BookOpen className="h-4 w-4 text-primary" />
           <div className="mr-auto"><p className="text-sm font-semibold">Modelos reutilizáveis</p><p className="text-xs text-muted-foreground">Salve uma ficha original e use a mesma estrutura quantas vezes quiser.</p></div>
-          {templates.map(template => <div key={template.id} className="flex items-center gap-1 rounded-md border border-border bg-background/60 px-2 py-1"><span className="max-w-32 truncate text-xs">{template.name}</span><Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => addFromTemplate(template)} disabled={template.system !== FREE_SHEET_SYSTEM}>{template.system === FREE_SHEET_SYSTEM ? 'Usar' : 'Pro'}</Button><Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => { deleteSheetTemplate(template.id); setTemplates(listSheetTemplates()); }}>×</Button></div>)}
+          {templates.map(template => <div key={template.id} className="flex items-center gap-1 rounded-md border border-border bg-background/60 px-2 py-1"><span className="max-w-32 truncate text-xs">{template.name}</span><Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => addFromTemplate(template)} disabled={!proUnlocked && template.system !== FREE_SHEET_SYSTEM}>{template.system === FREE_SHEET_SYSTEM ? 'Usar' : proUnlocked ? 'Usar' : 'Pro'}</Button><Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => { deleteSheetTemplate(template.id); setTemplates(listSheetTemplates()); }}>×</Button></div>)}
           <span className="text-xs text-muted-foreground">Abra uma ficha para salvar um novo modelo.</span>
         </div>
       </div>
@@ -397,7 +406,7 @@ const Cast = () => {
                 <select value={s.style.system ?? FREE_SHEET_SYSTEM} aria-label="Sistema de RPG"
                   onChange={e => {
                     const sys = e.target.value;
-                    if (sys !== FREE_SHEET_SYSTEM) {
+                    if (sys !== FREE_SHEET_SYSTEM && !proUnlocked) {
                       toast.info('Sistemas prontos ficam disponíveis no Pro. O sistema Livre continua gratuito.');
                       return;
                     }
@@ -407,9 +416,9 @@ const Cast = () => {
                     }
                   }}
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
-                  {SHEET_SYSTEMS.map(sys => <option key={sys.id} value={sys.id} disabled={sys.id !== FREE_SHEET_SYSTEM}>{sys.id === FREE_SHEET_SYSTEM ? `${sys.name} · grátis` : `${sys.name} · Pro`}</option>)}
+                  {SHEET_SYSTEMS.map(sys => <option key={sys.id} value={sys.id} disabled={!proUnlocked && sys.id !== FREE_SHEET_SYSTEM}>{sys.id === FREE_SHEET_SYSTEM ? `${sys.name} · grátis` : `${sys.name} · Pro`}</option>)}
                 </select>
-                <p className="text-xs text-muted-foreground">O sistema Livre é grátis. Sistemas prontos ficam disponíveis no Pro.</p>
+                <p className="text-xs text-muted-foreground">O sistema Livre é grátis. Sistemas prontos ficam disponíveis no Pro{proUnlocked ? ' ativado.' : '.'}</p>
               </div>
 
               {/* Tipo */}
