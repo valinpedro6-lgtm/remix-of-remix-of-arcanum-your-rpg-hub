@@ -66,3 +66,11 @@
 - [x] O bloqueio Pro apresenta os planos vitalício por R$ 32,90 e mensal por R$ 22,90.
 - [x] Cada plano abre o WhatsApp com uma mensagem pronta para o número (18) 99799-9210.
 - [x] O cliente consegue ativar o Pro com o código enviado pelo mestre, sem expor a senha no frontend.
+
+## Afiliados, cupons e vendas Pro
+- [x] A escolha do plano aceita um código de afiliado opcional e recalcula o valor final antes do contato.
+- [x] O WhatsApp recebe plano, valor original, valor líquido, cupom e referência da venda.
+- [x] A área do mestre permite cadastrar nome, código, percentual de desconto e percentual de comissão por afiliado.
+- [x] A comissão é calculada sobre o valor líquido após o desconto, não sobre o valor original nem sobre o desconto.
+- [x] Cada venda nasce pendente e o mestre pode aprovar, rejeitar ou reabrir o registro.
+- [x] O código de ativação Pro continua separado da aprovação manual da venda.

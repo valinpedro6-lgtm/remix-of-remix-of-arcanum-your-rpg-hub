@@ -58,6 +58,17 @@ function generateCode() {
   crypto.getRandomValues(bytes);
   return String(bytes[0] % 1_000_000).padStart(6, "0");
 }
+const PLAN_PRICES: Record<string, number> = { vitalicio: 3290, mensal: 2290 };
+const normalizeAffiliateCode = (value: unknown) => String(value ?? "").trim().toUpperCase().slice(0, 32);
+const money = (value: number) => Math.max(0, Math.round(value));
+const saleQuote = (plan: string, affiliate: { code: string; discount_percent: number; commission_percent: number } | null) => {
+  const grossAmountCents = PLAN_PRICES[plan] ?? 0;
+  const discountPercent = Number(affiliate?.discount_percent ?? 0);
+  const commissionPercent = Number(affiliate?.commission_percent ?? 0);
+  const discountAmountCents = money(grossAmountCents * discountPercent / 100);
+  const netAmountCents = Math.max(1, grossAmountCents - discountAmountCents);
+  return { grossAmountCents, discountPercent, discountAmountCents, netAmountCents, commissionPercent, commissionAmountCents: money(netAmountCents * commissionPercent / 100), affiliateCode: affiliate?.code ?? "" };
+};
 
 function clientKey(req: Request) {
   const fwd = req.headers.get("x-forwarded-for") ?? "";
@@ -205,6 +216,25 @@ Deno.serve(async (req) => {
       return json({ ok: false, ...r });
     }
 
+    if (action === "quote-sale" || action === "create-sale") {
+      const plan = String(body.plan ?? "").trim();
+      if (!PLAN_PRICES[plan]) return json({ ok: false, error: "Plano inválido" }, 400);
+      const code = normalizeAffiliateCode(body.affiliateCode);
+      let affiliate: { id?: string; code: string; discount_percent: number; commission_percent: number } | null = null;
+      if (code) {
+        const { data, error } = await admin.from("affiliates").select("id, code, discount_percent, commission_percent").eq("code", code).eq("active", true).maybeSingle();
+        if (error) throw error;
+        if (!data) return json({ ok: false, error: "Cupom não encontrado ou inativo" });
+        affiliate = data;
+      }
+      const quote = saleQuote(plan, affiliate);
+      if (action === "quote-sale") return json({ ok: true, plan, ...quote });
+      const { affiliateCode, ...saleValues } = quote;
+      const { data, error } = await admin.from("sales").insert({ plan, ...saleValues, affiliate_code: affiliateCode, affiliate_id: affiliate?.id ?? null, status: "pending" }).select("id").single();
+      if (error) throw error;
+      return json({ ok: true, saleId: data.id, plan, ...quote });
+    }
+
     if (action === "master-status") {
       const master = String(body.master ?? "").trim();
       if (master !== row.master_password) {
@@ -242,6 +272,52 @@ Deno.serve(async (req) => {
       const master = String(body.master ?? "").trim();
       if (master !== row.master_password) return json({ ok: false }, 200);
       return json({ ok: true, currentCode: row.current_code, maxUses: row.code_max_uses, usesLeft: row.code_uses_left, testCode: row.test_code, testExpiresAt: row.test_code_expires_at, ...(await stats()) });
+    }
+
+    if (action === "affiliates-list") {
+      const master = String(body.master ?? "").trim();
+      if (master !== row.master_password) return json({ ok: false });
+      const { data, error } = await admin.from("affiliates").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return json({ ok: true, affiliates: data ?? [] });
+    }
+
+    if (action === "affiliate-save") {
+      const master = String(body.master ?? "").trim();
+      if (master !== row.master_password) return json({ ok: false });
+      const id = String(body.id ?? "").trim();
+      const values = { name: String(body.name ?? "").trim().slice(0, 120), code: normalizeAffiliateCode(body.code), discount_percent: Math.min(100, Math.max(0, Number(body.discountPercent ?? 0))), commission_percent: Math.min(100, Math.max(0, Number(body.commissionPercent ?? 0))), active: body.active !== false };
+      if (!values.name || !/^[A-Z0-9_-]{3,32}$/.test(values.code)) return json({ ok: false, error: "Nome e código válidos são obrigatórios." });
+      const query = id ? admin.from("affiliates").update(values).eq("id", id) : admin.from("affiliates").insert(values);
+      const { error } = await query;
+      if (error) throw error;
+      return json({ ok: true });
+    }
+
+    if (action === "affiliate-delete") {
+      const master = String(body.master ?? "").trim();
+      if (master !== row.master_password) return json({ ok: false });
+      const { error } = await admin.from("affiliates").delete().eq("id", String(body.id ?? ""));
+      if (error) throw error;
+      return json({ ok: true });
+    }
+
+    if (action === "sales-list") {
+      const master = String(body.master ?? "").trim();
+      if (master !== row.master_password) return json({ ok: false });
+      const { data, error } = await admin.from("sales").select("*").order("created_at", { ascending: false }).limit(200);
+      if (error) throw error;
+      return json({ ok: true, sales: data ?? [] });
+    }
+
+    if (action === "sale-status") {
+      const master = String(body.master ?? "").trim();
+      if (master !== row.master_password) return json({ ok: false });
+      const status = String(body.status ?? "").trim();
+      if (!["approved", "rejected", "pending"].includes(status)) return json({ ok: false, error: "Status inválido" });
+      const { error } = await admin.from("sales").update({ status, approved_at: status === "approved" ? new Date().toISOString() : null }).eq("id", String(body.id ?? ""));
+      if (error) throw error;
+      return json({ ok: true });
     }
 
     if (action === "set-test-code") {
