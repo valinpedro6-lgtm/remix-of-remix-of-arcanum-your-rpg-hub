@@ -30,6 +30,7 @@ const TONES: SheetResource['tone'][] = ['life', 'sanity', 'effort', 'neutral'];
 const TONE_LABEL: Record<SheetResource['tone'], string> = {
   life: 'Vermelho', sanity: 'Azul', effort: 'Dourado', neutral: 'Cinza',
 };
+const FREE_SHEET_SYSTEM = 'custom';
 
 const degreeOptions = (system?: string) => {
   if (system === 'ordemparanormal') return [['destreinado', 'Destreinado'], ['treinado', 'Treinado'], ['veterano', 'Veterano'], ['expert', 'Expert']];
@@ -63,7 +64,7 @@ const sendToInitiative = (sheet: Sheet) => {
 
 const Cast = () => {
   const [searchParams] = useSearchParams();
-  const [newSystem, setNewSystem] = useState(() => localStorage.getItem('arcanum-sheet-system') ?? 'ordemparanormal');
+  const [newSystem, setNewSystem] = useState(FREE_SHEET_SYSTEM);
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -135,8 +136,8 @@ const Cast = () => {
 
   const add = async (kind: SheetKind) => {
     try {
-      localStorage.setItem('arcanum-sheet-system', newSystem);
-      const s = await createSheet(kind, newSystem);
+      localStorage.setItem('arcanum-sheet-system', FREE_SHEET_SYSTEM);
+      const s = await createSheet(kind, FREE_SHEET_SYSTEM);
       setSheets(prev => [...prev, s]);
       setSelectedId(s.id);
       window.dispatchEvent(new CustomEvent('arcanum:sheets-updated'));
@@ -149,7 +150,11 @@ const Cast = () => {
   const addFromTemplate = async (template: SheetTemplate) => {
     try {
       const kind = kindFromTemplate(template);
-      const system = template.system ?? newSystem;
+      const system = template.system ?? FREE_SHEET_SYSTEM;
+      if (system !== FREE_SHEET_SYSTEM) {
+        toast.info('Modelos de sistemas prontos ficam disponíveis no Pro. Crie uma ficha Livre para continuar.');
+        return;
+      }
       const created = await createSheet(kind, system);
       const source = JSON.parse(JSON.stringify(template.source)) as Partial<Sheet>;
       const patchData: Partial<Sheet> = { ...source, kind, style: { ...(source.style ?? {}), system }, name: source.name || template.name.replace(/\s+—\s+modelo$/i, ''), in_list: false, last_roll: null };
@@ -205,9 +210,9 @@ const Cast = () => {
   const grid = (items: Sheet[], kind: SheetKind) => (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-      <select value={newSystem} onChange={e => setNewSystem(e.target.value)} aria-label="Sistema da ficha"
+      <select value={newSystem} onChange={() => setNewSystem(FREE_SHEET_SYSTEM)} aria-label="Sistema da ficha"
         className="h-10 rounded-md border border-input bg-background px-3 text-sm max-w-full">
-        {SHEET_SYSTEMS.map(sys => <option key={sys.id} value={sys.id}>{sys.name}</option>)}
+        {SHEET_SYSTEMS.map(sys => <option key={sys.id} value={sys.id} disabled={sys.id !== FREE_SHEET_SYSTEM}>{sys.id === FREE_SHEET_SYSTEM ? `${sys.name} · grátis` : `${sys.name} · Pro`}</option>)}
       </select>
       <Button onClick={() => add(kind)} className="gap-2">
         <Plus className="w-4 h-4" />
@@ -218,7 +223,7 @@ const Cast = () => {
         <div className="flex flex-wrap items-center gap-2">
           <BookOpen className="h-4 w-4 text-primary" />
           <div className="mr-auto"><p className="text-sm font-semibold">Modelos reutilizáveis</p><p className="text-xs text-muted-foreground">Salve uma ficha original e use a mesma estrutura quantas vezes quiser.</p></div>
-          {templates.map(template => <div key={template.id} className="flex items-center gap-1 rounded-md border border-border bg-background/60 px-2 py-1"><span className="max-w-32 truncate text-xs">{template.name}</span><Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => addFromTemplate(template)}>Usar</Button><Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => { deleteSheetTemplate(template.id); setTemplates(listSheetTemplates()); }}>×</Button></div>)}
+          {templates.map(template => <div key={template.id} className="flex items-center gap-1 rounded-md border border-border bg-background/60 px-2 py-1"><span className="max-w-32 truncate text-xs">{template.name}</span><Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => addFromTemplate(template)} disabled={template.system !== FREE_SHEET_SYSTEM}>{template.system === FREE_SHEET_SYSTEM ? 'Usar' : 'Pro'}</Button><Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => { deleteSheetTemplate(template.id); setTemplates(listSheetTemplates()); }}>×</Button></div>)}
           <span className="text-xs text-muted-foreground">Abra uma ficha para salvar um novo modelo.</span>
         </div>
       </div>
@@ -389,18 +394,22 @@ const Cast = () => {
               {/* Sistema */}
               <div className="space-y-1.5">
                 <Label>Sistema de RPG</Label>
-                <select value={s.style.system ?? 'ordemparanormal'} aria-label="Sistema de RPG"
+                <select value={s.style.system ?? FREE_SHEET_SYSTEM} aria-label="Sistema de RPG"
                   onChange={e => {
                     const sys = e.target.value;
+                    if (sys !== FREE_SHEET_SYSTEM) {
+                      toast.info('Sistemas prontos ficam disponíveis no Pro. O sistema Livre continua gratuito.');
+                      return;
+                    }
                     if (confirm(`Trocar para ${getSystem(sys).name}? Os atributos, recursos e perícias serão trocados pelos desse sistema.`)) {
                       const t = systemTemplate(sys);
                       patch(s.id, { style: { ...s.style, system: sys, color: undefined, font: undefined }, attributes: t.attributes, resources: t.resources, skills: s.kind === 'monster' ? s.skills : t.skills });
                     }
                   }}
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
-                  {SHEET_SYSTEMS.map(sys => <option key={sys.id} value={sys.id}>{sys.name}</option>)}
+                  {SHEET_SYSTEMS.map(sys => <option key={sys.id} value={sys.id} disabled={sys.id !== FREE_SHEET_SYSTEM}>{sys.id === FREE_SHEET_SYSTEM ? `${sys.name} · grátis` : `${sys.name} · Pro`}</option>)}
                 </select>
-                <p className="text-xs text-muted-foreground">O visual da ficha muda de acordo com o sistema.</p>
+                <p className="text-xs text-muted-foreground">O sistema Livre é grátis. Sistemas prontos ficam disponíveis no Pro.</p>
               </div>
 
               {/* Tipo */}

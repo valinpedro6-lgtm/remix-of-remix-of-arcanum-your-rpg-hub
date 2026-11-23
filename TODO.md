@@ -74,3 +74,9 @@
 - [x] A comissão é calculada sobre o valor líquido após o desconto, não sobre o valor original nem sobre o desconto.
 - [x] Cada venda nasce pendente e o mestre pode aprovar, rejeitar ou reabrir o registro.
 - [x] O código de ativação Pro continua separado da aprovação manual da venda.
+
+## Fichas no plano gratuito
+- [x] A criação de fichas novas usa somente o sistema Livre (personalizado), marcado como grátis.
+- [x] Sistemas prontos aparecem bloqueados como Pro na seleção e não podem ser escolhidos no plano gratuito.
+- [x] Modelos de fichas baseados em sistemas prontos não podem ser usados sem Pro.
+- [x] A restrição é local na interface e não cria chamadas, tabelas ou migrações novas no banco.
