@@ -17,6 +17,7 @@ const planDetails: Record<Plan, { label: string; price: string; helper: string }
   vitalicio: { label: 'Pro vitalício', price: 'R$ 32,90', helper: 'Pagamento único, acesso permanente' },
   mensal: { label: 'Pro mensal', price: 'R$ 22,90', helper: 'Acesso Pro por 30 dias' },
 };
+const planPricesCents: Record<Plan, number> = { vitalicio: 3290, mensal: 2290 };
 
 export const isProUnlocked = () => localStorage.getItem(PRO_KEY) === 'true';
 
@@ -45,6 +46,10 @@ export const ProPricingDialog = ({ open, onOpenChange }: { open: boolean; onOpen
     finally { setLoading(false); }
   };
   const startSale = async () => {
+    if (!affiliateCode.trim()) {
+      openWhatsApp(plan, { netAmountCents: planPricesCents[plan], affiliateCode: '', discountPercent: 0 });
+      return;
+    }
     setLoading(true);
     try {
       const result = await callGate({ action: 'create-sale', plan, affiliateCode });
