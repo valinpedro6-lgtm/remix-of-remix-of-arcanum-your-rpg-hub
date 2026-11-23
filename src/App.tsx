@@ -46,7 +46,7 @@ const App = () => (
             <Route path="/mapa" element={<MindMap />} />
             <Route path="/tabletop" element={<Pro><Tabletop /></Pro>} />
             <Route path="/painel" element={<Pro><Dashboard /></Pro>} />
-            <Route path="/mesa" element={<Pro><TableHub /></Pro>} />
+            <Route path="/mesa" element={<TableHub />} />
             <Route path="/geradores" element={<Pro><GeneratorsHub /></Pro>} />
             <Route path="/compendio" element={<Pro><CompendiumHub /></Pro>} />
             <Route path="/mestre" element={<Master />} />
