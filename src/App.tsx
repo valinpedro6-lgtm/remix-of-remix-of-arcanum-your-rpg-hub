@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "@/components/Layout";
-import { AccessGate } from "@/components/AccessGate";
+import { ProGate } from "@/components/ProGate";
 import Index from "./pages/Index";
 import Notes from "./pages/Notes";
 import Dashboard from "./pages/Dashboard";
@@ -23,6 +23,7 @@ import SystemForge from "./pages/SystemForge";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+const Pro = ({ children }: { children: React.ReactNode }) => <ProGate>{children}</ProGate>;
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -36,22 +37,21 @@ const App = () => (
           {/* Mapa ao vivo para os jogadores (sem senha) */}
           <Route path="/mapa-ao-vivo/:shareId" element={<SharedTabletop />} />
           <Route path="*" element={
-            <AccessGate>
               <Layout>
                 <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/elenco" element={<Cast />} />
-            <Route path="/tabletop" element={<Tabletop />} />
-            <Route path="/painel" element={<Dashboard />} />
-            <Route path="/mesa" element={<TableHub />} />
             <Route path="/fichas" element={<SheetsHub />} />
-            <Route path="/geradores" element={<GeneratorsHub />} />
-            <Route path="/compendio" element={<CompendiumHub />} />
             <Route path="/notas" element={<Notes />} />
             <Route path="/mapa" element={<MindMap />} />
+            <Route path="/tabletop" element={<Pro><Tabletop /></Pro>} />
+            <Route path="/painel" element={<Pro><Dashboard /></Pro>} />
+            <Route path="/mesa" element={<Pro><TableHub /></Pro>} />
+            <Route path="/geradores" element={<Pro><GeneratorsHub /></Pro>} />
+            <Route path="/compendio" element={<Pro><CompendiumHub /></Pro>} />
             <Route path="/mestre" element={<Master />} />
-            <Route path="/historias" element={<StoryStudio />} />
-            <Route path="/sistemas" element={<SystemForge />} />
+            <Route path="/historias" element={<Pro><StoryStudio /></Pro>} />
+            <Route path="/sistemas" element={<Pro><SystemForge /></Pro>} />
 
             {/* Rotas antigas → novos hubs */}
             <Route path="/dados" element={<Navigate to="/mesa?t=dados" replace />} />
@@ -70,7 +70,6 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
                 </Routes>
               </Layout>
-            </AccessGate>
           } />
         </Routes>
       </HashRouter>

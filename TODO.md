@@ -58,3 +58,11 @@
 - [x] Abrir o link trata a última rolagem salva como estado inicial, sem animá-la automaticamente.
 - [x] Atualizações repetidas não reanimam o mesmo resultado; novas rolagens continuam sendo animadas uma única vez, sem duplicar a animação.
 - [x] A validação foi feita localmente, sem consultar ficha de usuário nem acessar o banco.
+
+## Acesso aberto e plano Pro
+- [x] O site abre normalmente sem pedir senha ou código de acesso.
+- [x] Início, ficha, mapa mental e notas permanecem disponíveis no plano gratuito.
+- [x] Tabletop, mesa ao vivo, geradores, compêndio, painel, histórias e sistemas exibem bloqueio Pro.
+- [x] O bloqueio Pro apresenta os planos vitalício por R$ 32,90 e mensal por R$ 22,90.
+- [x] Cada plano abre o WhatsApp com uma mensagem pronta para o número (18) 99799-9210.
+- [x] O cliente consegue ativar o Pro com o código enviado pelo mestre, sem expor a senha no frontend.
