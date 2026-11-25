@@ -242,9 +242,18 @@ const parse = (row: Record<string, unknown>): Sheet => {
 export async function listSheets(): Promise<Sheet[]> {
   try {
     const remote = (await listRows<Record<string, unknown>>('sheets')).map(parse);
-    // Keep a device backup so the app remains usable during a database outage.
-    writeLocalSheets(remote);
-    return remote;
+    const local = readLocalSheets();
+    const remoteIds = new Set(remote.map(sheet => sheet.id));
+    const remoteById = new Map(remote.map(sheet => [sheet.id, sheet]));
+    const preserved = local.filter(sheet => {
+      if (sheet.id.startsWith('local-')) return true;
+      const remoteSheet = remoteById.get(sheet.id);
+      return Boolean(remoteSheet && sheet.updated_at > remoteSheet.updated_at);
+    });
+    const merged = [...remote.filter(sheet => !preserved.some(localSheet => localSheet.id === sheet.id)), ...preserved];
+    // Keep local-only and newer device edits instead of replacing them with the remote snapshot.
+    writeLocalSheets(merged.filter(sheet => remoteIds.has(sheet.id) || sheet.id.startsWith('local-')));
+    return merged;
   } catch {
     return readLocalSheets();
   }
