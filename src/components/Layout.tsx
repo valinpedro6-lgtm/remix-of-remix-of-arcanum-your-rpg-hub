@@ -96,7 +96,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
         </div>
         <nav className="flex-1 overflow-y-auto px-3 py-4"><NavLinks /></nav>
         <div className="border-t border-border/60 p-3">
-          <div className="mb-3 flex items-center gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2"><span className="status-pulse" /><div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Sistema online</p><p className="truncate text-[11px] text-muted-foreground">Workspace sincronizado</p></div></div>
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2"><span className="status-pulse" /><div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Sistema online</p><p className="truncate text-[11px] text-muted-foreground">Dados salvos neste dispositivo</p></div></div>
           <div className="flex items-center gap-2">
             <Dialog open={preferencesOpen} onOpenChange={setPreferencesOpen}>
               <DialogTrigger asChild>

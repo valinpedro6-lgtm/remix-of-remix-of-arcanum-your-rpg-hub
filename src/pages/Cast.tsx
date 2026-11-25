@@ -709,7 +709,7 @@ const Cast = () => {
               </div>
 
               <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Save className="w-3 h-3" /> Tudo é salvo sozinho na nuvem.
+                <Save className="w-3 h-3" /> Tudo é salvo sozinho neste dispositivo.
               </p>
             </CardContent>
           </Card>
