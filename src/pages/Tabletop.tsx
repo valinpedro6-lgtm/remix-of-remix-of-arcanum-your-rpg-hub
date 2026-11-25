@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { listRows, createRow, updateRow, deleteRow } from '@/lib/userData';
 import { listSheets, Sheet } from '@/lib/sheets';
 import { DiceBar, DiceAnimation, Roll } from '@/components/DiceBar';
 import { compressImage } from '@/lib/image';
@@ -48,6 +47,20 @@ interface Board {
 type Tool = 'move' | 'pan' | 'fog';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
+const LOCAL_BOARDS_KEY = 'arcanum-local-tabletops-v1';
+
+const readLocalBoards = (): Board[] => {
+  try {
+    const value = JSON.parse(localStorage.getItem(LOCAL_BOARDS_KEY) ?? '[]');
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeLocalBoards = (boards: Board[]) => {
+  localStorage.setItem(LOCAL_BOARDS_KEY, JSON.stringify(boards));
+};
 
 const Tabletop = () => {
   const [boards, setBoards] = useState<Board[]>([]);
@@ -75,23 +88,16 @@ const Tabletop = () => {
   const syncing = useRef(false);
 
   useEffect(() => {
-    listRows<Board>('tabletops')
-      .then(list => {
-        setConnection('online');
-        let recovered = 0;
-        const next = list.map(raw => {
-          const board = { ...raw, fog: raw.fog ?? [], turn_order: raw.turn_order ?? [], active_turn: raw.active_turn ?? 0, round: raw.round ?? 1, vision_mode: raw.vision_mode ?? 'all' };
-          const draft = readDraft<Board>('tabletop', board.id);
-          if (!draft) return board;
-          recovered += 1;
-          return { ...board, ...draft.value, id: board.id, share_id: board.share_id };
-        });
-        if (recovered) toast.info(`${recovered} rascunho(s) local(is) de mapa recuperado(s).`);
-        setBoards(next);
-        setActiveId(next[0]?.id ?? null);
-      })
-      .catch(() => { setConnection('offline'); toast.error('Não consegui carregar os mapas. Tentando novamente…'); })
-      .finally(() => setLoading(false));
+    const list = readLocalBoards();
+    const next = list.map(raw => {
+      const board = { ...raw, fog: raw.fog ?? [], turn_order: raw.turn_order ?? [], active_turn: raw.active_turn ?? 0, round: raw.round ?? 1, vision_mode: raw.vision_mode ?? 'all' };
+      const draft = readDraft<Board>('tabletop', board.id);
+      return draft ? { ...board, ...draft.value, id: board.id, share_id: board.share_id } : board;
+    });
+    setConnection('offline');
+    setBoards(next);
+    setActiveId(next[0]?.id ?? null);
+    setLoading(false);
     listSheets().then(setSheets).catch(() => {});
     const h = () => setFull(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', h);
@@ -104,14 +110,11 @@ const Tabletop = () => {
     const t = setInterval(() => {
       if (document.hidden || drag.current || syncing.current || Date.now() < busyUntil.current) return;
       syncing.current = true;
-      listRows<Board>('tabletops').then(list => {
-        if (drag.current || Date.now() < busyUntil.current) return;
-        const f = list.find(b => b.id === activeId);
-        if (!f) return;
-        setBoards(prev => prev.map(b => b.id === f.id ? { ...b, tokens: f.tokens, last_roll: f.last_roll, zoom: f.zoom, camera: f.camera } : b));
-        const lr = f.last_roll;
-        if (lr && lr.at > lastSeenRoll.current) { lastSeenRoll.current = lr.at; if (lr.by !== 'Mestre') setAnimRoll(lr); }
-      }).then(() => setConnection('online')).catch(() => setConnection('offline')).finally(() => { syncing.current = false; });
+      const f = readLocalBoards().find(b => b.id === activeId);
+      if (f && !drag.current && Date.now() >= busyUntil.current) {
+        setBoards(prev => prev.map(b => b.id === f.id ? { ...b, ...f } : b));
+      }
+      syncing.current = false;
     }, 5000);
     return () => clearInterval(t);
   }, [activeId]);
@@ -129,10 +132,23 @@ const Tabletop = () => {
     setConnection('retrying');
     saveDraft('tabletop', id, next);
     setBoards(prev => prev.map(b => (b.id === id ? { ...b, ...p } : b)));
+    try {
+      writeLocalBoards(readLocalBoards().map(item => item.id === id ? { ...item, ...p } : item));
+    } catch {
+      // The debounced handler below shows the user the storage error.
+    }
     clearTimeout(saveT.current);
-    const run = () => updateRow('tabletops', id, { ...p })
-      .then(() => { clearDraft('tabletop', id); setConnection('online'); })
-      .catch(() => { setConnection('offline'); toast.error('A conexão caiu. O rascunho local foi mantido e será reenviado.'); });
+    const run = () => {
+      try {
+        const current = readLocalBoards();
+        writeLocalBoards(current.map(item => item.id === id ? { ...item, ...p } : item));
+        clearDraft('tabletop', id);
+        setConnection('offline');
+      } catch (error) {
+        setConnection('offline');
+        toast.error(error instanceof Error ? error.message : 'Não consegui salvar o mapa neste dispositivo.');
+      }
+    };
     if (now) run(); else saveT.current = setTimeout(run, 150);
   };
 
@@ -155,16 +171,20 @@ const Tabletop = () => {
   });
 
   const create = async () => {
-    let data: Board;
-    try { data = await createRow<Board>('tabletops', { name: `Mapa ${boards.length + 1}` }); }
-    catch { return toast.error('Não consegui criar o mapa.'); }
+    const data: Board = {
+      id: `local-${uid()}`,
+      name: `Mapa ${boards.length + 1}`,
+      map_url: '', tokens: [], grid: false, fog: [], share_id: `local-${uid()}`,
+      zoom: 1, camera: { x: 0.5, y: 0.5 }, last_roll: null, turn_order: [], active_turn: 0, round: 1, vision_mode: 'all',
+    };
+    writeLocalBoards([...readLocalBoards(), data]);
     setBoards(prev => [...prev, { ...data, fog: data.fog ?? [] }]);
     setActiveId(data.id);
   };
 
   const remove = async () => {
     if (!board || !confirm(`Apagar "${board.name}"?`)) return;
-    await deleteRow('tabletops', board.id).catch(() => {});
+    writeLocalBoards(readLocalBoards().filter(item => item.id !== board.id));
     const rest = boards.filter(b => b.id !== board.id);
     setBoards(rest);
     setActiveId(rest[0]?.id ?? null);

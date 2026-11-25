@@ -119,6 +119,34 @@ export interface SheetTemplate {
 }
 
 const TEMPLATE_KEY = 'arcanum-sheet-templates-v1';
+const LOCAL_SHEETS_KEY = 'arcanum-local-sheets-v1';
+
+const readLocalSheets = (): Sheet[] => {
+  try {
+    const raw = localStorage.getItem(LOCAL_SHEETS_KEY);
+    if (!raw) return [];
+    const value = JSON.parse(raw);
+    return Array.isArray(value) ? value.map(row => parse(row as Record<string, unknown>)) : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeLocalSheets = (sheets: Sheet[]) => {
+  localStorage.setItem(LOCAL_SHEETS_KEY, JSON.stringify(sheets));
+};
+
+const createLocalSheet = (kind: SheetKind, system?: string): Sheet => {
+  const now = new Date().toISOString();
+  const id = `local-${uid()}`;
+  return parse({
+    ...emptySheet(kind, system),
+    id,
+    share_id: `local-${uid()}${uid()}`,
+    created_at: now,
+    updated_at: now,
+  });
+};
 
 export const listSheetTemplates = (): SheetTemplate[] => {
   try { return JSON.parse(localStorage.getItem(TEMPLATE_KEY) ?? '[]') as SheetTemplate[]; } catch { return []; }
@@ -212,7 +240,14 @@ const parse = (row: Record<string, unknown>): Sheet => {
 };
 
 export async function listSheets(): Promise<Sheet[]> {
-  return (await listRows<Record<string, unknown>>('sheets')).map(parse);
+  try {
+    const remote = (await listRows<Record<string, unknown>>('sheets')).map(parse);
+    // Keep a device backup so the app remains usable during a database outage.
+    writeLocalSheets(remote);
+    return remote;
+  } catch {
+    return readLocalSheets();
+  }
 }
 
 export async function getSheetByShareId(shareId: string): Promise<Sheet | null> {
@@ -229,15 +264,47 @@ export async function updateSharedSheet(shareId: string, patch: Partial<Sheet>):
 }
 
 export async function createSheet(kind: SheetKind, system?: string): Promise<Sheet> {
-  return parse(await createRow<Record<string, unknown>>('sheets', emptySheet(kind, system)));
+  try {
+    return parse(await createRow<Record<string, unknown>>('sheets', emptySheet(kind, system)));
+  } catch (remoteError) {
+    try {
+      const local = createLocalSheet(kind, system);
+      writeLocalSheets([...readLocalSheets(), local]);
+      return local;
+    } catch {
+      throw remoteError;
+    }
+  }
 }
 
 export async function updateSheet(id: string, patch: Partial<Sheet>): Promise<void> {
-  await updateRow('sheets', id, { ...patch });
+  try {
+    await updateRow('sheets', id, { ...patch });
+  } catch (remoteError) {
+    try {
+      const local = readLocalSheets();
+      const index = local.findIndex(sheet => sheet.id === id);
+      if (index < 0) throw remoteError;
+      local[index] = { ...local[index], ...patch, updated_at: new Date().toISOString() };
+      writeLocalSheets(local);
+    } catch {
+      throw remoteError;
+    }
+  }
 }
 
 export async function deleteSheet(id: string): Promise<void> {
-  await deleteRow('sheets', id);
+  try {
+    await deleteRow('sheets', id);
+  } catch (remoteError) {
+    try {
+      const local = readLocalSheets();
+      if (!local.some(sheet => sheet.id === id)) throw remoteError;
+      writeLocalSheets(local.filter(sheet => sheet.id !== id));
+    } catch {
+      throw remoteError;
+    }
+  }
 }
 
 export const shareUrl = (shareId: string) =>
