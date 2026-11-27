@@ -74,6 +74,7 @@ const Tabletop = () => {
   const [connection, setConnection] = useState<'online' | 'retrying' | 'offline'>('retrying');
   const [combatOpen, setCombatOpen] = useState(false);
   const [tool, setTool] = useState<Tool>('move');
+  const fallbackFull = useRef(false);
   const [draftFog, setDraftFog] = useState<FogRect | null>(null);
   const [animRoll, setAnimRoll] = useState<Roll | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -99,10 +100,19 @@ const Tabletop = () => {
     setActiveId(next[0]?.id ?? null);
     setLoading(false);
     listSheets().then(setSheets).catch(() => {});
-    const h = () => setFull(!!document.fullscreenElement);
+    const h = () => setFull(!!document.fullscreenElement || fallbackFull.current);
     document.addEventListener('fullscreenchange', h);
     return () => document.removeEventListener('fullscreenchange', h);
   }, []);
+
+  // O iPhone/Safari pode não aceitar requestFullscreen em um elemento comum.
+  // Nesse caso usamos um modo imersivo local, sem alterar dados ou navegação.
+  useEffect(() => {
+    if (!full) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [full]);
 
   // Puxa as mudanças feitas pelos jogadores no link (bonecos e dados)
   useEffect(() => {
@@ -334,8 +344,24 @@ const Tabletop = () => {
   };
 
   const toggleFull = async () => {
-    if (!document.fullscreenElement) await stageRef.current?.requestFullscreen?.().catch(() => {});
-    else await document.exitFullscreen().catch(() => {});
+    if (document.fullscreenElement || fallbackFull.current) {
+      if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
+      fallbackFull.current = false;
+      setFull(false);
+      return;
+    }
+    const request = stageRef.current?.requestFullscreen;
+    if (request) {
+      try {
+        await request.call(stageRef.current);
+        setFull(true);
+        return;
+      } catch {
+        // Continua para o fallback em navegadores móveis restritivos.
+      }
+    }
+    fallbackFull.current = true;
+    setFull(true);
   };
 
   const rollDice = (roll: Roll) => {
@@ -415,7 +441,9 @@ const Tabletop = () => {
             <Button size="sm" variant="outline" className="h-9" onClick={() => zoomCtl.zoomOut()}><ZoomOut className="w-4 h-4" /></Button>
             <Button size="sm" variant="outline" className="h-9" onClick={() => zoomCtl.zoomIn()}><ZoomIn className="w-4 h-4" /></Button>
             <Button size="sm" variant="outline" className="h-9 px-2 tabular-nums text-xs" onClick={() => zoomCtl.reset()}>{Math.round(zoom * 100)}%</Button>
-            <Button size="sm" variant="outline" className="h-9" onClick={toggleFull}>{full ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</Button>
+            <Button size="sm" variant={full ? 'default' : 'outline'} className="h-9 gap-1" onClick={toggleFull} title={full ? 'Sair da tela cheia' : 'Abrir Tabletop em tela cheia'} aria-label={full ? 'Sair da tela cheia' : 'Abrir Tabletop em tela cheia'}>
+              {full ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}<span className="hidden sm:inline">{full ? 'Sair' : 'Tela cheia'}</span>
+            </Button>
             <Button size="sm" variant={showSummary ? 'default' : 'outline'} className="h-9 gap-1" onClick={() => setShowSummary(v => !v)} title="Resumo das fichas na mesa"><ScrollText className="w-4 h-4" /><span className="hidden sm:inline">Fichas</span></Button>
             <Button size="sm" variant={combatOpen ? 'default' : 'outline'} className="h-9 gap-1" onClick={() => setCombatOpen(v => !v)} title="Ordem de turno e condições"><RotateCw className="w-4 h-4" /><span className="hidden sm:inline">Combate</span></Button>
             <Button size="sm" variant="outline" className="h-9 text-destructive" onClick={remove}><Trash2 className="w-4 h-4" /></Button>
@@ -494,7 +522,7 @@ const Tabletop = () => {
           <div className="flex gap-3 items-start">
             <div
               ref={stageRef}
-              className={`relative flex-1 min-w-0 overflow-auto rounded-xl border border-border/50 bg-background ${full ? 'flex items-center' : 'max-h-[75dvh]'} ${tool === 'pan' ? 'cursor-grab active:cursor-grabbing' : ''} ${tool === 'fog' ? 'cursor-crosshair' : ''}`}
+              className={`relative flex-1 min-w-0 overflow-auto border border-border/50 bg-background ${full ? 'fixed inset-0 z-[60] h-[100dvh] w-screen max-h-none rounded-none flex items-center overscroll-contain' : 'rounded-xl max-h-[75dvh]'} ${tool === 'pan' ? 'cursor-grab active:cursor-grabbing' : ''} ${tool === 'fog' ? 'cursor-crosshair' : ''}`}
             >
               <div
                 ref={mapRef}
