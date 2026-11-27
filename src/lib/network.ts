@@ -2,6 +2,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type ConnectionState = 'online' | 'retrying' | 'offline';
 
+// O site publicado pode não receber variáveis Vite configuradas na Vercel.
+// Mantemos a variável como override, mas o fluxo principal deve continuar
+// apontando para o Worker Cloudflare mesmo quando ela estiver ausente.
+const DEFAULT_API_BASE_URL = 'https://arcanum-neon-api.arcanumrpg.workers.dev';
+
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 type InvokeResult<T> = { data: T | null; error: Error | null };
@@ -33,8 +38,8 @@ async function postJson<T>(baseUrl: string, name: string, body: Record<string, u
 }
 
 /**
- * Chamadas só usam a API Neon quando VITE_API_BASE_URL estiver configurada.
- * Sem essa variável, a versão publicada continua usando as Edge Functions atuais.
+ * Chamadas usam o Worker Cloudflare por padrão; VITE_API_BASE_URL permite
+ * trocar o endereço sem alterar o código em ambientes de teste.
  * Criações devem passar attempts: 1 para não duplicar registros após timeout.
  */
 export async function invokeResilient<T = unknown>(
@@ -44,7 +49,7 @@ export async function invokeResilient<T = unknown>(
 ): Promise<InvokeResult<T>> {
   const attempts = Math.max(1, Math.min(2, options.attempts ?? 3));
   let lastError: Error | null = null;
-  const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
+  const apiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/+$/, '');
 
   if (apiBaseUrl) {
     for (let attempt = 1; attempt <= attempts; attempt += 1) {
