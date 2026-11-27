@@ -683,8 +683,13 @@ const Tabletop = () => {
                   </div>
                 </>
               )}
-              {/* Barra de dados flutuante */}
-              <div className="sticky bottom-2 flex justify-center pointer-events-none">
+              {/* Barra de dados: no fullscreen fica presa à viewport, não ao mapa ampliado. */}
+              <div
+                className={full
+                  ? 'absolute inset-x-0 bottom-3 z-[70] flex justify-center pointer-events-none px-3'
+                  : 'sticky bottom-2 flex justify-center pointer-events-none'}
+                style={full ? { paddingBottom: 'env(safe-area-inset-bottom)' } : undefined}
+              >
                 <div className="pointer-events-auto"><DiceBar onRoll={rollDice} /></div>
               </div>
             </div>
