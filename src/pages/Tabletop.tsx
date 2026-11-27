@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Plus, Trash2, Map as MapIcon, ImagePlus, UserPlus, Maximize2, Minimize2,
-  Grid3x3, Loader2, ZoomIn, ZoomOut, Users, Hand, MousePointer2, Square, Eye, ScrollText, RotateCw,
+  Grid3x3, Loader2, ZoomIn, ZoomOut, Users, Hand, MousePointer2, Square, Eye, ScrollText, RotateCw, Menu, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,6 +75,9 @@ const Tabletop = () => {
   const [combatOpen, setCombatOpen] = useState(false);
   const [tool, setTool] = useState<Tool>('move');
   const fallbackFull = useRef(false);
+  const [mobileViewport, setMobileViewport] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  const [portraitMobile, setPortraitMobile] = useState(false);
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const [draftFog, setDraftFog] = useState<FogRect | null>(null);
   const [animRoll, setAnimRoll] = useState<Roll | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -112,6 +115,23 @@ const Tabletop = () => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = previousOverflow; };
+  }, [full]);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 767px)');
+    const updateViewport = () => setMobileViewport(media.matches);
+    const updateOrientation = () => setPortraitMobile(full && media.matches && window.innerHeight > window.innerWidth);
+    updateViewport();
+    updateOrientation();
+    media.addEventListener?.('change', updateViewport);
+    window.addEventListener('resize', updateOrientation);
+    window.addEventListener('orientationchange', updateOrientation);
+    if (full && media.matches) window.screen.orientation?.lock?.('landscape')?.catch(() => {});
+    return () => {
+      media.removeEventListener?.('change', updateViewport);
+      window.removeEventListener('resize', updateOrientation);
+      window.removeEventListener('orientationchange', updateOrientation);
+    };
   }, [full]);
 
   // Puxa as mudanças feitas pelos jogadores no link (bonecos e dados)
@@ -256,7 +276,10 @@ const Tabletop = () => {
   };
 
   const onStageDown = (e: React.PointerEvent) => {
-    if (tool === 'pan') {
+    // No celular, o modo padrão não precisa de uma ferramenta "mãozinha".
+    // Arrastar uma área vazia navega pelo mapa; tocar e arrastar um token
+    // continua sendo reservado ao próprio token.
+    if (tool === 'pan' || (mobileViewport && full && tool === 'move')) {
       const st = stageRef.current!;
       pan.current = { sx: e.clientX, sy: e.clientY, sl: st.scrollLeft, st: st.scrollTop };
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -346,6 +369,7 @@ const Tabletop = () => {
   const toggleFull = async () => {
     if (document.fullscreenElement || fallbackFull.current) {
       if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
+      window.screen.orientation?.unlock?.();
       fallbackFull.current = false;
       setFull(false);
       return;
@@ -354,6 +378,7 @@ const Tabletop = () => {
     if (request) {
       try {
         await request.call(stageRef.current);
+        if (mobileViewport) window.screen.orientation?.lock?.('landscape')?.catch(() => {});
         setFull(true);
         return;
       } catch {
@@ -361,6 +386,7 @@ const Tabletop = () => {
       }
     }
     fallbackFull.current = true;
+    if (mobileViewport) window.screen.orientation?.lock?.('landscape')?.catch(() => {});
     setFull(true);
   };
 
@@ -522,7 +548,7 @@ const Tabletop = () => {
           <div className="flex gap-3 items-start">
             <div
               ref={stageRef}
-              className={`relative flex-1 min-w-0 overflow-auto border border-border/50 bg-background ${full ? 'fixed inset-0 z-[60] h-[100dvh] w-screen max-h-none rounded-none flex items-center overscroll-contain' : 'rounded-xl max-h-[75dvh]'} ${tool === 'pan' ? 'cursor-grab active:cursor-grabbing' : ''} ${tool === 'fog' ? 'cursor-crosshair' : ''}`}
+              className={`relative flex-1 min-w-0 overflow-auto border border-border/50 bg-background ${full ? 'fixed inset-0 z-[60] h-[100dvh] w-screen max-h-none rounded-none flex items-center overscroll-contain' : 'rounded-xl max-h-[75dvh]'} ${tool === 'pan' || (mobileViewport && full && tool === 'move') ? 'cursor-grab active:cursor-grabbing' : ''} ${tool === 'fog' ? 'cursor-crosshair' : ''}`}
             >
               <div
                 ref={mapRef}
@@ -571,6 +597,92 @@ const Tabletop = () => {
                   </div>
                 ))}
               </div>
+              {full && mobileViewport && (
+                <>
+                  {portraitMobile && (
+                    <div className="absolute inset-0 z-[75] flex items-center justify-center bg-background/90 p-6 text-center backdrop-blur-sm">
+                      <div className="max-w-xs space-y-3">
+                        <RotateCw className="mx-auto h-10 w-10 text-primary" />
+                        <p className="text-lg font-semibold">Deite o celular</p>
+                        <p className="text-sm text-muted-foreground">Para usar o Tabletop em tela cheia, vire o aparelho para o modo paisagem.</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="absolute left-2 top-2 z-[80] flex items-start gap-2">
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="h-11 w-11 shrink-0 rounded-full border border-border/70 bg-card/95 shadow-lg"
+                      onClick={() => setMobileToolsOpen(v => !v)}
+                      aria-label={mobileToolsOpen ? 'Fechar ferramentas' : 'Abrir ferramentas'}
+                    >
+                      {mobileToolsOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                    </Button>
+                    {mobileToolsOpen && (
+                      <div className="w-[min(19rem,calc(100vw-4.5rem))] max-h-[calc(100dvh-1rem)] overflow-y-auto rounded-xl border border-border/70 bg-card/95 p-3 shadow-2xl backdrop-blur-md">
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-widest text-primary">Ferramentas</p>
+                            <p className="text-[11px] text-muted-foreground">Arraste o mapa vazio para navegar · pinça para zoom</p>
+                          </div>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={toggleFull} aria-label="Sair da tela cheia"><Minimize2 className="h-4 w-4" /></Button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button size="sm" variant={tool === 'fog' ? 'default' : 'outline'} className="h-10 justify-start gap-2" onClick={() => setTool(tool === 'fog' ? 'move' : 'fog')}><Square className="h-4 w-4" />Névoa</Button>
+                          <Button size="sm" variant={board.grid ? 'default' : 'outline'} className="h-10 justify-start gap-2" onClick={() => patch({ grid: !board.grid }, true)}><Grid3x3 className="h-4 w-4" />Grade</Button>
+                          <Button size="sm" variant="outline" className="h-10 justify-start gap-2" onClick={() => zoomCtl.zoomOut()}><ZoomOut className="h-4 w-4" />Afastar</Button>
+                          <Button size="sm" variant="outline" className="h-10 justify-start gap-2" onClick={() => zoomCtl.zoomIn()}><ZoomIn className="h-4 w-4" />Aproximar</Button>
+                          <Button size="sm" variant="outline" className="h-10 justify-start gap-2" onClick={() => zoomCtl.reset()}><MousePointer2 className="h-4 w-4" />{Math.round(zoom * 100)}%</Button>
+                          <Button size="sm" variant="outline" className="h-10 justify-start gap-2" onClick={() => setShowSummary(v => !v)}><ScrollText className="h-4 w-4" />Fichas</Button>
+                          <Button size="sm" variant={combatOpen ? 'default' : 'outline'} className="h-10 justify-start gap-2" onClick={() => setCombatOpen(v => !v)}><RotateCw className="h-4 w-4" />Combate</Button>
+                        </div>
+                        {tool === 'fog' && <p className="mt-3 rounded-md bg-muted/60 p-2 text-[11px] text-muted-foreground">Toque e arraste no mapa para criar uma área preta. Toque na área preta para revelar.</p>}
+
+                        <div className="mt-3 border-t border-border/60 pt-3">
+                          <p className="mb-2 text-xs font-semibold">Personagens</p>
+                          <div className="flex flex-wrap gap-2">
+                            {board.tokens.length === 0 && <p className="text-[11px] text-muted-foreground">Nenhum personagem na mesa.</p>}
+                            {board.tokens.map(token => (
+                              <button key={token.id} type="button" onClick={() => setSelToken(token.id)} className={`flex min-w-14 max-w-20 flex-col items-center gap-1 rounded-lg border p-1.5 text-[10px] ${selToken === token.id ? 'border-primary bg-primary/15' : 'border-border/60'}`}>
+                                <img src={token.image} alt="" className="h-10 w-10 rounded-full object-contain" />
+                                <span className="w-full truncate">{token.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {sel && (
+                          <div className="mt-3 space-y-2 border-t border-border/60 pt-3">
+                            <p className="text-xs font-semibold">Editar personagem</p>
+                            <Input className="h-9" value={sel.name} onChange={e => updateToken(sel.id, { name: e.target.value })} />
+                            <label className="block text-[11px] text-muted-foreground">Tamanho: {Math.round(sel.size)}%
+                              <input type="range" min={3} max={30} value={sel.size} className="mt-1 w-full accent-primary" onChange={e => updateToken(sel.id, { size: Number(e.target.value) })} />
+                            </label>
+                            <label className="block text-[11px] text-muted-foreground">Rotação: {Math.round(sel.rotation ?? 0)}°
+                              <input type="range" min={0} max={359} value={((sel.rotation ?? 0) + 360) % 360} className="mt-1 w-full accent-primary" onChange={e => updateToken(sel.id, { rotation: Number(e.target.value) })} />
+                            </label>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" className="h-9 flex-1 gap-1" onClick={() => updateToken(sel.id, { rotation: ((sel.rotation ?? 0) + 45) % 360 }, true)}><RotateCw className="h-3.5 w-3.5" />Girar 45°</Button>
+                              <Button size="sm" variant="ghost" className="h-9 text-destructive" onClick={() => { patch({ tokens: board.tokens.filter(t => t.id !== sel.id) }, true); setSelToken(null); }}><Trash2 className="h-4 w-4" /></Button>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="mt-3 flex gap-2 border-t border-border/60 pt-3">
+                          <label className="flex-1">
+                            <input type="file" accept="image/*" className="hidden" onChange={e => uploadMap(e.target.files?.[0])} />
+                            <span className="flex h-10 cursor-pointer items-center justify-center gap-1 rounded-md border border-border px-2 text-xs"><ImagePlus className="h-4 w-4" />Mapa</span>
+                          </label>
+                          <label className="flex-1">
+                            <input type="file" accept="image/png,image/*" multiple className="hidden" onChange={e => { uploadTokens(e.target.files); e.target.value = ''; }} />
+                            <span className="flex h-10 cursor-pointer items-center justify-center gap-1 rounded-md border border-border px-2 text-xs"><UserPlus className="h-4 w-4" />Token</span>
+                          </label>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
               {/* Barra de dados flutuante */}
               <div className="sticky bottom-2 flex justify-center pointer-events-none">
                 <div className="pointer-events-auto"><DiceBar onRoll={rollDice} /></div>
