@@ -636,6 +636,12 @@ const Tabletop = () => {
                           <Button size="sm" variant="outline" className="h-10 justify-start gap-2" onClick={() => setShowSummary(v => !v)}><ScrollText className="h-4 w-4" />Fichas</Button>
                           <Button size="sm" variant={combatOpen ? 'default' : 'outline'} className="h-10 justify-start gap-2" onClick={() => setCombatOpen(v => !v)}><RotateCw className="h-4 w-4" />Combate</Button>
                         </div>
+                        <div className="mt-3 border-t border-border/60 pt-3">
+                          <p className="mb-2 text-xs font-semibold">Dados</p>
+                          <div className="overflow-x-auto rounded-lg bg-background/50 p-1">
+                            <DiceBar onRoll={rollDice} />
+                          </div>
+                        </div>
                         {tool === 'fog' && <p className="mt-3 rounded-md bg-muted/60 p-2 text-[11px] text-muted-foreground">Toque e arraste no mapa para criar uma área preta. Toque na área preta para revelar.</p>}
 
                         <div className="mt-3 border-t border-border/60 pt-3">
@@ -690,7 +696,7 @@ const Tabletop = () => {
                   : 'sticky bottom-2 flex justify-center pointer-events-none'}
                 style={full ? { paddingBottom: 'env(safe-area-inset-bottom)' } : undefined}
               >
-                <div className="pointer-events-auto"><DiceBar onRoll={rollDice} /></div>
+                {(!full || !mobileViewport) && <div className="pointer-events-auto"><DiceBar onRoll={rollDice} /></div>}
               </div>
             </div>
 
