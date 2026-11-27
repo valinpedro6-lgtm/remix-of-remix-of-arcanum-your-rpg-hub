@@ -1,5 +1,5 @@
 import { useStageZoom, StageZoomFocus } from '@/hooks/useStageZoom';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 // A névoa fica POR CIMA dos personagens (z-20) — cobre bonecos também.
 import { motion } from 'framer-motion';
 import {
@@ -78,6 +78,8 @@ const Tabletop = () => {
   const [mobileViewport, setMobileViewport] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
   const [portraitMobile, setPortraitMobile] = useState(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
+  const [mapAspect, setMapAspect] = useState(16 / 9);
+  const [fullscreenFit, setFullscreenFit] = useState(1);
   const [draftFog, setDraftFog] = useState<FogRect | null>(null);
   const [animRoll, setAnimRoll] = useState<Roll | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -134,6 +136,39 @@ const Tabletop = () => {
     };
   }, [full]);
 
+  // No fullscreen o mapa usa um enquadramento "cover": preenche a viewport,
+  // preserva a proporção e deixa o excesso navegável por arrasto.
+  useLayoutEffect(() => {
+    const updateFit = () => {
+      const stage = stageRef.current;
+      if (!full || !stage || !mapAspect) {
+        setFullscreenFit(1);
+        return;
+      }
+      const mapHeightAtViewportWidth = stage.clientWidth / mapAspect;
+      setFullscreenFit(Math.max(1, stage.clientHeight / Math.max(1, mapHeightAtViewportWidth)));
+    };
+    updateFit();
+    const observer = stageRef.current ? new ResizeObserver(updateFit) : null;
+    if (stageRef.current) observer?.observe(stageRef.current);
+    window.addEventListener('resize', updateFit);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', updateFit);
+    };
+  }, [full, mapAspect]);
+
+  useLayoutEffect(() => {
+    if (!full || !stageRef.current) return;
+    const frame = requestAnimationFrame(() => {
+      const stage = stageRef.current;
+      if (!stage) return;
+      stage.scrollLeft = Math.max(0, (stage.scrollWidth - stage.clientWidth) / 2);
+      stage.scrollTop = Math.max(0, (stage.scrollHeight - stage.clientHeight) / 2);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [full, fullscreenFit]);
+
   // Puxa as mudanças feitas pelos jogadores no link (bonecos e dados)
   useEffect(() => {
     if (!activeId) return;
@@ -152,6 +187,7 @@ const Tabletop = () => {
 
   const board = boards.find(b => b.id === activeId) ?? null;
   const zoom = board?.zoom ?? 1;
+  const renderedZoom = full ? zoom * fullscreenFit : zoom;
   const zoomCtl = useStageZoom(stageRef, zoom, (z, camera) => patch({ zoom: z, camera }), () => { drag.current = null; pan.current = null; fogStart.current = null; setDraftFog(null); });
 
   const patch = (p: Partial<Board>, now = false) => {
@@ -548,19 +584,22 @@ const Tabletop = () => {
           <div className="flex gap-3 items-start">
             <div
               ref={stageRef}
-              className={`relative flex-1 min-w-0 overflow-auto border border-border/50 bg-background ${full ? 'fixed inset-0 z-[60] h-[100dvh] w-screen max-h-none rounded-none flex items-center overscroll-contain' : 'rounded-xl max-h-[75dvh]'} ${tool === 'pan' || (mobileViewport && full && tool === 'move') ? 'cursor-grab active:cursor-grabbing' : ''} ${tool === 'fog' ? 'cursor-crosshair' : ''}`}
+              className={`relative flex-1 min-w-0 overflow-auto border border-border/50 bg-black ${full ? 'fixed inset-0 z-[60] h-[100dvh] w-screen max-h-none rounded-none flex items-center overscroll-contain' : 'rounded-xl max-h-[75dvh]'} ${tool === 'pan' || (mobileViewport && full && tool === 'move') ? 'cursor-grab active:cursor-grabbing' : ''} ${tool === 'fog' ? 'cursor-crosshair' : ''}`}
             >
               <div
                 ref={mapRef}
                 className="relative mx-auto select-none touch-none"
-                style={{ width: `${zoom * 100}%` }}
+                style={{ width: `${renderedZoom * 100}%` }}
                 onPointerDown={onStageDown}
                 onPointerMove={onMove}
                 onPointerUp={onUp}
                 onPointerCancel={onUp}
               >
                 {board.map_url ? (
-                  <img src={board.map_url} alt={board.name} draggable={false} className="w-full block pointer-events-none" />
+                  <img src={board.map_url} alt={board.name} draggable={false} onLoad={e => {
+                    const image = e.currentTarget;
+                    if (image.naturalWidth && image.naturalHeight) setMapAspect(image.naturalWidth / image.naturalHeight);
+                  }} className="w-full block pointer-events-none" />
                 ) : (
                   <div className="aspect-video flex flex-col items-center justify-center gap-2 text-muted-foreground subtle-pattern">
                     <MapIcon className="w-10 h-10" /><p className="text-sm">Carregue a imagem do mapa</p>
