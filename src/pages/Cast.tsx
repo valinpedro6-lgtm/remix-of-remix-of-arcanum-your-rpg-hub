@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Users, Skull, Plus, Trash2, Link2, Copy, Maximize2, Minimize2, ArrowUp, ArrowDown,
@@ -64,6 +64,7 @@ const sendToInitiative = (sheet: Sheet) => {
 };
 
 const Cast = () => {
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const [proUnlocked, setProUnlocked] = useState(isProUnlocked);
   const [newSystem, setNewSystem] = useState(FREE_SHEET_SYSTEM);
@@ -75,6 +76,11 @@ const Cast = () => {
   const [templates, setTemplates] = useState<SheetTemplate[]>(() => listSheetTemplates());
   const stageRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  // Ao voltar para Elenco, mostre sempre a lista; não mantenha um editor aberto.
+  useEffect(() => {
+    setSelectedId(null);
+  }, [location.key, location.pathname]);
 
   useEffect(() => {
     const refreshPro = () => setProUnlocked(isProUnlocked());
