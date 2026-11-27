@@ -78,8 +78,6 @@ const Tabletop = () => {
   const [mobileViewport, setMobileViewport] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
   const [portraitMobile, setPortraitMobile] = useState(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
-  const [mapAspect, setMapAspect] = useState(16 / 9);
-  const [fullscreenFit, setFullscreenFit] = useState(1);
   const [draftFog, setDraftFog] = useState<FogRect | null>(null);
   const [animRoll, setAnimRoll] = useState<Roll | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -136,28 +134,6 @@ const Tabletop = () => {
     };
   }, [full]);
 
-  // No fullscreen o mapa usa um enquadramento "cover": preenche a viewport,
-  // preserva a proporção e deixa o excesso navegável por arrasto.
-  useLayoutEffect(() => {
-    const updateFit = () => {
-      const stage = stageRef.current;
-      if (!full || !stage || !mapAspect) {
-        setFullscreenFit(1);
-        return;
-      }
-      const mapHeightAtViewportWidth = stage.clientWidth / mapAspect;
-      setFullscreenFit(Math.max(1, stage.clientHeight / Math.max(1, mapHeightAtViewportWidth)));
-    };
-    updateFit();
-    const observer = stageRef.current ? new ResizeObserver(updateFit) : null;
-    if (stageRef.current) observer?.observe(stageRef.current);
-    window.addEventListener('resize', updateFit);
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener('resize', updateFit);
-    };
-  }, [full, mapAspect]);
-
   useLayoutEffect(() => {
     if (!full || !stageRef.current) return;
     const frame = requestAnimationFrame(() => {
@@ -167,7 +143,7 @@ const Tabletop = () => {
       stage.scrollTop = Math.max(0, (stage.scrollHeight - stage.clientHeight) / 2);
     });
     return () => cancelAnimationFrame(frame);
-  }, [full, fullscreenFit]);
+  }, [full]);
 
   // Puxa as mudanças feitas pelos jogadores no link (bonecos e dados)
   useEffect(() => {
@@ -187,7 +163,7 @@ const Tabletop = () => {
 
   const board = boards.find(b => b.id === activeId) ?? null;
   const zoom = board?.zoom ?? 1;
-  const renderedZoom = full ? zoom * fullscreenFit : zoom;
+  const renderedZoom = zoom;
   const zoomCtl = useStageZoom(stageRef, zoom, (z, camera) => patch({ zoom: z, camera }), () => { drag.current = null; pan.current = null; fogStart.current = null; setDraftFog(null); });
 
   const patch = (p: Partial<Board>, now = false) => {
@@ -588,18 +564,15 @@ const Tabletop = () => {
             >
               <div
                 ref={mapRef}
-                className="relative mx-auto select-none touch-none"
-                style={{ width: `${renderedZoom * 100}%` }}
+                className={`relative mx-auto flex-none select-none touch-none ${full ? 'h-full' : ''}`}
+                style={{ width: `${renderedZoom * 100}%`, ...(full ? { height: `${renderedZoom * 100}%` } : {}) }}
                 onPointerDown={onStageDown}
                 onPointerMove={onMove}
                 onPointerUp={onUp}
                 onPointerCancel={onUp}
               >
                 {board.map_url ? (
-                  <img src={board.map_url} alt={board.name} draggable={false} onLoad={e => {
-                    const image = e.currentTarget;
-                    if (image.naturalWidth && image.naturalHeight) setMapAspect(image.naturalWidth / image.naturalHeight);
-                  }} className="w-full block pointer-events-none" />
+                  <img src={board.map_url} alt={board.name} draggable={false} className={`w-full block pointer-events-none ${full ? 'h-full object-cover' : ''}`} />
                 ) : (
                   <div className="aspect-video flex flex-col items-center justify-center gap-2 text-muted-foreground subtle-pattern">
                     <MapIcon className="w-10 h-10" /><p className="text-sm">Carregue a imagem do mapa</p>
