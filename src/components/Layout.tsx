@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { isMaster, logout } from '@/lib/access';
 import { Link, useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -56,6 +56,8 @@ export const Layout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
   useTheme();
   const [open, setOpen] = useState(false);
+  const [mobileNavigationGuard, setMobileNavigationGuard] = useState(false);
+  const mobileNavigationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [master, setMaster] = useState(isMaster);
   useEffect(() => {
@@ -64,11 +66,22 @@ export const Layout = ({ children }: { children: ReactNode }) => {
     window.addEventListener('storage', h);
     return () => { window.removeEventListener('arcanum-master-change', h); window.removeEventListener('storage', h); };
   }, []);
+  useEffect(() => () => {
+    if (mobileNavigationTimer.current) clearTimeout(mobileNavigationTimer.current);
+  }, []);
+  const guardMobileNavigation = () => {
+    setMobileNavigationGuard(true);
+    if (mobileNavigationTimer.current) clearTimeout(mobileNavigationTimer.current);
+    mobileNavigationTimer.current = setTimeout(() => {
+      setMobileNavigationGuard(false);
+      mobileNavigationTimer.current = null;
+    }, 500);
+  };
   const isActive = (path: string) => location.pathname === path || (path !== '/' && location.pathname.startsWith(`${path}/`));
   const activeItem = allItems.find(item => isActive(item.path));
   const groups = master ? [...navGroups, { label: 'Administração', items: [{ path: '/mestre', label: 'Mestre', caption: 'Acessos e campanha', icon: Shield }] }] : navGroups;
 
-  const NavLinks = ({ compact = false }: { compact?: boolean }) => (
+  const NavLinks = ({ compact = false, mobile = false }: { compact?: boolean; mobile?: boolean }) => (
     <>
       {groups.map(group => (
         <div key={group.label} className={compact ? 'space-y-1' : 'space-y-1'}>
@@ -76,7 +89,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
           {group.items.map(item => {
             const active = isActive(item.path);
             return (
-              <Link key={item.path} to={item.path} onClick={() => setOpen(false)} title={`${item.label} — ${item.caption}`} className={`nav-item group ${active ? 'nav-active text-primary' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground'} ${compact ? 'justify-center px-2' : ''}`}>
+              <Link key={item.path} to={item.path} onClick={() => { setOpen(false); if (mobile) guardMobileNavigation(); }} title={`${item.label} — ${item.caption}`} className={`nav-item group ${active ? 'nav-active text-primary' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground'} ${compact ? 'justify-center px-2' : ''}`}>
                 <item.icon className={`h-[18px] w-[18px] shrink-0 transition-transform ${active ? 'text-primary' : 'group-hover:scale-105'}`} />
                 <span className="nav-copy min-w-0"><span className="nav-label block truncate">{item.label}</span><span className="nav-caption block truncate">{item.caption}</span></span>
                 {active && <span className="nav-dot" />}
@@ -129,12 +142,12 @@ export const Layout = ({ children }: { children: ReactNode }) => {
 
       <div className="mobile-shell fixed left-0 right-0 top-0 z-50 flex items-center gap-3 border-b border-border/60 bg-background/92 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-xl md:hidden">
         <Sheet open={open} onOpenChange={setOpen}><SheetTrigger asChild><Button variant="ghost" size="icon" className="h-10 w-10 shrink-0"><Menu className="h-5 w-5" /></Button></SheetTrigger>
-          <SheetContent side="left" className="mobile-drawer w-[min(92vw,360px)] border-border/60 bg-card/96 p-0 backdrop-blur-xl"><div className="border-b border-border/60 p-5"><div className="flex items-center gap-3"><div className="brand-mark grid h-10 w-10 place-items-center rounded-xl text-primary-foreground"><Dices className="h-5 w-5" /></div><div><div className="brand-wordmark">ARCANUM</div><div className="brand-kicker">CAMPAIGN COMMAND</div></div></div></div><nav className="flex h-[calc(100%-88px)] flex-col overflow-y-auto p-3"><NavLinks /><div className="mobile-footer-stack mt-auto border-t border-border/60 pt-3"><ThemeSwitcher /><CampaignBackup /><Button variant="ghost" size="sm" className="mobile-logout w-full justify-start text-muted-foreground" onClick={() => confirm('Sair da conta neste aparelho?') && logout()}><LogOut className="mr-2 h-4 w-4" />Sair da conta</Button></div></nav></SheetContent>
+          <SheetContent side="left" className="mobile-drawer w-[min(92vw,360px)] border-border/60 bg-card/96 p-0 backdrop-blur-xl"><div className="border-b border-border/60 p-5"><div className="flex items-center gap-3"><div className="brand-mark grid h-10 w-10 place-items-center rounded-xl text-primary-foreground"><Dices className="h-5 w-5" /></div><div><div className="brand-wordmark">ARCANUM</div><div className="brand-kicker">CAMPAIGN COMMAND</div></div></div></div><nav className="flex h-[calc(100%-88px)] flex-col overflow-y-auto p-3"><NavLinks mobile /><div className="mobile-footer-stack mt-auto border-t border-border/60 pt-3"><ThemeSwitcher /><CampaignBackup /><Button variant="ghost" size="sm" className="mobile-logout w-full justify-start text-muted-foreground" onClick={() => confirm('Sair da conta neste aparelho?') && logout()}><LogOut className="mr-2 h-4 w-4" />Sair da conta</Button></div></nav></SheetContent>
         </Sheet>
         <div className="min-w-0"><div className="mobile-wordmark">ARCANUM</div><p className="truncate text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{activeItem?.label ?? 'Campaign command'}</p></div><div className="ml-auto"><GlobalTimerBar /></div>
       </div>
 
-      <main className="min-h-screen min-w-0 overflow-x-hidden md:ml-[248px] md:pt-0"><div className="shell-content animate-fade-in">{children}</div></main>
+      <main className={`min-h-screen min-w-0 overflow-x-hidden md:ml-[248px] md:pt-0 ${mobileNavigationGuard ? 'pointer-events-none' : ''}`}><div className="shell-content animate-fade-in">{children}</div></main>
 
       <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40 grid grid-cols-4 gap-1 border-t border-border/60 bg-background/96 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl md:hidden">
         {[groups[0].items[0], groups[1].items[0], groups[2].items[0], groups[2].items[1]].map(item => { const active = isActive(item.path); return <Link key={item.path} to={item.path} className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold transition-colors ${active ? 'bg-primary/15 text-primary' : 'text-muted-foreground'}`}><item.icon className="h-4 w-4" /><span>{item.label}</span></Link>; })}
