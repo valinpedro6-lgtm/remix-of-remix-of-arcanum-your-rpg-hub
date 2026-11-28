@@ -224,15 +224,18 @@ const Cast = () => {
   /* ---------- Lista ---------- */
   const grid = (items: Sheet[], kind: SheetKind) => (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-      <select value={newSystem} onChange={event => setNewSystem(event.target.value)} aria-label="Sistema da ficha"
-        className="h-10 rounded-md border border-input bg-background px-3 text-sm max-w-full">
-        {SHEET_SYSTEMS.map(sys => <option key={sys.id} value={sys.id} disabled={!proUnlocked && sys.id !== FREE_SHEET_SYSTEM}>{sys.id === FREE_SHEET_SYSTEM ? `${sys.name} · grátis` : `${sys.name} · Pro`}</option>)}
-      </select>
-      <Button onClick={() => add(kind)} className="gap-2">
-        <Plus className="w-4 h-4" />
-        {kind === 'monster' ? 'Nova criatura' : kind === 'story' ? 'Novo personagem da história' : 'Novo jogador'}
-      </Button>
+      <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-[minmax(220px,1fr)_auto] sm:items-end">
+        <div className="space-y-1.5">
+          <Label htmlFor={`new-sheet-system-${kind}`}>Sistema da próxima ficha</Label>
+          <select id={`new-sheet-system-${kind}`} value={newSystem} onChange={event => setNewSystem(event.target.value)} aria-label="Sistema da próxima ficha"
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm sm:min-w-[220px]">
+            {SHEET_SYSTEMS.map(sys => <option key={sys.id} value={sys.id} disabled={!proUnlocked && sys.id !== FREE_SHEET_SYSTEM}>{sys.id === FREE_SHEET_SYSTEM ? `${sys.name} · grátis` : `${sys.name} · Pro`}</option>)}
+          </select>
+        </div>
+        <Button type="button" onClick={() => add(kind)} className="h-10 w-full gap-2 sm:w-auto">
+          <Plus className="w-4 h-4" />
+          {kind === 'monster' ? 'Criar nova criatura' : kind === 'story' ? 'Criar personagem da história' : 'Criar novo jogador'}
+        </Button>
       </div>
       <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
         <div className="flex flex-wrap items-center gap-2">
